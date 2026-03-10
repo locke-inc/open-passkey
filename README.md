@@ -96,7 +96,7 @@ webauthn.KtyComposite              // 9   (Composite key type)
 
 **Status:** Functional. 16 tests passing.
 
-HTTP handlers for the full WebAuthn ceremony, built on `net/http`. Works with any Go router (stdlib mux, Chi, Gin, etc.). Defaults to **ML-DSA-65 preferred, ES256 fallback** in `pubKeyCredParams`.
+HTTP handlers for the full WebAuthn ceremony, built on `net/http`. Works with any Go router (stdlib mux, Chi, Gin, etc.). Defaults to **ML-DSA-65-ES256 (hybrid) preferred**, with ML-DSA-65 and ES256 as fallbacks in `pubKeyCredParams`.
 
 ```go
 import "github.com/locke-inc/open-passkey/packages/server-go"
@@ -265,10 +265,9 @@ cd packages/angular && npm test
 - [x] TypeScript core library — same 16 spec vectors passing (cross-language proof)
 - [x] Angular component bindings — headless components, injectable service, 28 tests passing
 - [x] Post-quantum support — ML-DSA-65 (FIPS 204) verification in Go and TypeScript
-- [x] PQ-preferred algorithm negotiation in server-go
+- [x] Hybrid-preferred algorithm negotiation in server-go (ML-DSA-65-ES256 first in `pubKeyCredParams`)
 - [x] Hybrid PQ mode — ML-DSA-65-ES256 composite signatures (COSE alg -52) in Go and TypeScript
 - [x] 6 hybrid-specific test vectors with independent ML-DSA/ECDSA tampering tests
-- [ ] Hybrid-preferred algorithm negotiation in server-go
 - [ ] React component bindings
 - [ ] Additional attestation formats (packed, TPM, Android)
 - [ ] Sign count rollback detection

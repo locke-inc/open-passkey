@@ -34,7 +34,7 @@ open-passkey/
 | ES256 (ECDSA P-256) | -7 | 2 (EC2) | Go + TypeScript | Classical, all browsers support |
 
 ### Algorithm Negotiation
-`server-go` sends `pubKeyCredParams` with ML-DSA-65 first (preferred) and ES256 second (fallback). The authenticator picks the first algorithm it supports. During authentication, the core libraries read the COSE `alg` field from the stored key and dispatch to the correct verifier (ES256, ML-DSA-65, or ML-DSA-65-ES256 composite).
+`server-go` sends `pubKeyCredParams` with ML-DSA-65-ES256 first (preferred), ML-DSA-65 second, and ES256 third (classical fallback). The authenticator picks the first algorithm it supports. During authentication, the core libraries read the COSE `alg` field from the stored key and dispatch to the correct verifier (ES256, ML-DSA-65, or ML-DSA-65-ES256 composite).
 
 ### ML-DSA-65 COSE Key Format
 ```
@@ -147,7 +147,7 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] `server-go`: `ChallengeStore` interface + `MemoryChallengeStore` (single-use, time-limited)
 - [x] `server-go`: `CredentialStore` interface + `MemoryCredentialStore`
 - [x] `server-go`: Config validation, challenge generation, discoverable credentials support
-- [x] `server-go`: PQ-preferred `pubKeyCredParams` (ML-DSA-65 first, ES256 fallback)
+- [x] `server-go`: Hybrid-preferred `pubKeyCredParams` (ML-DSA-65-ES256 first, ML-DSA-65 second, ES256 fallback)
 - [x] 16 isolated httptest-based tests for server-go (all passing)
 - [x] `core-ts`: TypeScript port — `verifyRegistration()` + `verifyAuthentication()` — all 16 spec vectors passing
 - [x] `core-ts`: ES256 via Node `crypto`, ML-DSA-65 via `@noble/post-quantum`, composite ML-DSA-65-ES256
@@ -159,7 +159,6 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] `angular`: 28 isolated Jest tests (4 util, 11 service, 6 register component, 7 login component)
 
 ### Next
-- [ ] Hybrid-preferred algorithm negotiation in `server-go` (ML-DSA-65-ES256 as first `pubKeyCredParams` entry)
 - [ ] `packages/react/` — React hooks and components
 
 ### Backlog
