@@ -10,7 +10,7 @@
     "test:watch": "vitest"
   },
   "keywords": ["passkey", "webauthn", "fido2"],
-  "author": "Locke Inc",
+  "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "type": "module",
   "devDependencies": {

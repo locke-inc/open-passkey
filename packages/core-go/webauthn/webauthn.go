@@ -4,6 +4,10 @@
 // This is the "Core Protocol" layer — it contains no HTTP handling, no
 // framework bindings, and no session management. It operates purely on
 // parsed WebAuthn structures and returns verification results.
+//
+// Supported algorithms:
+//   - ES256 (ECDSA P-256, COSE alg -7) — classical, widely supported
+//   - ML-DSA-65 (FIPS 204 / Dilithium3, COSE alg -49) — post-quantum
 package webauthn
 
 import (
@@ -17,7 +21,20 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 	"github.com/fxamacker/cbor/v2"
+)
+
+// COSE algorithm identifiers.
+const (
+	AlgES256   = -7  // ECDSA w/ SHA-256 on P-256
+	AlgMLDSA65 = -49 // ML-DSA-65 (Dilithium3, FIPS 204)
+)
+
+// COSE key type identifiers.
+const (
+	KtyEC2   = 2 // Elliptic Curve (two coordinates)
+	KtyMLDSA = 8 // ML-DSA (Module-Lattice Digital Signature)
 )
 
 // Sentinel errors returned by verification functions.
@@ -44,10 +61,10 @@ type RegistrationInput struct {
 }
 
 type RegistrationResult struct {
-	CredentialID []byte
+	CredentialID  []byte
 	PublicKeyCOSE []byte
-	SignCount    uint32
-	RPIDHash     []byte
+	SignCount     uint32
+	RPIDHash      []byte
 }
 
 type AuthenticationInput struct {
@@ -103,11 +120,11 @@ func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expect
 const minAuthDataLen = 37
 
 type parsedAuthData struct {
-	RPIDHash       []byte
-	Flags          byte
-	SignCount      uint32
-	CredentialID   []byte
-	CredentialKey  []byte // raw COSE key bytes
+	RPIDHash      []byte
+	Flags         byte
+	SignCount     uint32
+	CredentialID  []byte
+	CredentialKey []byte // raw COSE key bytes
 }
 
 func parseAuthenticatorData(authData []byte, expectCredData bool) (*parsedAuthData, error) {
@@ -176,9 +193,16 @@ func decodeAttestationObject(attObjB64 string) ([]byte, error) {
 	return obj.AuthData, nil
 }
 
-// --- COSE key decoding (ES256 / P-256 only) ---
+// --- COSE key decoding (multi-algorithm) ---
 
-type coseKey struct {
+// coseKeyHeader is decoded first to determine the algorithm, then dispatched.
+type coseKeyHeader struct {
+	Kty int `cbor:"1,keyasint"`
+	Alg int `cbor:"3,keyasint"`
+}
+
+// coseEC2Key holds the EC2-specific fields for ES256 / P-256.
+type coseEC2Key struct {
 	Kty int    `cbor:"1,keyasint"`
 	Alg int    `cbor:"3,keyasint"`
 	Crv int    `cbor:"-1,keyasint"`
@@ -186,13 +210,29 @@ type coseKey struct {
 	Y   []byte `cbor:"-3,keyasint"`
 }
 
-func decodeCOSEPublicKey(data []byte) (*ecdsa.PublicKey, error) {
-	var key coseKey
-	if err := cbor.Unmarshal(data, &key); err != nil {
-		return nil, fmt.Errorf("CBOR decoding COSE key: %w", err)
+// coseMLDSAKey holds the ML-DSA-specific fields.
+// The public key is stored in COSE parameter -1 (analogous to crv for EC).
+type coseMLDSAKey struct {
+	Kty int    `cbor:"1,keyasint"`
+	Alg int    `cbor:"3,keyasint"`
+	Pub []byte `cbor:"-1,keyasint"` // raw ML-DSA public key bytes
+}
+
+// identifyCOSEAlgorithm returns the COSE algorithm ID from a raw COSE key.
+func identifyCOSEAlgorithm(data []byte) (int, error) {
+	var header coseKeyHeader
+	if err := cbor.Unmarshal(data, &header); err != nil {
+		return 0, fmt.Errorf("CBOR decoding COSE key header: %w", err)
 	}
-	// kty=2 (EC2), alg=-7 (ES256), crv=1 (P-256)
-	if key.Kty != 2 || key.Alg != -7 || key.Crv != 1 {
+	return header.Alg, nil
+}
+
+func decodeES256PublicKey(data []byte) (*ecdsa.PublicKey, error) {
+	var key coseEC2Key
+	if err := cbor.Unmarshal(data, &key); err != nil {
+		return nil, fmt.Errorf("CBOR decoding COSE EC2 key: %w", err)
+	}
+	if key.Kty != KtyEC2 || key.Alg != AlgES256 || key.Crv != 1 {
 		return nil, ErrUnsupportedAlg
 	}
 	if len(key.X) != 32 || len(key.Y) != 32 {
@@ -205,9 +245,25 @@ func decodeCOSEPublicKey(data []byte) (*ecdsa.PublicKey, error) {
 	}, nil
 }
 
-// --- Signature verification ---
+func decodeMLDSA65PublicKey(data []byte) (*mldsa65.PublicKey, error) {
+	var key coseMLDSAKey
+	if err := cbor.Unmarshal(data, &key); err != nil {
+		return nil, fmt.Errorf("CBOR decoding COSE ML-DSA key: %w", err)
+	}
+	if key.Kty != KtyMLDSA || key.Alg != AlgMLDSA65 {
+		return nil, ErrUnsupportedAlg
+	}
 
-func verifySignature(pubKey *ecdsa.PublicKey, authData, clientDataJSON []byte, signatureBytes []byte) error {
+	var pk mldsa65.PublicKey
+	if err := pk.UnmarshalBinary(key.Pub); err != nil {
+		return nil, fmt.Errorf("decoding ML-DSA-65 public key: %w", err)
+	}
+	return &pk, nil
+}
+
+// --- Signature verification (multi-algorithm) ---
+
+func verifySignatureES256(pubKey *ecdsa.PublicKey, authData, clientDataJSON, signatureBytes []byte) error {
 	clientDataHash := sha256.Sum256(clientDataJSON)
 	verifyData := append(authData, clientDataHash[:]...)
 	hash := sha256.Sum256(verifyData)
@@ -216,6 +272,43 @@ func verifySignature(pubKey *ecdsa.PublicKey, authData, clientDataJSON []byte, s
 		return ErrSignatureInvalid
 	}
 	return nil
+}
+
+func verifySignatureMLDSA65(pubKey *mldsa65.PublicKey, authData, clientDataJSON, signatureBytes []byte) error {
+	clientDataHash := sha256.Sum256(clientDataJSON)
+	verifyData := append(authData, clientDataHash[:]...)
+
+	if !mldsa65.Verify(pubKey, verifyData, nil, signatureBytes) {
+		return ErrSignatureInvalid
+	}
+	return nil
+}
+
+// verifySignature dispatches to the correct algorithm based on the COSE key.
+func verifySignature(coseKeyData, authData, clientDataJSON, signatureBytes []byte) error {
+	alg, err := identifyCOSEAlgorithm(coseKeyData)
+	if err != nil {
+		return err
+	}
+
+	switch alg {
+	case AlgES256:
+		pubKey, err := decodeES256PublicKey(coseKeyData)
+		if err != nil {
+			return err
+		}
+		return verifySignatureES256(pubKey, authData, clientDataJSON, signatureBytes)
+
+	case AlgMLDSA65:
+		pubKey, err := decodeMLDSA65PublicKey(coseKeyData)
+		if err != nil {
+			return err
+		}
+		return verifySignatureMLDSA65(pubKey, authData, clientDataJSON, signatureBytes)
+
+	default:
+		return ErrUnsupportedAlg
+	}
 }
 
 // --- Public API ---
@@ -268,17 +361,12 @@ func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, err
 		return nil, err
 	}
 
-	pubKey, err := decodeCOSEPublicKey(input.StoredPublicKeyCOSE)
-	if err != nil {
-		return nil, err
-	}
-
 	sigBytes, err := b64Decode(input.Signature)
 	if err != nil {
 		return nil, fmt.Errorf("decoding signature: %w", err)
 	}
 
-	if err := verifySignature(pubKey, authDataRaw, clientDataJSONRaw, sigBytes); err != nil {
+	if err := verifySignature(input.StoredPublicKeyCOSE, authDataRaw, clientDataJSONRaw, sigBytes); err != nil {
 		return nil, err
 	}
 

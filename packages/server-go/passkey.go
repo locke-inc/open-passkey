@@ -139,7 +139,8 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 			"displayName": req.Username,
 		},
 		"pubKeyCredParams": []map[string]any{
-			{"type": "public-key", "alg": -7}, // ES256
+			{"type": "public-key", "alg": -49}, // ML-DSA-65 (post-quantum, preferred)
+			{"type": "public-key", "alg": -7},  // ES256 (classical fallback)
 		},
 		"authenticatorSelection": map[string]any{
 			"residentKey":      "preferred",

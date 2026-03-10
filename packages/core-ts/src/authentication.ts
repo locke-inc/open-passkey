@@ -3,11 +3,16 @@ import { decode } from "cbor-x";
 import { base64urlDecode, sha256 } from "./util.js";
 import { verifyClientData } from "./clientdata.js";
 import { parseAuthenticatorData, verifyRPIdHash } from "./authdata.js";
-import { SignatureInvalidError } from "./errors.js";
+import { SignatureInvalidError, UnsupportedAlgorithmError } from "./errors.js";
+import { COSE_ALG_ES256, COSE_ALG_MLDSA65 } from "./cose.js";
 import type { AuthenticationInput, AuthenticationResult } from "./types.js";
 
-function coseKeyToDer(coseBytes: Uint8Array): Buffer {
-  // cbor-x decodes CBOR maps with integer keys as plain objects with string keys
+function identifyCOSEAlgorithm(coseBytes: Uint8Array): number {
+  const raw = decode(coseBytes) as Record<string, unknown>;
+  return raw["3"] as number;
+}
+
+function coseES256KeyToDer(coseBytes: Uint8Array): Buffer {
   const raw = decode(coseBytes) as Record<string, unknown>;
 
   const kty = raw["1"];
@@ -16,15 +21,14 @@ function coseKeyToDer(coseBytes: Uint8Array): Buffer {
   const x = raw["-2"] as Uint8Array;
   const y = raw["-3"] as Uint8Array;
 
-  if (kty !== 2 || alg !== -7 || crv !== 1) {
-    throw new Error("unsupported_cose_algorithm");
+  if (kty !== 2 || alg !== COSE_ALG_ES256 || crv !== 1) {
+    throw new UnsupportedAlgorithmError();
   }
 
   // Encode as uncompressed EC point: 0x04 || x || y
   const uncompressed = Buffer.concat([Buffer.from([0x04]), x, y]);
 
   // Wrap in SubjectPublicKeyInfo ASN.1 DER for P-256
-  // SEQUENCE { SEQUENCE { OID ecPublicKey, OID prime256v1 }, BIT STRING { uncompressed point } }
   const ecOid = Buffer.from([0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01]); // 1.2.840.10045.2.1
   const p256Oid = Buffer.from([0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07]); // 1.2.840.10045.3.1.7
   const algoSeq = Buffer.concat([
@@ -45,6 +49,41 @@ function coseKeyToDer(coseBytes: Uint8Array): Buffer {
   return spki;
 }
 
+function verifyES256Signature(
+  coseKeyBytes: Uint8Array,
+  authDataRaw: Uint8Array,
+  clientDataHash: Uint8Array,
+  sigBytes: Uint8Array,
+): void {
+  const spki = coseES256KeyToDer(coseKeyBytes);
+
+  const verifier = createVerify("SHA256");
+  verifier.update(Buffer.concat([authDataRaw, clientDataHash]));
+  const valid = verifier.verify(
+    { key: Buffer.concat([Buffer.from("-----BEGIN PUBLIC KEY-----\n"), Buffer.from(spki.toString("base64").replace(/(.{64})/g, "$1\n")), Buffer.from("\n-----END PUBLIC KEY-----")]), format: "pem" },
+    Buffer.from(sigBytes),
+  );
+
+  if (!valid) {
+    throw new SignatureInvalidError();
+  }
+}
+
+function verifyMLDSA65Signature(
+  _coseKeyBytes: Uint8Array,
+  _authDataRaw: Uint8Array,
+  _clientDataHash: Uint8Array,
+  _sigBytes: Uint8Array,
+): void {
+  // ML-DSA-65 verification requires a post-quantum crypto library.
+  // Node.js does not yet have native ML-DSA support.
+  // Server-side ML-DSA-65 verification should use the Go implementation (core-go).
+  // This TypeScript path will be implemented when a stable PQ library is available for Node.js.
+  throw new UnsupportedAlgorithmError(
+    "ML-DSA-65 verification is not yet available in the TypeScript implementation. Use the Go server (core-go) for post-quantum passkey verification.",
+  );
+}
+
 export function verifyAuthentication(
   input: AuthenticationInput,
 ): AuthenticationResult {
@@ -61,22 +100,18 @@ export function verifyAuthentication(
   verifyRPIdHash(parsed.rpIdHash, input.rpId);
 
   const clientDataHash = sha256(clientDataJSONRaw);
-
-  // Decode COSE key to DER SPKI format for Node crypto
-  const spki = coseKeyToDer(input.storedPublicKeyCose);
   const sigBytes = base64urlDecode(input.signature);
+  const alg = identifyCOSEAlgorithm(input.storedPublicKeyCose);
 
-  // Verify ECDSA signature using Node's crypto
-  // The signature from WebAuthn is DER-encoded ASN.1, which Node's verify expects
-  const verifier = createVerify("SHA256");
-  verifier.update(Buffer.concat([authDataRaw, clientDataHash]));
-  const valid = verifier.verify(
-    { key: Buffer.concat([Buffer.from("-----BEGIN PUBLIC KEY-----\n"), Buffer.from(spki.toString("base64").replace(/(.{64})/g, "$1\n")), Buffer.from("\n-----END PUBLIC KEY-----")]), format: "pem" },
-    Buffer.from(sigBytes),
-  );
-
-  if (!valid) {
-    throw new SignatureInvalidError();
+  switch (alg) {
+    case COSE_ALG_ES256:
+      verifyES256Signature(input.storedPublicKeyCose, authDataRaw, clientDataHash, sigBytes);
+      break;
+    case COSE_ALG_MLDSA65:
+      verifyMLDSA65Signature(input.storedPublicKeyCose, authDataRaw, clientDataHash, sigBytes);
+      break;
+    default:
+      throw new UnsupportedAlgorithmError();
   }
 
   return {

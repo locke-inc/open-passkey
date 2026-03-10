@@ -38,3 +38,9 @@ export class SignatureInvalidError extends WebAuthnError {
     super("signature_invalid");
   }
 }
+
+export class UnsupportedAlgorithmError extends WebAuthnError {
+  constructor(message?: string) {
+    super("unsupported_cose_algorithm", message);
+  }
+}
