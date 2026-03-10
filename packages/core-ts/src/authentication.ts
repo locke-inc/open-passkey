@@ -1,10 +1,17 @@
 import { createVerify } from "node:crypto";
 import { decode } from "cbor-x";
+import { ml_dsa65 } from "@noble/post-quantum/ml-dsa.js";
 import { base64urlDecode, sha256 } from "./util.js";
 import { verifyClientData } from "./clientdata.js";
 import { parseAuthenticatorData, verifyRPIdHash } from "./authdata.js";
 import { SignatureInvalidError, UnsupportedAlgorithmError } from "./errors.js";
-import { COSE_ALG_ES256, COSE_ALG_MLDSA65 } from "./cose.js";
+import {
+  COSE_ALG_ES256,
+  COSE_ALG_MLDSA65,
+  COSE_ALG_COMPOSITE_MLDSA65_ES256,
+  COSE_KTY_MLDSA,
+  COSE_KTY_COMPOSITE,
+} from "./cose.js";
 import type { AuthenticationInput, AuthenticationResult } from "./types.js";
 
 function identifyCOSEAlgorithm(coseBytes: Uint8Array): number {
@@ -69,19 +76,123 @@ function verifyES256Signature(
   }
 }
 
-function verifyMLDSA65Signature(
-  _coseKeyBytes: Uint8Array,
-  _authDataRaw: Uint8Array,
-  _clientDataHash: Uint8Array,
-  _sigBytes: Uint8Array,
+/** Verify an ES256 signature given raw uncompressed EC point bytes (65 bytes). */
+function verifyES256SignatureRaw(
+  ecPointBytes: Uint8Array,
+  authDataRaw: Uint8Array,
+  clientDataHash: Uint8Array,
+  sigBytes: Uint8Array,
 ): void {
-  // ML-DSA-65 verification requires a post-quantum crypto library.
-  // Node.js does not yet have native ML-DSA support.
-  // Server-side ML-DSA-65 verification should use the Go implementation (core-go).
-  // This TypeScript path will be implemented when a stable PQ library is available for Node.js.
-  throw new UnsupportedAlgorithmError(
-    "ML-DSA-65 verification is not yet available in the TypeScript implementation. Use the Go server (core-go) for post-quantum passkey verification.",
+  // Wrap the raw uncompressed point in SubjectPublicKeyInfo DER for P-256
+  const ecOid = Buffer.from([0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01]);
+  const p256Oid = Buffer.from([0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07]);
+  const algoSeq = Buffer.concat([
+    Buffer.from([0x30, ecOid.length + p256Oid.length]),
+    ecOid,
+    p256Oid,
+  ]);
+  const bitString = Buffer.concat([
+    Buffer.from([0x03, ecPointBytes.length + 1, 0x00]),
+    ecPointBytes,
+  ]);
+  const spki = Buffer.concat([
+    Buffer.from([0x30, algoSeq.length + bitString.length]),
+    algoSeq,
+    bitString,
+  ]);
+
+  const verifier = createVerify("SHA256");
+  verifier.update(Buffer.concat([authDataRaw, clientDataHash]));
+  const valid = verifier.verify(
+    { key: Buffer.concat([Buffer.from("-----BEGIN PUBLIC KEY-----\n"), Buffer.from(spki.toString("base64").replace(/(.{64})/g, "$1\n")), Buffer.from("\n-----END PUBLIC KEY-----")]), format: "pem" },
+    Buffer.from(sigBytes),
   );
+
+  if (!valid) {
+    throw new SignatureInvalidError();
+  }
+}
+
+function verifyMLDSA65Signature(
+  coseKeyBytes: Uint8Array,
+  authDataRaw: Uint8Array,
+  clientDataHash: Uint8Array,
+  sigBytes: Uint8Array,
+): void {
+  const raw = decode(coseKeyBytes) as Record<string, unknown>;
+  const kty = raw["1"];
+  const alg = raw["3"];
+  const pub = raw["-1"] as Uint8Array;
+
+  if (kty !== COSE_KTY_MLDSA || alg !== COSE_ALG_MLDSA65) {
+    throw new UnsupportedAlgorithmError();
+  }
+
+  const verifyData = new Uint8Array([...authDataRaw, ...clientDataHash]);
+  const valid = ml_dsa65.verify(sigBytes, verifyData, pub);
+
+  if (!valid) {
+    throw new SignatureInvalidError();
+  }
+}
+
+// ML-DSA-65 public key size (FIPS 204).
+const MLDSA_PUB_KEY_SIZE = 1952;
+// Uncompressed EC P-256 point: 0x04 || x(32) || y(32).
+const ECDSA_UNCOMPRESSED_SIZE = 65;
+
+function verifyCompositeSignature(
+  coseKeyBytes: Uint8Array,
+  authDataRaw: Uint8Array,
+  clientDataHash: Uint8Array,
+  sigBytes: Uint8Array,
+): void {
+  // Decode the composite COSE key
+  const raw = decode(coseKeyBytes) as Record<string, unknown>;
+  const kty = raw["1"];
+  const alg = raw["3"];
+  const compositeKey = raw["-1"] as Uint8Array;
+
+  if (kty !== COSE_KTY_COMPOSITE || alg !== COSE_ALG_COMPOSITE_MLDSA65_ES256) {
+    throw new UnsupportedAlgorithmError();
+  }
+
+  const expectedKeyLen = MLDSA_PUB_KEY_SIZE + ECDSA_UNCOMPRESSED_SIZE;
+  if (compositeKey.length !== expectedKeyLen) {
+    throw new UnsupportedAlgorithmError(
+      `composite public key wrong length: got ${compositeKey.length}, want ${expectedKeyLen}`,
+    );
+  }
+
+  // Split composite key: ML-DSA-65 (1952 bytes) || ECDSA uncompressed point (65 bytes)
+  const mldsaPubKey = compositeKey.slice(0, MLDSA_PUB_KEY_SIZE);
+  const ecdsaPubPoint = compositeKey.slice(MLDSA_PUB_KEY_SIZE);
+
+  // Split composite signature: 4-byte big-endian ML-DSA sig length || ML-DSA sig || ES256 DER sig
+  if (sigBytes.length < 4) {
+    throw new SignatureInvalidError();
+  }
+
+  const view = new DataView(sigBytes.buffer, sigBytes.byteOffset, sigBytes.byteLength);
+  const mldsaSigLen = view.getUint32(0);
+
+  if (sigBytes.length < 4 + mldsaSigLen) {
+    throw new SignatureInvalidError();
+  }
+
+  const mldsaSig = sigBytes.slice(4, 4 + mldsaSigLen);
+  const ecdsaSig = sigBytes.slice(4 + mldsaSigLen);
+
+  // Both components verify over the same data: authData || SHA256(clientDataJSON)
+  // ML-DSA-65: signs the message directly (no additional hashing)
+  const verifyData = new Uint8Array([...authDataRaw, ...clientDataHash]);
+  const mldsaValid = ml_dsa65.verify(mldsaSig, verifyData, mldsaPubKey);
+  if (!mldsaValid) {
+    throw new SignatureInvalidError();
+  }
+
+  // ES256: verify using the raw EC point extracted from the composite key
+  verifyES256SignatureRaw(ecdsaPubPoint, authDataRaw, clientDataHash, ecdsaSig);
 }
 
 export function verifyAuthentication(
@@ -109,6 +220,9 @@ export function verifyAuthentication(
       break;
     case COSE_ALG_MLDSA65:
       verifyMLDSA65Signature(input.storedPublicKeyCose, authDataRaw, clientDataHash, sigBytes);
+      break;
+    case COSE_ALG_COMPOSITE_MLDSA65_ES256:
+      verifyCompositeSignature(input.storedPublicKeyCose, authDataRaw, clientDataHash, sigBytes);
       break;
     default:
       throw new UnsupportedAlgorithmError();

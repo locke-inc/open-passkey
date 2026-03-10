@@ -107,10 +107,10 @@ describe("Registration vectors", () => {
   }
 });
 
-// --- Authentication vectors ---
+// --- Shared authentication vector runner ---
 
-describe("Authentication vectors", () => {
-  const vf = loadVectors("authentication.json");
+function runAuthenticationVectors(filename: string) {
+  const vf = loadVectors(filename);
 
   for (const vec of vf.vectors) {
     it(vec.name, () => {
@@ -158,4 +158,16 @@ describe("Authentication vectors", () => {
       }
     });
   }
+}
+
+// --- Authentication vectors ---
+
+describe("Authentication vectors", () => {
+  runAuthenticationVectors("authentication.json");
+});
+
+// --- Hybrid ML-DSA-65-ES256 authentication vectors ---
+
+describe("Hybrid authentication vectors", () => {
+  runAuthenticationVectors("hybrid_authentication.json");
 });

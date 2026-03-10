@@ -8,6 +8,7 @@
 // Supported algorithms:
 //   - ES256 (ECDSA P-256, COSE alg -7) — classical, widely supported
 //   - ML-DSA-65 (FIPS 204 / Dilithium3, COSE alg -49) — post-quantum
+//   - ML-DSA-65-ES256 (composite, COSE alg -52) — hybrid PQ, draft-ietf-jose-pq-composite-sigs
 package webauthn
 
 import (
@@ -27,14 +28,16 @@ import (
 
 // COSE algorithm identifiers.
 const (
-	AlgES256   = -7  // ECDSA w/ SHA-256 on P-256
-	AlgMLDSA65 = -49 // ML-DSA-65 (Dilithium3, FIPS 204)
+	AlgES256              = -7  // ECDSA w/ SHA-256 on P-256
+	AlgMLDSA65            = -49 // ML-DSA-65 (Dilithium3, FIPS 204)
+	AlgCompositeMLDSA65ES256 = -52 // ML-DSA-65-ES256 composite (draft-ietf-jose-pq-composite-sigs)
 )
 
 // COSE key type identifiers.
 const (
-	KtyEC2   = 2 // Elliptic Curve (two coordinates)
-	KtyMLDSA = 8 // ML-DSA (Module-Lattice Digital Signature)
+	KtyEC2       = 2 // Elliptic Curve (two coordinates)
+	KtyMLDSA     = 8 // ML-DSA (Module-Lattice Digital Signature)
+	KtyComposite = 9 // Composite key (draft-ietf-jose-pq-composite-sigs)
 )
 
 // Sentinel errors returned by verification functions.
@@ -261,6 +264,66 @@ func decodeMLDSA65PublicKey(data []byte) (*mldsa65.PublicKey, error) {
 	return &pk, nil
 }
 
+// --- Composite ML-DSA-65-ES256 key decoding ---
+
+// coseCompositeKey holds the composite key fields.
+// The raw composite public key is stored in COSE parameter -1:
+// ML-DSA-65 public key (1952 bytes) || ECDSA P-256 uncompressed point (65 bytes)
+type coseCompositeKey struct {
+	Kty int    `cbor:"1,keyasint"`
+	Alg int    `cbor:"3,keyasint"`
+	Pub []byte `cbor:"-1,keyasint"` // concatenated component public keys
+}
+
+// compositePublicKey holds the decoded component keys for ML-DSA-65-ES256.
+type compositePublicKey struct {
+	MLDSA65 *mldsa65.PublicKey
+	ECDSA   *ecdsa.PublicKey
+}
+
+// ML-DSA-65 public key size per FIPS 204.
+const mldsaPubKeySize = 1952
+
+// Uncompressed EC P-256 point: 0x04 || x(32) || y(32).
+const ecdsaUncompressedSize = 65
+
+func decodeCompositePublicKey(data []byte) (*compositePublicKey, error) {
+	var key coseCompositeKey
+	if err := cbor.Unmarshal(data, &key); err != nil {
+		return nil, fmt.Errorf("CBOR decoding COSE composite key: %w", err)
+	}
+	if key.Kty != KtyComposite || key.Alg != AlgCompositeMLDSA65ES256 {
+		return nil, ErrUnsupportedAlg
+	}
+
+	expectedLen := mldsaPubKeySize + ecdsaUncompressedSize
+	if len(key.Pub) != expectedLen {
+		return nil, fmt.Errorf("composite public key wrong length: got %d, want %d", len(key.Pub), expectedLen)
+	}
+
+	// Split into ML-DSA-65 and ECDSA components
+	mldsaPubBytes := key.Pub[:mldsaPubKeySize]
+	ecdsaPubBytes := key.Pub[mldsaPubKeySize:]
+
+	// Decode ML-DSA-65 component
+	var mldsaPub mldsa65.PublicKey
+	if err := mldsaPub.UnmarshalBinary(mldsaPubBytes); err != nil {
+		return nil, fmt.Errorf("decoding ML-DSA-65 component: %w", err)
+	}
+
+	// Decode ECDSA P-256 component (uncompressed point)
+	if ecdsaPubBytes[0] != 0x04 {
+		return nil, fmt.Errorf("ECDSA component not uncompressed point")
+	}
+	ecdsaPub := &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     new(big.Int).SetBytes(ecdsaPubBytes[1:33]),
+		Y:     new(big.Int).SetBytes(ecdsaPubBytes[33:65]),
+	}
+
+	return &compositePublicKey{MLDSA65: &mldsaPub, ECDSA: ecdsaPub}, nil
+}
+
 // --- Signature verification (multi-algorithm) ---
 
 func verifySignatureES256(pubKey *ecdsa.PublicKey, authData, clientDataJSON, signatureBytes []byte) error {
@@ -281,6 +344,33 @@ func verifySignatureMLDSA65(pubKey *mldsa65.PublicKey, authData, clientDataJSON,
 	if !mldsa65.Verify(pubKey, verifyData, nil, signatureBytes) {
 		return ErrSignatureInvalid
 	}
+	return nil
+}
+
+// verifySignatureComposite verifies an ML-DSA-65-ES256 composite signature.
+// The composite signature format is: 4-byte big-endian ML-DSA sig length || ML-DSA sig || ES256 DER sig.
+// Both components must verify independently for the composite to be valid.
+func verifySignatureComposite(pubKey *compositePublicKey, authData, clientDataJSON, signatureBytes []byte) error {
+	if len(signatureBytes) < 4 {
+		return ErrSignatureInvalid
+	}
+
+	mldsaSigLen := binary.BigEndian.Uint32(signatureBytes[:4])
+	if uint32(len(signatureBytes)) < 4+mldsaSigLen {
+		return ErrSignatureInvalid
+	}
+
+	mldsaSig := signatureBytes[4 : 4+mldsaSigLen]
+	ecdsaSig := signatureBytes[4+mldsaSigLen:]
+
+	// Both components sign over the same verification data
+	if err := verifySignatureMLDSA65(pubKey.MLDSA65, authData, clientDataJSON, mldsaSig); err != nil {
+		return err
+	}
+	if err := verifySignatureES256(pubKey.ECDSA, authData, clientDataJSON, ecdsaSig); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -305,6 +395,13 @@ func verifySignature(coseKeyData, authData, clientDataJSON, signatureBytes []byt
 			return err
 		}
 		return verifySignatureMLDSA65(pubKey, authData, clientDataJSON, signatureBytes)
+
+	case AlgCompositeMLDSA65ES256:
+		pubKey, err := decodeCompositePublicKey(coseKeyData)
+		if err != nil {
+			return err
+		}
+		return verifySignatureComposite(pubKey, authData, clientDataJSON, signatureBytes)
 
 	default:
 		return ErrUnsupportedAlg

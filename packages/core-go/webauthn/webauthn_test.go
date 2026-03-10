@@ -117,7 +117,16 @@ func TestRegistrationVectors(t *testing.T) {
 // --- Authentication ceremony tests ---
 
 func TestAuthenticationVectors(t *testing.T) {
-	vf := loadVectors(t, "authentication.json")
+	testAuthenticationVectorFile(t, "authentication.json")
+}
+
+func TestHybridAuthenticationVectors(t *testing.T) {
+	testAuthenticationVectorFile(t, "hybrid_authentication.json")
+}
+
+func testAuthenticationVectorFile(t *testing.T, filename string) {
+	t.Helper()
+	vf := loadVectors(t, filename)
 
 	for _, vec := range vf.Vectors {
 		t.Run(vec.Name, func(t *testing.T) {

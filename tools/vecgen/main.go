@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 	"github.com/fxamacker/cbor/v2"
 )
 
@@ -179,6 +180,139 @@ func makeAttestationObject(authData []byte) []byte {
 		log.Fatalf("attestationObject marshal failed: %v", err)
 	}
 	return data
+}
+
+// --- Composite ML-DSA-65-ES256 (hybrid PQ) ---
+//
+// Per draft-ietf-jose-pq-composite-sigs, the composite algorithm ML-DSA-65-ES256
+// uses COSE alg -52. The composite public key concatenates the component keys
+// (ML-DSA-65 || ES256) and the composite signature concatenates the component
+// signatures (ML-DSA-65 || ES256). Both signatures must verify independently.
+
+const (
+	algCompositeMLDSA65ES256 = -52 // COSE alg for ML-DSA-65-ES256 composite
+	ktyComposite             = 9   // COSE kty for composite keys
+)
+
+// coseCompositePublicKey encodes a composite ML-DSA-65-ES256 public key in COSE_Key format.
+// The composite public key stores concatenated raw keys in COSE parameter -1.
+// Format: ML-DSA-65 public key (1952 bytes) || ECDSA P-256 uncompressed point (65 bytes)
+func coseCompositePublicKey(mldsaPub *mldsa65.PublicKey, ecdsaPub *ecdsa.PublicKey) []byte {
+	mldsaPubBytes, err := mldsaPub.MarshalBinary()
+	if err != nil {
+		log.Fatalf("ML-DSA-65 public key marshal failed: %v", err)
+	}
+
+	// Uncompressed EC point: 0x04 || x(32) || y(32)
+	ecdsaPubBytes := make([]byte, 65)
+	ecdsaPubBytes[0] = 0x04
+	copy(ecdsaPubBytes[1:33], ecdsaPub.X.FillBytes(make([]byte, 32)))
+	copy(ecdsaPubBytes[33:65], ecdsaPub.Y.FillBytes(make([]byte, 32)))
+
+	compositeKey := append(mldsaPubBytes, ecdsaPubBytes...)
+
+	key := map[int]interface{}{
+		1:  ktyComposite,             // kty: Composite
+		3:  algCompositeMLDSA65ES256, // alg: ML-DSA-65-ES256
+		-1: compositeKey,             // composite public key bytes
+	}
+	data, err := cbor.Marshal(key)
+	if err != nil {
+		log.Fatalf("coseCompositePublicKey marshal failed: %v", err)
+	}
+	return data
+}
+
+// hybridAuthenticator is a software authenticator that produces composite
+// ML-DSA-65-ES256 credentials (dual-signed with both algorithms).
+type hybridAuthenticator struct {
+	credentialID  []byte
+	mldsaPriv     *mldsa65.PrivateKey
+	mldsaPub      *mldsa65.PublicKey
+	ecdsaPriv     *ecdsa.PrivateKey
+	publicKeyCOSE []byte // cached composite COSE key
+	signCount     uint32
+}
+
+func newHybridAuthenticator() *hybridAuthenticator {
+	// Generate ML-DSA-65 key pair
+	mldsaPub, mldsaPriv, err := mldsa65.GenerateKey(rand.Reader)
+	if err != nil {
+		log.Fatalf("ML-DSA-65 key generation failed: %v", err)
+	}
+
+	// Generate ECDSA P-256 key pair
+	ecdsaPriv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		log.Fatalf("ECDSA key generation failed: %v", err)
+	}
+
+	credID := make([]byte, 32)
+	if _, err := rand.Read(credID); err != nil {
+		log.Fatalf("credID generation failed: %v", err)
+	}
+
+	return &hybridAuthenticator{
+		credentialID:  credID,
+		mldsaPriv:     mldsaPriv,
+		mldsaPub:      mldsaPub,
+		ecdsaPriv:     ecdsaPriv,
+		publicKeyCOSE: coseCompositePublicKey(mldsaPub, &ecdsaPriv.PublicKey),
+		signCount:     0,
+	}
+}
+
+// makeAuthenticatorData builds authenticator data identical to the ES256 authenticator.
+func (h *hybridAuthenticator) makeAuthenticatorData(rpID string, flags byte, includeCredData bool) []byte {
+	rpIDHash := sha256.Sum256([]byte(rpID))
+	buf := make([]byte, 0, 4096) // larger buffer for composite key
+	buf = append(buf, rpIDHash[:]...)
+	buf = append(buf, flags)
+
+	counterBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(counterBytes, h.signCount)
+	buf = append(buf, counterBytes...)
+
+	if includeCredData {
+		buf = append(buf, make([]byte, 16)...) // AAGUID
+		credIDLen := make([]byte, 2)
+		binary.BigEndian.PutUint16(credIDLen, uint16(len(h.credentialID)))
+		buf = append(buf, credIDLen...)
+		buf = append(buf, h.credentialID...)
+		buf = append(buf, h.publicKeyCOSE...)
+	}
+
+	return buf
+}
+
+// sign produces a composite signature: ML-DSA-65 signature || ES256 DER signature.
+// Per the draft, both component signatures are computed over the same verification data:
+// authData || SHA256(clientDataJSON).
+func (h *hybridAuthenticator) sign(authData, clientDataJSON []byte) []byte {
+	clientDataHash := sha256.Sum256(clientDataJSON)
+	verifyData := append(authData, clientDataHash[:]...)
+
+	// ML-DSA-65: signs the message directly (no pre-hashing)
+	mldsaSig, err := h.mldsaPriv.Sign(rand.Reader, verifyData, nil)
+	if err != nil {
+		log.Fatalf("ML-DSA-65 signing failed: %v", err)
+	}
+
+	// ES256: ECDSA signs SHA-256(verifyData)
+	ecdsaHash := sha256.Sum256(verifyData)
+	r, s, err := ecdsa.Sign(rand.Reader, h.ecdsaPriv, ecdsaHash[:])
+	if err != nil {
+		log.Fatalf("ECDSA signing failed: %v", err)
+	}
+	ecdsaSig := marshalDER(r, s)
+
+	// Composite signature: 4-byte big-endian length of ML-DSA sig, then ML-DSA sig, then ES256 sig
+	lenBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(lenBytes, uint32(len(mldsaSig)))
+	composite := append(lenBytes, mldsaSig...)
+	composite = append(composite, ecdsaSig...)
+
+	return composite
 }
 
 // --- Test vector types (matching the JSON schema) ---
@@ -582,6 +716,243 @@ func generateAuthenticationVectors() VectorFile {
 	return vectors
 }
 
+// --- Hybrid ML-DSA-65-ES256 authentication vector generation ---
+
+func generateHybridAuthenticationVectors() VectorFile {
+	rpID := "example.com"
+	origin := "https://example.com"
+	challenge := b64Encode([]byte("hybrid-auth-challenge-01234567890"))
+
+	auth := newHybridAuthenticator()
+	auth.signCount = 1
+
+	vectors := VectorFile{
+		Description: "WebAuthn authentication test vectors for ML-DSA-65-ES256 composite (hybrid PQ) signatures (COSE alg -52)",
+		Vectors:     []TestVector{},
+	}
+
+	storedPublicKey := b64Encode(auth.publicKeyCOSE)
+
+	// --- Happy path: valid composite signature ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x04) // UP + UV
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		signCount := auth.signCount
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "valid_hybrid_authentication",
+			Description: "A valid authentication ceremony with ML-DSA-65-ES256 composite signature (COSE alg -52). Both PQ and classical components verify.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:   true,
+				SignCount: &signCount,
+			},
+		})
+	}
+
+	// --- Wrong RP ID ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x04)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "invalid_hybrid_rp_id_mismatch",
+			Description: "Hybrid authentication where the relying party passes a different rpId than what the authenticator signed.",
+			Input: map[string]any{
+				"rpId":                "evil.com",
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "rp_id_mismatch",
+			},
+		})
+	}
+
+	// --- Wrong challenge ---
+	{
+		wrongChallenge := b64Encode([]byte("wrong-challenge-value"))
+		clientDataJSON := makeClientDataJSON("webauthn.get", wrongChallenge, origin)
+		flags := byte(0x01 | 0x04)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "invalid_hybrid_challenge_mismatch",
+			Description: "Hybrid authentication where the challenge in clientDataJSON does not match the expected challenge.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "challenge_mismatch",
+			},
+		})
+	}
+
+	// --- Tampered composite signature (flip bits in ML-DSA component) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x04)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		// Tamper with the ML-DSA portion (byte 10 inside the ML-DSA sig, after the 4-byte length prefix)
+		tamperedSig := make([]byte, len(signature))
+		copy(tamperedSig, signature)
+		tamperedSig[10] ^= 0xFF
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "invalid_hybrid_signature_tampered_mldsa",
+			Description: "Hybrid authentication with a tampered ML-DSA-65 component. The ES256 component is valid but the PQ component is corrupted.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(tamperedSig),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "signature_invalid",
+			},
+		})
+	}
+
+	// --- Tampered composite signature (flip bits in ES256 component) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x04)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		// Tamper with the ES256 portion (last byte of the composite signature)
+		tamperedSig := make([]byte, len(signature))
+		copy(tamperedSig, signature)
+		tamperedSig[len(tamperedSig)-1] ^= 0xFF
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "invalid_hybrid_signature_tampered_ecdsa",
+			Description: "Hybrid authentication with a tampered ES256 component. The ML-DSA-65 component is valid but the classical component is corrupted.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(tamperedSig),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "signature_invalid",
+			},
+		})
+	}
+
+	// --- Wrong type in clientDataJSON ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin) // wrong type
+		flags := byte(0x01 | 0x04)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "invalid_hybrid_type_not_get",
+			Description: "Hybrid authentication where clientDataJSON type is 'webauthn.create' instead of 'webauthn.get'.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "type_mismatch",
+			},
+		})
+	}
+
+	return vectors
+}
+
 func main() {
 	outDir := flag.String("out", "../../spec/vectors", "Output directory for test vector JSON files")
 	flag.Parse()
@@ -592,6 +963,7 @@ func main() {
 
 	regVectors := generateRegistrationVectors()
 	authVectors := generateAuthenticationVectors()
+	hybridVectors := generateHybridAuthenticationVectors()
 
 	for _, pair := range []struct {
 		name string
@@ -599,6 +971,7 @@ func main() {
 	}{
 		{"registration.json", regVectors},
 		{"authentication.json", authVectors},
+		{"hybrid_authentication.json", hybridVectors},
 	} {
 		path := filepath.Join(*outDir, pair.name)
 		content, err := json.MarshalIndent(pair.data, "", "  ")
