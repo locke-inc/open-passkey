@@ -1,0 +1,31 @@
+{
+  "name": "@open-passkey/angular",
+  "version": "0.0.1",
+  "description": "Angular components for passkey (WebAuthn/FIDO2) authentication",
+  "license": "MIT",
+  "scripts": {
+    "build": "ng-packagr -p ng-package.json",
+    "test": "jest"
+  },
+  "peerDependencies": {
+    "@angular/core": ">=19.0.0",
+    "@angular/common": ">=19.0.0",
+    "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@angular/common": "^19.2.0",
+    "@angular/compiler": "^19.2.0",
+    "@angular/compiler-cli": "^19.2.0",
+    "@angular/core": "^19.2.0",
+    "@angular/platform-browser": "^19.2.0",
+    "@angular/platform-browser-dynamic": "^19.2.0",
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "jest-preset-angular": "^14.5.0",
+    "ng-packagr": "^19.2.0",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.8.0",
+    "typescript": "~5.7.0",
+    "zone.js": "~0.15.0"
+  }
+}

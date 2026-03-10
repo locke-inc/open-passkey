@@ -1,0 +1,23 @@
+{
+  "name": "@open-passkey/core",
+  "version": "0.0.1",
+  "description": "Core WebAuthn/FIDO2 protocol verification library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["passkey", "webauthn", "fido2"],
+  "author": "Locke Inc",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "cbor-x": "^1.6.3"
+  }
+}

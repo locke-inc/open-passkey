@@ -1,0 +1,166 @@
+package webauthn_test
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/locke-inc/open-passkey/packages/core-go/webauthn"
+)
+
+const vectorsDir = "../../../spec/vectors"
+
+// --- JSON vector schema types ---
+
+type VectorFile struct {
+	Description string       `json:"description"`
+	Vectors     []TestVector `json:"vectors"`
+}
+
+type TestVector struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Input       map[string]any `json:"input"`
+	Expected    Expected       `json:"expected"`
+}
+
+type Expected struct {
+	Success       bool    `json:"success"`
+	Error         string  `json:"error,omitempty"`
+	CredentialID  string  `json:"credentialId,omitempty"`
+	PublicKeyCOSE string  `json:"publicKeyCose,omitempty"`
+	SignCount     *uint32 `json:"signCount,omitempty"`
+	RPIDHash      string  `json:"rpIdHash,omitempty"`
+}
+
+func loadVectors(t *testing.T, filename string) VectorFile {
+	t.Helper()
+	path := filepath.Join(vectorsDir, filename)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read vector file %s: %v", path, err)
+	}
+	var vf VectorFile
+	if err := json.Unmarshal(data, &vf); err != nil {
+		t.Fatalf("failed to parse vector file %s: %v", path, err)
+	}
+	if len(vf.Vectors) == 0 {
+		t.Fatalf("vector file %s contains no test vectors", path)
+	}
+	return vf
+}
+
+func b64Encode(data []byte) string {
+	return base64.RawURLEncoding.EncodeToString(data)
+}
+
+// --- Registration ceremony tests ---
+
+func TestRegistrationVectors(t *testing.T) {
+	vf := loadVectors(t, "registration.json")
+
+	for _, vec := range vf.Vectors {
+		t.Run(vec.Name, func(t *testing.T) {
+			input := vec.Input
+			credential := input["credential"].(map[string]any)
+			response := credential["response"].(map[string]any)
+
+			result, err := webauthn.VerifyRegistration(webauthn.RegistrationInput{
+				RPID:              input["rpId"].(string),
+				ExpectedChallenge: input["expectedChallenge"].(string),
+				ExpectedOrigin:    input["expectedOrigin"].(string),
+				ClientDataJSON:    response["clientDataJSON"].(string),
+				AttestationObject: response["attestationObject"].(string),
+			})
+
+			if vec.Expected.Success {
+				if err != nil {
+					t.Fatalf("expected success, got error: %v", err)
+				}
+				if vec.Expected.CredentialID != "" {
+					got := b64Encode(result.CredentialID)
+					if got != vec.Expected.CredentialID {
+						t.Errorf("credentialId: got %s, want %s", got, vec.Expected.CredentialID)
+					}
+				}
+				if vec.Expected.PublicKeyCOSE != "" {
+					got := b64Encode(result.PublicKeyCOSE)
+					if got != vec.Expected.PublicKeyCOSE {
+						t.Errorf("publicKeyCose: got %s, want %s", got, vec.Expected.PublicKeyCOSE)
+					}
+				}
+				if vec.Expected.SignCount != nil {
+					if result.SignCount != *vec.Expected.SignCount {
+						t.Errorf("signCount: got %d, want %d", result.SignCount, *vec.Expected.SignCount)
+					}
+				}
+				if vec.Expected.RPIDHash != "" {
+					got := b64Encode(result.RPIDHash)
+					if got != vec.Expected.RPIDHash {
+						t.Errorf("rpIdHash: got %s, want %s", got, vec.Expected.RPIDHash)
+					}
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("expected error %q, got success", vec.Expected.Error)
+				}
+				if err.Error() != vec.Expected.Error {
+					t.Errorf("error: got %q, want %q", err.Error(), vec.Expected.Error)
+				}
+			}
+		})
+	}
+}
+
+// --- Authentication ceremony tests ---
+
+func TestAuthenticationVectors(t *testing.T) {
+	vf := loadVectors(t, "authentication.json")
+
+	for _, vec := range vf.Vectors {
+		t.Run(vec.Name, func(t *testing.T) {
+			input := vec.Input
+			credential := input["credential"].(map[string]any)
+			response := credential["response"].(map[string]any)
+
+			storedPubKeyB64 := input["storedPublicKeyCose"].(string)
+			storedPubKey, err := base64.RawURLEncoding.DecodeString(storedPubKeyB64)
+			if err != nil {
+				t.Fatalf("decoding storedPublicKeyCose: %v", err)
+			}
+
+			storedSignCount := uint32(input["storedSignCount"].(float64))
+
+			result, err := webauthn.VerifyAuthentication(webauthn.AuthenticationInput{
+				RPID:                input["rpId"].(string),
+				ExpectedChallenge:   input["expectedChallenge"].(string),
+				ExpectedOrigin:      input["expectedOrigin"].(string),
+				StoredPublicKeyCOSE: storedPubKey,
+				StoredSignCount:     storedSignCount,
+				ClientDataJSON:      response["clientDataJSON"].(string),
+				AuthenticatorData:   response["authenticatorData"].(string),
+				Signature:           response["signature"].(string),
+			})
+
+			if vec.Expected.Success {
+				if err != nil {
+					t.Fatalf("expected success, got error: %v", err)
+				}
+				if vec.Expected.SignCount != nil {
+					if result.SignCount != *vec.Expected.SignCount {
+						t.Errorf("signCount: got %d, want %d", result.SignCount, *vec.Expected.SignCount)
+					}
+				}
+			} else {
+				if err == nil {
+					t.Fatalf("expected error %q, got success", vec.Expected.Error)
+				}
+				if err.Error() != vec.Expected.Error {
+					t.Errorf("error: got %q, want %q", err.Error(), vec.Expected.Error)
+				}
+			}
+		})
+	}
+}
