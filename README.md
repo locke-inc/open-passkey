@@ -1,102 +1,87 @@
 # open-passkey
 
-An open-source, post-quantum-ready library for adding passkey authentication to any app. Built on the [WebAuthn](https://www.w3.org/TR/webauthn-3/) standard. Hybrid PQ signature verification works today in both Go and TypeScript.
+An open-source library for adding passkey authentication to any app. Built on [WebAuthn](https://www.w3.org/TR/webauthn-3/) with hybrid post-quantum signature verification (ML-DSA-65-ES256) that works today in Go and TypeScript.
 
-> **Status:** Early development. Core protocol libraries (Go + TypeScript), Go HTTP server bindings, and Angular components are all functional with full test coverage. Not yet ready for production use.
+> **Status:** Early development. Not yet recommended for production.
 
 ## Hybrid Post-Quantum Support
 
-open-passkey implements **ML-DSA-65-ES256** hybrid composite signatures ([draft-ietf-jose-pq-composite-sigs](https://datatracker.ietf.org/doc/draft-ietf-jose-pq-composite-sigs/)), combining a NIST-standardized post-quantum algorithm with classical ECDSA in a single credential. Both signature components must verify independently — if either is broken, the other still protects you.
+open-passkey implements **ML-DSA-65-ES256** hybrid composite signatures ([draft-ietf-jose-pq-composite-sigs](https://datatracker.ietf.org/doc/draft-ietf-jose-pq-composite-sigs/)), combining a NIST-standardized post-quantum algorithm with classical ECDSA in a single credential. Both signature components must verify independently. If either is broken, the other still protects you.
 
-| Algorithm | COSE alg | Status | Support |
-|-----------|----------|--------|---------|
-| **ML-DSA-65-ES256** (composite) | -52 | IETF draft, hybrid PQ | Go core ✓, TypeScript core ✓ |
-| **ML-DSA-65** | -49 | NIST FIPS 204 (2024) | Go core ✓, TypeScript core ✓ |
-| **ES256** (ECDSA P-256) | -7 | Classical, widely deployed | Go core ✓, TypeScript core ✓ |
+| Algorithm | COSE alg | Status | Go | TS |
+|-----------|----------|--------|----|----|
+| **ML-DSA-65-ES256** (composite) | `-52` | IETF Draft | Yes | Yes |
+| **ML-DSA-65** (PQ only) | `-49` | NIST FIPS 204 | Yes | Yes |
+| **ES256** (ECDSA P-256) | `-7` | Generally Available | Yes | Yes |
 
-**How it works:** During registration, the server advertises its preferred algorithms in `pubKeyCredParams`. During authentication, the core libraries read the COSE `alg` field from the stored credential key and dispatch to the correct verifier automatically — ES256, ML-DSA-65, or the composite ML-DSA-65-ES256 path. No application code changes needed regardless of which algorithm the authenticator used.
+**How it works:** During registration, the server advertises preferred algorithms in `pubKeyCredParams`. During authentication, the core libraries read the COSE `alg` field from the stored credential and dispatch to the correct verifier automatically. ES256, ML-DSA-65, or the composite ML-DSA-65-ES256 path. No application code changes needed.
 
-> **Note:** As of early 2026, no major browser authenticator produces ML-DSA-65 or composite signatures natively. Credentials will use ES256 until platform support arrives. Both the Go and TypeScript cores are ready to verify all three algorithms today — when authenticators catch up, your deployment is already protected.
+> **Browser support note:** As of early 2026, no major browser authenticator produces ML-DSA-65 or composite signatures natively. Credentials use ES256 until platform support arrives. Both cores verify all three algorithms today so that when authenticators catch up, your deployment is already protected.
 
 ## Architecture
 
-open-passkey separates concerns into two layers:
-
-**Core Protocol** — Pure WebAuthn/FIDO2 verification logic with no framework dependencies. Parses authenticator responses, verifies signatures, validates ceremonies. One implementation per language.
-
-**Framework Bindings** — Thin adapters that wire the core into specific frameworks (Go HTTP handlers, Angular components, React hooks, etc.). Each binding is its own package.
-
-This separation means adding passkey support to a new framework only requires writing a thin adapter, not reimplementing cryptography.
-
-### Repository Layout
+open-passkey separates concerns into two layers. The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Framework bindings** are thin adapters that wire the core into specific frameworks. Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography.
 
 ```
 open-passkey/
-├── spec/vectors/        # Shared JSON test vectors (language-agnostic)
+├── spec/vectors/        # Shared JSON test vectors
 ├── packages/
-│   ├── core-go/         # Go core protocol library (ES256, ML-DSA-65, ML-DSA-65-ES256)
+│   ├── core-go/         # Go core protocol
 │   ├── server-go/       # Go HTTP bindings
-│   ├── core-ts/         # TypeScript core protocol library (ES256, ML-DSA-65, ML-DSA-65-ES256)
-│   └── angular/         # Angular components (headless)
-└── tools/vecgen/        # Test vector generation tooling
+│   ├── core-ts/         # TypeScript core protocol
+│   └── angular/         # Angular components
+└── tools/vecgen/        # Test vector generation
 ```
-
-### Cross-Language Testing
-
-Every language implementation runs against the same set of JSON test vectors in `spec/vectors/`. These vectors contain real WebAuthn payloads (generated by a software authenticator) covering both happy paths and failure modes. When a bug is found in any language, a new vector is added and all implementations gain the test case automatically.
 
 ## Packages
 
-### `packages/core-go` — Go Core Library
+### core-go
 
-**Status:** Functional. All 16 spec vectors passing (5 registration, 5 ES256 authentication, 6 hybrid ML-DSA-65-ES256 authentication).
+Go core protocol. Registration and authentication ceremony verification. ES256, ML-DSA-65, ML-DSA-65-ES256 composite.
 
-The core library verifies WebAuthn registration and authentication ceremonies. It supports **ES256** (ECDSA P-256), **ML-DSA-65** (post-quantum), and **ML-DSA-65-ES256** (hybrid composite) signature verification. Dependencies: Go stdlib `crypto`, [`fxamacker/cbor/v2`](https://github.com/fxamacker/cbor) for CBOR decoding, and [`cloudflare/circl`](https://github.com/cloudflare/circl) for ML-DSA-65.
+Dependencies: Go stdlib `crypto`, [`fxamacker/cbor`](https://github.com/fxamacker/cbor), [`cloudflare/circl`](https://github.com/cloudflare/circl).
+
+16 spec vectors passing.
 
 ```go
 import "github.com/locke-inc/open-passkey/packages/core-go/webauthn"
 
-// Registration — verify navigator.credentials.create() response
+// Registration
 result, err := webauthn.VerifyRegistration(webauthn.RegistrationInput{
     RPID:              "example.com",
-    ExpectedChallenge: challengeB64URL,       // base64url-encoded
+    ExpectedChallenge: challengeB64URL,
     ExpectedOrigin:    "https://example.com",
-    ClientDataJSON:    credential.Response.ClientDataJSON,    // base64url-encoded
-    AttestationObject: credential.Response.AttestationObject, // base64url-encoded
+    ClientDataJSON:    credential.Response.ClientDataJSON,
+    AttestationObject: credential.Response.AttestationObject,
 })
-// result.CredentialID, result.PublicKeyCOSE — store these for future authentication
+// result.CredentialID, result.PublicKeyCOSE -- store for future auth
 
-// Authentication — verify navigator.credentials.get() response
-// Automatically dispatches to ES256, ML-DSA-65, or ML-DSA-65-ES256 based on the stored COSE key
+// Authentication: dispatches to ES256, ML-DSA-65, or ML-DSA-65-ES256
 result, err := webauthn.VerifyAuthentication(webauthn.AuthenticationInput{
     RPID:                "example.com",
     ExpectedChallenge:   challengeB64URL,
     ExpectedOrigin:      "https://example.com",
-    StoredPublicKeyCOSE: storedKeyBytes,   // []byte from registration
-    StoredSignCount:     storedCount,      // uint32 from last authentication
-    ClientDataJSON:      credential.Response.ClientDataJSON,    // base64url-encoded
-    AuthenticatorData:   credential.Response.AuthenticatorData, // base64url-encoded
-    Signature:           credential.Response.Signature,         // base64url-encoded
+    StoredPublicKeyCOSE: storedKeyBytes,
+    StoredSignCount:     storedCount,
+    ClientDataJSON:      credential.Response.ClientDataJSON,
+    AuthenticatorData:   credential.Response.AuthenticatorData,
+    Signature:           credential.Response.Signature,
 })
-// result.SignCount — update stored sign count
 ```
 
-**Algorithm constants** are exported for use in custom implementations:
+**Algorithm constants:**
 
 ```go
 webauthn.AlgES256                  // -7  (ECDSA P-256)
 webauthn.AlgMLDSA65                // -49 (ML-DSA-65 / Dilithium3)
-webauthn.AlgCompositeMLDSA65ES256  // -52 (ML-DSA-65-ES256 hybrid composite)
-webauthn.KtyEC2                    // 2   (Elliptic Curve key type)
-webauthn.KtyMLDSA                  // 8   (ML-DSA key type)
-webauthn.KtyComposite              // 9   (Composite key type)
+webauthn.AlgCompositeMLDSA65ES256  // -52 (hybrid composite)
 ```
 
-### `packages/server-go` — Go HTTP Server Bindings
+### server-go
 
-**Status:** Functional. 16 tests passing.
+Go HTTP bindings. Challenge management, 4 ceremony handlers, pluggable store interfaces. Works with any Go router. Defaults to hybrid ML-DSA-65-ES256 preferred, with ML-DSA-65 and ES256 as fallbacks in `pubKeyCredParams`.
 
-HTTP handlers for the full WebAuthn ceremony, built on `net/http`. Works with any Go router (stdlib mux, Chi, Gin, etc.). Defaults to **ML-DSA-65-ES256 (hybrid) preferred**, with ML-DSA-65 and ES256 as fallbacks in `pubKeyCredParams`.
+16 tests passing.
 
 ```go
 import "github.com/locke-inc/open-passkey/packages/server-go"
@@ -105,26 +90,24 @@ p, _ := passkey.New(passkey.Config{
     RPID:            "example.com",
     RPDisplayName:   "My App",
     Origin:          "https://example.com",
-    ChallengeStore:  passkey.NewMemoryChallengeStore(), // or your Redis/DB implementation
-    CredentialStore: myDBCredentialStore,                // implement passkey.CredentialStore
+    ChallengeStore:  passkey.NewMemoryChallengeStore(),
+    CredentialStore: myDBCredentialStore,
 })
 
 mux := http.NewServeMux()
-mux.HandleFunc("POST /passkey/register/begin", p.BeginRegistration)
+mux.HandleFunc("POST /passkey/register/begin",  p.BeginRegistration)
 mux.HandleFunc("POST /passkey/register/finish", p.FinishRegistration)
-mux.HandleFunc("POST /passkey/login/begin", p.BeginAuthentication)
-mux.HandleFunc("POST /passkey/login/finish", p.FinishAuthentication)
+mux.HandleFunc("POST /passkey/login/begin",     p.BeginAuthentication)
+mux.HandleFunc("POST /passkey/login/finish",    p.FinishAuthentication)
 ```
 
-**Pluggable interfaces:**
-- `ChallengeStore` — single-use, time-limited challenge storage (in-memory default provided)
-- `CredentialStore` — credential persistence (you implement for your database)
+**Pluggable interfaces:** `ChallengeStore` (single-use challenge storage; in-memory default provided) and `CredentialStore` (credential persistence; you implement for your DB).
 
-### `packages/core-ts` — TypeScript Core Library
+### core-ts
 
-**Status:** Functional. All 16 spec vectors passing (same vectors as Go).
+TypeScript core. Full parity with Go utilizing the same 16 spec vectors. ES256, ML-DSA-65, and composite verification.
 
-TypeScript port of the core protocol library. Uses Node's built-in `crypto` module for ECDSA verification, [`@noble/post-quantum`](https://github.com/paulmillr/noble-post-quantum) for ML-DSA-65, and `cbor-x` for CBOR decoding. Supports **ES256**, **ML-DSA-65**, and **ML-DSA-65-ES256** (hybrid composite) verification — full parity with the Go core.
+Dependencies: Node `crypto`, [`@noble/post-quantum`](https://github.com/paulmillr/noble-post-quantum), `cbor-x`.
 
 ```typescript
 import {
@@ -136,11 +119,13 @@ import {
 } from "@open-passkey/core";
 ```
 
-### `packages/angular` — Angular Components
+The API mirrors the Go core. Same `verifyRegistration` / `verifyAuthentication` functions, same automatic algorithm dispatch based on the stored COSE key.
 
-**Status:** Functional. 28 tests passing.
+### angular
 
-Headless Angular components and injectable service for passkey registration and authentication. Components use content projection — you provide the UI, the library handles the WebAuthn ceremony and server communication.
+Headless Angular components and injectable service. Content projection for custom UI. Handles WebAuthn ceremony and server communication.
+
+28 tests passing.
 
 ```typescript
 // app.config.ts
@@ -174,7 +159,8 @@ export const appConfig = {
 </passkey-login>
 ```
 
-**Or use the service directly:**
+**Service API:**
+
 ```typescript
 import { PasskeyService } from "@open-passkey/angular";
 
@@ -185,14 +171,53 @@ class MyComponent {
   register() {
     this.passkey.register(userId, username).subscribe(result => { ... });
   }
-
   login() {
     this.passkey.authenticate(userId).subscribe(result => { ... });
   }
 }
 ```
 
-**What it does:** Calls `navigator.credentials.create()`/`.get()` in the browser, encodes responses as base64url, and communicates with server-go's 4 HTTP endpoints. The client passes through whatever algorithm the server and authenticator negotiate — no client-side changes needed for PQ support.
+The client passes through whatever algorithm the server and authenticator negotiate. No client-side changes needed for PQ support.
+
+## Cross-Language Testing
+
+Every implementation runs against the same JSON test vectors in `spec/vectors/`. These contain real WebAuthn payloads generated by a software authenticator, covering both happy paths and failure modes. When a bug is found in any language, a new vector is added and all implementations gain the test case automatically.
+
+**Registration** (5 vectors):
+- ES256 + none attestation
+- RP ID mismatch
+- Challenge mismatch
+- Origin mismatch
+- Wrong ceremony type
+
+**Authentication** (5 vectors):
+- ES256 signature
+- RP ID mismatch
+- Challenge mismatch
+- Tampered signature
+- Wrong ceremony type
+
+**Hybrid PQ** (6 vectors):
+- ML-DSA-65-ES256 composite
+- RP ID mismatch
+- Challenge mismatch
+- ML-DSA component tampered
+- ECDSA component tampered
+- Wrong ceremony type
+
+```bash
+# Go core
+cd packages/core-go && go test ./... -v
+
+# Go server
+cd packages/server-go && go test ./... -v
+
+# TypeScript core
+cd packages/core-ts && npm test
+
+# Angular
+cd packages/angular && npm test
+```
 
 ## Development
 
@@ -210,83 +235,29 @@ cd tools/vecgen
 go run main.go -out ../../spec/vectors
 ```
 
-### Run tests
-
-```bash
-# Go core (shared vector tests)
-cd packages/core-go && go test ./... -v
-
-# Go server (HTTP handler tests)
-cd packages/server-go && go test ./... -v
-
-# TypeScript core (shared vector tests)
-cd packages/core-ts && npm test
-
-# Angular components (isolated Jest tests)
-cd packages/angular && npm test
-```
-
-### Test vector coverage
-
-**Registration ceremony** (`spec/vectors/registration.json`):
-| Vector | Tests |
-|--------|-------|
-| `valid_registration_none_attestation` | Happy path with ES256 + none attestation |
-| `invalid_rp_id_mismatch` | RP ID doesn't match authenticator data |
-| `invalid_challenge_mismatch` | Challenge in clientDataJSON doesn't match expected |
-| `invalid_origin_mismatch` | Origin in clientDataJSON doesn't match expected |
-| `invalid_type_not_create` | clientDataJSON type is "webauthn.get" instead of "webauthn.create" |
-
-**Authentication ceremony** (`spec/vectors/authentication.json`):
-| Vector | Tests |
-|--------|-------|
-| `valid_authentication` | Happy path with ES256 signature verification |
-| `invalid_rp_id_mismatch` | RP ID doesn't match authenticator data |
-| `invalid_challenge_mismatch` | Challenge in clientDataJSON doesn't match expected |
-| `invalid_signature_tampered` | Valid structure but tampered signature bytes |
-| `invalid_type_not_get` | clientDataJSON type is "webauthn.create" instead of "webauthn.get" |
-
-**Hybrid authentication ceremony** (`spec/vectors/hybrid_authentication.json`):
-| Vector | Tests |
-|--------|-------|
-| `valid_hybrid_authentication` | Happy path with ML-DSA-65-ES256 composite signature |
-| `invalid_hybrid_rp_id_mismatch` | RP ID doesn't match authenticator data |
-| `invalid_hybrid_challenge_mismatch` | Challenge in clientDataJSON doesn't match expected |
-| `invalid_hybrid_signature_tampered_mldsa` | ML-DSA-65 component corrupted, ES256 component valid |
-| `invalid_hybrid_signature_tampered_ecdsa` | ES256 component corrupted, ML-DSA-65 component valid |
-| `invalid_hybrid_type_not_get` | clientDataJSON type is "webauthn.create" instead of "webauthn.get" |
-
 ## Roadmap
 
-- [x] Repository structure and architecture
-- [x] Shared test vector generation tooling (16 vectors across 3 ceremonies)
-- [x] Go core library — `VerifyRegistration()` and `VerifyAuthentication()`
-- [x] Go HTTP server bindings — challenge management, 4 HTTP handlers, pluggable store interfaces
-- [x] TypeScript core library — same 16 spec vectors passing (cross-language proof)
-- [x] Angular component bindings — headless components, injectable service, 28 tests passing
-- [x] Post-quantum support — ML-DSA-65 (FIPS 204) verification in Go and TypeScript
-- [x] Hybrid-preferred algorithm negotiation in server-go (ML-DSA-65-ES256 first in `pubKeyCredParams`)
-- [x] Hybrid PQ mode — ML-DSA-65-ES256 composite signatures (COSE alg -52) in Go and TypeScript
-- [x] 6 hybrid-specific test vectors with independent ML-DSA/ECDSA tampering tests
+- [x] Go core: registration + authentication verification
+- [x] Go HTTP server bindings: 4 handlers, pluggable stores
+- [x] TypeScript core: same 16 spec vectors, full parity
+- [x] Angular bindings: headless components, injectable service
+- [x] Hybrid PQ: ML-DSA-65-ES256 composite in Go + TypeScript
+- [x] 16 shared test vectors across 3 ceremonies
 - [ ] React component bindings
 - [ ] Additional attestation formats (packed, TPM, Android)
 - [ ] Sign count rollback detection
 
 ## Contributing
 
-This project follows strict TDD. To add a new test case:
+Strict TDD. To add a new test case:
 
-1. Add a vector to the appropriate file in `spec/vectors/` (or update `tools/vecgen/main.go` and regenerate)
-2. Run tests in all implemented languages — the new vector should fail
-3. Implement the fix in each language
-4. All vectors pass — done
+1. Add a vector to `spec/vectors/` (or update `tools/vecgen/main.go` and regenerate)
+2. Run tests in all languages. The new vector should fail.
+3. Implement the fix in each language.
+4. All vectors pass = done.
 
-To add a new language implementation:
-
-1. Create `packages/core-{lang}/`
-2. Write a test runner that loads `spec/vectors/*.json`
-3. Implement until all vectors pass
+**New language implementation:** Create `packages/core-{lang}/`, write a test runner that loads `spec/vectors/*.json`, implement until all 16 vectors pass.
 
 ## License
 
-MIT — Copyright 2025 Locke Identity Networks Inc.
+MIT. Copyright 2025 Locke Identity Networks Inc.
