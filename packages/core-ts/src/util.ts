@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 
 export function base64urlDecode(input: string): Uint8Array {
-  // Add padding if needed
+  if (!/^[A-Za-z0-9_-]*$/.test(input)) {
+    throw new Error("invalid base64url input");
+  }
   let padded = input.replace(/-/g, "+").replace(/_/g, "/");
   while (padded.length % 4 !== 0) {
     padded += "=";

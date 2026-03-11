@@ -15,6 +15,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -25,6 +26,11 @@ import (
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 	"github.com/fxamacker/cbor/v2"
 )
+
+// cborDecMode rejects CBOR maps with duplicate keys (defense-in-depth).
+var cborDecMode, _ = cbor.DecOptions{
+	DupMapKey: cbor.DupMapKeyEnforcedAPF,
+}.DecMode()
 
 // COSE algorithm identifiers.
 const (
@@ -51,6 +57,7 @@ var (
 	ErrAuthDataTooShort  = errors.New("authenticator_data_too_short")
 	ErrNoCredentialData  = errors.New("no_attested_credential_data")
 	ErrUnsupportedAlg    = errors.New("unsupported_cose_algorithm")
+	ErrSignCountRollback = errors.New("sign_count_rollback")
 )
 
 // --- Public input/output types ---
@@ -170,10 +177,8 @@ func verifyRPIDHash(authDataRPIDHash []byte, rpID string) error {
 	if len(authDataRPIDHash) != 32 {
 		return ErrRPIDMismatch
 	}
-	for i := 0; i < 32; i++ {
-		if authDataRPIDHash[i] != expected[i] {
-			return ErrRPIDMismatch
-		}
+	if subtle.ConstantTimeCompare(authDataRPIDHash, expected[:]) != 1 {
+		return ErrRPIDMismatch
 	}
 	return nil
 }
@@ -190,7 +195,7 @@ func decodeAttestationObject(attObjB64 string) ([]byte, error) {
 		return nil, fmt.Errorf("decoding attestationObject: %w", err)
 	}
 	var obj attestationObject
-	if err := cbor.Unmarshal(raw, &obj); err != nil {
+	if err := cborDecMode.Unmarshal(raw, &obj); err != nil {
 		return nil, fmt.Errorf("CBOR decoding attestationObject: %w", err)
 	}
 	return obj.AuthData, nil
@@ -224,7 +229,7 @@ type coseMLDSAKey struct {
 // identifyCOSEAlgorithm returns the COSE algorithm ID from a raw COSE key.
 func identifyCOSEAlgorithm(data []byte) (int, error) {
 	var header coseKeyHeader
-	if err := cbor.Unmarshal(data, &header); err != nil {
+	if err := cborDecMode.Unmarshal(data, &header); err != nil {
 		return 0, fmt.Errorf("CBOR decoding COSE key header: %w", err)
 	}
 	return header.Alg, nil
@@ -232,7 +237,7 @@ func identifyCOSEAlgorithm(data []byte) (int, error) {
 
 func decodeES256PublicKey(data []byte) (*ecdsa.PublicKey, error) {
 	var key coseEC2Key
-	if err := cbor.Unmarshal(data, &key); err != nil {
+	if err := cborDecMode.Unmarshal(data, &key); err != nil {
 		return nil, fmt.Errorf("CBOR decoding COSE EC2 key: %w", err)
 	}
 	if key.Kty != KtyEC2 || key.Alg != AlgES256 || key.Crv != 1 {
@@ -250,7 +255,7 @@ func decodeES256PublicKey(data []byte) (*ecdsa.PublicKey, error) {
 
 func decodeMLDSA65PublicKey(data []byte) (*mldsa65.PublicKey, error) {
 	var key coseMLDSAKey
-	if err := cbor.Unmarshal(data, &key); err != nil {
+	if err := cborDecMode.Unmarshal(data, &key); err != nil {
 		return nil, fmt.Errorf("CBOR decoding COSE ML-DSA key: %w", err)
 	}
 	if key.Kty != KtyMLDSA || key.Alg != AlgMLDSA65 {
@@ -289,7 +294,7 @@ const ecdsaUncompressedSize = 65
 
 func decodeCompositePublicKey(data []byte) (*compositePublicKey, error) {
 	var key coseCompositeKey
-	if err := cbor.Unmarshal(data, &key); err != nil {
+	if err := cborDecMode.Unmarshal(data, &key); err != nil {
 		return nil, fmt.Errorf("CBOR decoding COSE composite key: %w", err)
 	}
 	if key.Kty != KtyComposite || key.Alg != AlgCompositeMLDSA65ES256 {
@@ -356,7 +361,7 @@ func verifySignatureComposite(pubKey *compositePublicKey, authData, clientDataJS
 	}
 
 	mldsaSigLen := binary.BigEndian.Uint32(signatureBytes[:4])
-	if uint32(len(signatureBytes)) < 4+mldsaSigLen {
+	if uint64(mldsaSigLen)+4 > uint64(len(signatureBytes)) {
 		return ErrSignatureInvalid
 	}
 
@@ -465,6 +470,12 @@ func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, err
 
 	if err := verifySignature(input.StoredPublicKeyCOSE, authDataRaw, clientDataJSONRaw, sigBytes); err != nil {
 		return nil, err
+	}
+
+	// Sign count rollback detection per WebAuthn spec §7.2 step 21.
+	// If both stored and reported counts are non-zero, the new count must be greater.
+	if input.StoredSignCount > 0 && pad.SignCount <= input.StoredSignCount {
+		return nil, ErrSignCountRollback
 	}
 
 	return &AuthenticationResult{

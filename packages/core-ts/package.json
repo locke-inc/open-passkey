@@ -22,7 +22,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@noble/post-quantum": "^0.5.4",
-    "cbor-x": "^1.6.3"
+    "@noble/post-quantum": "0.5.4",
+    "cbor-x": "1.6.3"
   }
 }

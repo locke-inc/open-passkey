@@ -36,12 +36,20 @@ export function parseAuthenticatorData(
       throw new Error("no_attested_credential_data");
     }
 
+    // Need at least 37 + 16 (AAGUID) + 2 (credID length) = 55 bytes
+    if (authData.length < 55) {
+      throw new Error("authenticator_data_too_short");
+    }
+
     let offset = 37;
     // AAGUID: 16 bytes
     offset += 16;
     // Credential ID length: 2 bytes big-endian
     const credIdLen = view.getUint16(offset);
     offset += 2;
+    if (authData.length < offset + credIdLen) {
+      throw new Error("authenticator_data_too_short");
+    }
     result.credentialId = authData.slice(offset, offset + credIdLen);
     offset += credIdLen;
     result.credentialKey = authData.slice(offset);

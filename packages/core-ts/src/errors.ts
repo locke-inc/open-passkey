@@ -44,3 +44,9 @@ export class UnsupportedAlgorithmError extends WebAuthnError {
     super("unsupported_cose_algorithm", message);
   }
 }
+
+export class SignCountRollbackError extends WebAuthnError {
+  constructor() {
+    super("sign_count_rollback");
+  }
+}

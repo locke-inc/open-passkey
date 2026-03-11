@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -106,6 +107,7 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		UserID   string `json:"userId"`
 		Username string `json:"username"`
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -169,6 +171,7 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 			} `json:"response"`
 		} `json:"credential"`
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -188,7 +191,8 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		AttestationObject: req.Credential.Response.AttestationObject,
 	})
 	if err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("registration verification failed: %s", err.Error()))
+		log.Printf("registration verification failed: %s", err.Error())
+		writeError(w, http.StatusBadRequest, "registration verification failed")
 		return
 	}
 
@@ -216,6 +220,7 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 		UserID string `json:"userId"`
 	}
 	// Body is optional for discoverable credentials
+	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	challenge, err := p.generateChallenge()
@@ -242,19 +247,20 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 		"userVerification": "preferred",
 	}
 
-	// If userId provided, look up allowed credentials
+	// If userId provided, look up allowed credentials.
+	// Always include allowCredentials (empty array for unknown users) to prevent user enumeration.
 	if req.UserID != "" {
+		allowCredentials := []map[string]any{}
 		creds, err := p.config.CredentialStore.GetByUser(req.UserID)
-		if err == nil && len(creds) > 0 {
-			allowCredentials := make([]map[string]any, len(creds))
-			for i, c := range creds {
-				allowCredentials[i] = map[string]any{
+		if err == nil {
+			for _, c := range creds {
+				allowCredentials = append(allowCredentials, map[string]any{
 					"type": "public-key",
 					"id":   base64.RawURLEncoding.EncodeToString(c.CredentialID),
-				}
+				})
 			}
-			options["allowCredentials"] = allowCredentials
 		}
+		options["allowCredentials"] = allowCredentials
 	}
 
 	writeJSON(w, http.StatusOK, options)
@@ -276,6 +282,7 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 			} `json:"response"`
 		} `json:"credential"`
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -310,7 +317,8 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 		Signature:           req.Credential.Response.Signature,
 	})
 	if err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Sprintf("authentication verification failed: %s", err.Error()))
+		log.Printf("authentication verification failed: %s", err.Error())
+		writeError(w, http.StatusBadRequest, "authentication verification failed")
 		return
 	}
 

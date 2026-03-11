@@ -4,7 +4,7 @@ import { ml_dsa65 } from "@noble/post-quantum/ml-dsa.js";
 import { base64urlDecode, sha256 } from "./util.js";
 import { verifyClientData } from "./clientdata.js";
 import { parseAuthenticatorData, verifyRPIdHash } from "./authdata.js";
-import { SignatureInvalidError, UnsupportedAlgorithmError } from "./errors.js";
+import { SignatureInvalidError, SignCountRollbackError, UnsupportedAlgorithmError } from "./errors.js";
 import {
   COSE_ALG_ES256,
   COSE_ALG_MLDSA65,
@@ -226,6 +226,12 @@ export function verifyAuthentication(
       break;
     default:
       throw new UnsupportedAlgorithmError();
+  }
+
+  // Sign count rollback detection per WebAuthn spec §7.2 step 21.
+  // If both stored and reported counts are non-zero, the new count must be greater.
+  if (input.storedSignCount > 0 && parsed.signCount <= input.storedSignCount) {
+    throw new SignCountRollbackError();
   }
 
   return {

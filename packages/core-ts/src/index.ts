@@ -27,6 +27,7 @@ export {
   RPIDMismatchError,
   SignatureInvalidError,
   UnsupportedAlgorithmError,
+  SignCountRollbackError,
 } from "./errors.js";
 export {
   COSE_ALG_ES256,
