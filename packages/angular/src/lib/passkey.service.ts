@@ -62,6 +62,18 @@ export class PasskeyService {
     userId: string,
   ): Observable<PasskeyRegistrationResult> {
     return new Observable((subscriber) => {
+      const prfExt = options.extensions?.prf;
+      const extensions: AuthenticationExtensionsClientInputs | undefined =
+        prfExt?.eval
+          ? ({
+              prf: {
+                eval: {
+                  first: base64urlDecode(prfExt.eval.first),
+                },
+              },
+            } as any)
+          : undefined;
+
       const publicKey: PublicKeyCredentialCreationOptions = {
         challenge: base64urlDecode(options.challenge),
         rp: options.rp,
@@ -82,6 +94,7 @@ export class PasskeyService {
         },
         timeout: options.timeout,
         attestation: options.attestation as AttestationConveyancePreference,
+        extensions,
       };
 
       navigator.credentials
@@ -96,8 +109,15 @@ export class PasskeyService {
           const response =
             pkc.response as AuthenticatorAttestationResponse;
 
+          const extResults = (pkc as any).getClientExtensionResults?.();
+          const prfResult = extResults?.prf;
+          const prfEnabled = prfResult?.enabled === true;
+          const prfOutput: ArrayBuffer | undefined =
+            prfResult?.results?.first;
+
           const body: FinishRegistrationRequest = {
             userId,
+            prfSupported: prfEnabled,
             credential: {
               id: pkc.id,
               rawId: base64urlEncode(pkc.rawId),
@@ -117,8 +137,11 @@ export class PasskeyService {
               body,
             )
             .subscribe({
-              next: (result) => {
-                subscriber.next(result);
+              next: (serverResult) => {
+                subscriber.next({
+                  ...serverResult,
+                  prfOutput,
+                });
                 subscriber.complete();
               },
               error: (err) => subscriber.error(err),
@@ -133,6 +156,30 @@ export class PasskeyService {
     userId?: string,
   ): Observable<PasskeyAuthenticationResult> {
     return new Observable((subscriber) => {
+      const prfExt = options.extensions?.prf;
+      let prfInput: any = undefined;
+
+      if (prfExt?.evalByCredential) {
+        const evalByCredential: Record<string, { first: BufferSource }> =
+          {};
+        for (const [credId, salts] of Object.entries(
+          prfExt.evalByCredential,
+        )) {
+          evalByCredential[credId] = {
+            first: base64urlDecode(salts.first),
+          };
+        }
+        prfInput = { evalByCredential };
+      } else if (prfExt?.eval) {
+        prfInput = { eval: { first: base64urlDecode(prfExt.eval.first) } };
+      }
+
+      const authExtensions:
+        | AuthenticationExtensionsClientInputs
+        | undefined = prfInput
+        ? ({ prf: prfInput } as any)
+        : undefined;
+
       const publicKey: PublicKeyCredentialRequestOptions = {
         challenge: base64urlDecode(options.challenge),
         rpId: options.rpId,
@@ -143,6 +190,7 @@ export class PasskeyService {
           type: c.type as PublicKeyCredentialType,
           id: base64urlDecode(c.id),
         })),
+        extensions: authExtensions,
       };
 
       navigator.credentials
@@ -156,6 +204,10 @@ export class PasskeyService {
           const pkc = credential as PublicKeyCredential;
           const response =
             pkc.response as AuthenticatorAssertionResponse;
+
+          const extResults = (pkc as any).getClientExtensionResults?.();
+          const prfOutput: ArrayBuffer | undefined =
+            extResults?.prf?.results?.first;
 
           const body: FinishAuthenticationRequest = {
             userId: userId ?? "",
@@ -179,8 +231,11 @@ export class PasskeyService {
               body,
             )
             .subscribe({
-              next: (result) => {
-                subscriber.next(result);
+              next: (serverResult) => {
+                subscriber.next({
+                  ...serverResult,
+                  prfOutput,
+                });
                 subscriber.complete();
               },
               error: (err) => subscriber.error(err),

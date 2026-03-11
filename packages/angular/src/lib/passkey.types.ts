@@ -4,16 +4,32 @@ export interface PasskeyConfig {
   baseUrl: string;
 }
 
+/** PRF salt pair for the PRF extension. */
+export interface PRFSaltPair {
+  first: string;   // base64url-encoded salt
+  second?: string;  // optional second salt
+}
+
+/** PRF extension input shape. */
+export interface PRFExtension {
+  eval?: PRFSaltPair;
+  evalByCredential?: Record<string, PRFSaltPair>;
+}
+
 /** Result emitted after successful passkey registration. */
 export interface PasskeyRegistrationResult {
   credentialId: string;
   registered: boolean;
+  prfSupported: boolean;
+  prfOutput?: ArrayBuffer;
 }
 
 /** Result emitted after successful passkey authentication. */
 export interface PasskeyAuthenticationResult {
   userId: string;
   authenticated: boolean;
+  prfSupported?: boolean;
+  prfOutput?: ArrayBuffer;
 }
 
 // --- Server API request/response shapes (matching server-go) ---
@@ -34,10 +50,14 @@ export interface BeginRegistrationResponse {
   };
   timeout: number;
   attestation: string;
+  extensions?: {
+    prf?: PRFExtension;
+  };
 }
 
 export interface FinishRegistrationRequest {
   userId: string;
+  prfSupported?: boolean;
   credential: {
     id: string;
     rawId: string;
@@ -59,6 +79,9 @@ export interface BeginAuthenticationResponse {
   timeout: number;
   userVerification: string;
   allowCredentials?: Array<{ type: string; id: string }>;
+  extensions?: {
+    prf?: PRFExtension;
+  };
 }
 
 export interface FinishAuthenticationRequest {

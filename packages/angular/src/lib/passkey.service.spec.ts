@@ -67,15 +67,20 @@ describe("PasskeyService", () => {
       attestation: "none",
     };
 
-    function mockWebAuthnCreate(): void {
+    function mockWebAuthnCreate(prfEnabled = false): void {
       const rawId = new Uint8Array([100, 101, 102]).buffer;
       const clientDataJSON = new Uint8Array([1, 2, 3]).buffer;
       const attestationObject = new Uint8Array([4, 5, 6]).buffer;
+      const prfOutput = new Uint8Array([99, 98, 97]).buffer;
       mockCredentials.create.mockResolvedValue({
         id: "credential-id",
         rawId,
         type: "public-key",
         response: { clientDataJSON, attestationObject },
+        getClientExtensionResults: () =>
+          prfEnabled
+            ? { prf: { enabled: true, results: { first: prfOutput } } }
+            : {},
       });
     }
 
@@ -185,6 +190,65 @@ describe("PasskeyService", () => {
       expect(body.credential.response.attestationObject).toBe("BAUG");
       finishReq.flush({ credentialId: "credential-id", registered: true });
     }));
+
+    it("should pass PRF eval extension through create() when present", fakeAsync(() => {
+      mockWebAuthnCreate();
+      const beginWithPrf: BeginRegistrationResponse = {
+        ...beginResponse,
+        extensions: {
+          prf: { eval: { first: "AQIDBA" } },  // base64url of [1,2,3,4]
+        },
+      };
+      service.register("user-1", "alice").subscribe();
+
+      httpTesting.expectOne("/passkey/register/begin").flush(beginWithPrf);
+      tick();
+
+      const createArg = mockCredentials.create.mock.calls[0][0];
+      expect(createArg.publicKey.extensions).toBeDefined();
+      expect(createArg.publicKey.extensions.prf).toBeDefined();
+      expect(createArg.publicKey.extensions.prf.eval.first).toBeInstanceOf(ArrayBuffer);
+
+      const finishReq = httpTesting.expectOne("/passkey/register/finish");
+      expect(finishReq.request.body.prfSupported).toBe(false);
+      finishReq.flush({ credentialId: "credential-id", registered: true, prfSupported: false });
+    }));
+
+    it("should report prfSupported=true and include prfOutput when authenticator supports PRF", fakeAsync(() => {
+      mockWebAuthnCreate(true);
+      const beginWithPrf: BeginRegistrationResponse = {
+        ...beginResponse,
+        extensions: {
+          prf: { eval: { first: "AQIDBA" } },
+        },
+      };
+      let result: any;
+      service.register("user-1", "alice").subscribe((r) => (result = r));
+
+      httpTesting.expectOne("/passkey/register/begin").flush(beginWithPrf);
+      tick();
+
+      const finishReq = httpTesting.expectOne("/passkey/register/finish");
+      expect(finishReq.request.body.prfSupported).toBe(true);
+      finishReq.flush({ credentialId: "credential-id", registered: true, prfSupported: true });
+
+      expect(result.prfSupported).toBe(true);
+      expect(result.prfOutput).toBeInstanceOf(ArrayBuffer);
+    }));
+
+    it("should not include extensions when server response has no PRF", fakeAsync(() => {
+      mockWebAuthnCreate();
+      service.register("user-1", "alice").subscribe();
+
+      httpTesting.expectOne("/passkey/register/begin").flush(beginResponse);
+      tick();
+
+      const createArg = mockCredentials.create.mock.calls[0][0];
+      expect(createArg.publicKey.extensions).toBeUndefined();
+
+      const finishReq = httpTesting.expectOne("/passkey/register/finish");
+      finishReq.flush({ credentialId: "credential-id", registered: true, prfSupported: false });
+    }));
   });
 
   describe("authenticate", () => {
@@ -198,16 +262,21 @@ describe("PasskeyService", () => {
       allowCredentials: [{ type: "public-key", id: "cred-abc" }],
     };
 
-    function mockWebAuthnGet(): void {
+    function mockWebAuthnGet(withPrf = false): void {
       const rawId = new Uint8Array([200, 201]).buffer;
       const clientDataJSON = new Uint8Array([7, 8]).buffer;
       const authenticatorData = new Uint8Array([9, 10]).buffer;
       const signature = new Uint8Array([11, 12]).buffer;
+      const prfOutput = new Uint8Array([50, 51, 52]).buffer;
       mockCredentials.get.mockResolvedValue({
         id: "cred-abc",
         rawId,
         type: "public-key",
         response: { clientDataJSON, authenticatorData, signature },
+        getClientExtensionResults: () =>
+          withPrf
+            ? { prf: { results: { first: prfOutput } } }
+            : {},
       });
     }
 
@@ -292,6 +361,81 @@ describe("PasskeyService", () => {
       // signature [11,12] -> base64url "Cww"
       expect(body.credential.response.signature).toBe("Cww");
       finishReq.flush({ userId: "user-1", authenticated: true });
+    }));
+
+    it("should build evalByCredential PRF extension for get()", fakeAsync(() => {
+      mockWebAuthnGet();
+      const beginWithPrf: BeginAuthenticationResponse = {
+        ...beginResponse,
+        extensions: {
+          prf: {
+            evalByCredential: {
+              "cred-abc": { first: "AQIDBA" },
+              "cred-def": { first: "BQYHCA" },
+            },
+          },
+        },
+      };
+      service.authenticate("user-1").subscribe();
+
+      httpTesting.expectOne("/passkey/login/begin").flush(beginWithPrf);
+      tick();
+
+      const getArg = mockCredentials.get.mock.calls[0][0];
+      expect(getArg.publicKey.extensions).toBeDefined();
+      expect(getArg.publicKey.extensions.prf.evalByCredential).toBeDefined();
+      expect(getArg.publicKey.extensions.prf.evalByCredential["cred-abc"].first).toBeInstanceOf(ArrayBuffer);
+      expect(getArg.publicKey.extensions.prf.evalByCredential["cred-def"].first).toBeInstanceOf(ArrayBuffer);
+
+      httpTesting.expectOne("/passkey/login/finish").flush({ userId: "user-1", authenticated: true });
+    }));
+
+    it("should fall back to eval when evalByCredential is absent", fakeAsync(() => {
+      mockWebAuthnGet();
+      const beginWithEval: BeginAuthenticationResponse = {
+        ...beginResponse,
+        extensions: {
+          prf: {
+            eval: { first: "AQIDBA" },
+          },
+        },
+      };
+      service.authenticate("user-1").subscribe();
+
+      httpTesting.expectOne("/passkey/login/begin").flush(beginWithEval);
+      tick();
+
+      const getArg = mockCredentials.get.mock.calls[0][0];
+      expect(getArg.publicKey.extensions.prf.eval.first).toBeInstanceOf(ArrayBuffer);
+      expect(getArg.publicKey.extensions.prf.evalByCredential).toBeUndefined();
+
+      httpTesting.expectOne("/passkey/login/finish").flush({ userId: "user-1", authenticated: true });
+    }));
+
+    it("should extract prfOutput from extension results during authentication", fakeAsync(() => {
+      mockWebAuthnGet(true);
+      let result: any;
+      service.authenticate("user-1").subscribe((r) => (result = r));
+
+      httpTesting.expectOne("/passkey/login/begin").flush(beginResponse);
+      tick();
+      httpTesting.expectOne("/passkey/login/finish").flush({ userId: "user-1", authenticated: true, prfSupported: true });
+
+      expect(result.prfOutput).toBeInstanceOf(ArrayBuffer);
+      expect(result.prfSupported).toBe(true);
+    }));
+
+    it("should not include extensions when server response has no PRF", fakeAsync(() => {
+      mockWebAuthnGet();
+      service.authenticate("user-1").subscribe();
+
+      httpTesting.expectOne("/passkey/login/begin").flush(beginResponse);
+      tick();
+
+      const getArg = mockCredentials.get.mock.calls[0][0];
+      expect(getArg.publicKey.extensions).toBeUndefined();
+
+      httpTesting.expectOne("/passkey/login/finish").flush({ userId: "user-1", authenticated: true });
     }));
   });
 });

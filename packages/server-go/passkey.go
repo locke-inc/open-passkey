@@ -123,7 +123,19 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := p.config.ChallengeStore.Store(req.UserID, challenge, p.config.ChallengeTimeout); err != nil {
+	// Generate a random 32-byte PRF salt
+	prfSalt := make([]byte, 32)
+	if _, err := rand.Read(prfSalt); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to generate PRF salt")
+		return
+	}
+
+	// Store challenge + PRF salt together as JSON
+	challengeData, _ := json.Marshal(map[string]string{
+		"challenge": challenge,
+		"prfSalt":   base64.RawURLEncoding.EncodeToString(prfSalt),
+	})
+	if err := p.config.ChallengeStore.Store(req.UserID, string(challengeData), p.config.ChallengeTimeout); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to store challenge")
 		return
 	}
@@ -151,6 +163,13 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		},
 		"timeout":     p.config.ChallengeTimeout.Milliseconds(),
 		"attestation": "none",
+		"extensions": map[string]any{
+			"prf": map[string]any{
+				"eval": map[string]string{
+					"first": base64.RawURLEncoding.EncodeToString(prfSalt),
+				},
+			},
+		},
 	}
 
 	writeJSON(w, http.StatusOK, options)
@@ -160,8 +179,9 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 // Expects JSON body with userId and the credential from navigator.credentials.create().
 func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		UserID     string `json:"userId"`
-		Credential struct {
+		UserID       string `json:"userId"`
+		PRFSupported *bool  `json:"prfSupported,omitempty"`
+		Credential   struct {
 			ID       string `json:"id"`
 			RawID    string `json:"rawId"`
 			Type     string `json:"type"`
@@ -177,15 +197,24 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	challenge, err := p.config.ChallengeStore.Consume(req.UserID)
+	// Retrieve and decode the challenge+prfSalt JSON pair
+	challengeData, err := p.config.ChallengeStore.Consume(req.UserID)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "challenge not found or expired")
+		return
+	}
+	var stored struct {
+		Challenge string `json:"challenge"`
+		PRFSalt   string `json:"prfSalt"`
+	}
+	if err := json.Unmarshal([]byte(challengeData), &stored); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to decode challenge data")
 		return
 	}
 
 	result, err := webauthn.VerifyRegistration(webauthn.RegistrationInput{
 		RPID:              p.config.RPID,
-		ExpectedChallenge: challenge,
+		ExpectedChallenge: stored.Challenge,
 		ExpectedOrigin:    p.config.Origin,
 		ClientDataJSON:    req.Credential.Response.ClientDataJSON,
 		AttestationObject: req.Credential.Response.AttestationObject,
@@ -196,12 +225,23 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	prfEnabled := req.PRFSupported != nil && *req.PRFSupported
+
 	cred := StoredCredential{
 		CredentialID:  result.CredentialID,
 		PublicKeyCOSE: result.PublicKeyCOSE,
 		SignCount:     result.SignCount,
 		UserID:        req.UserID,
 	}
+
+	if prfEnabled {
+		prfSaltBytes, err := base64.RawURLEncoding.DecodeString(stored.PRFSalt)
+		if err == nil {
+			cred.PRFSalt = prfSaltBytes
+			cred.PRFSupported = true
+		}
+	}
+
 	if err := p.config.CredentialStore.Store(cred); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to store credential")
 		return
@@ -210,6 +250,7 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"credentialId": base64.RawURLEncoding.EncodeToString(result.CredentialID),
 		"registered":   true,
+		"prfSupported": prfEnabled,
 	})
 }
 
@@ -247,20 +288,38 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 		"userVerification": "preferred",
 	}
 
-	// If userId provided, look up allowed credentials.
+	// If userId provided, look up allowed credentials and PRF salts.
 	// Always include allowCredentials (empty array for unknown users) to prevent user enumeration.
 	if req.UserID != "" {
 		allowCredentials := []map[string]any{}
+		evalByCredential := map[string]map[string]string{}
+		hasPRF := false
+
 		creds, err := p.config.CredentialStore.GetByUser(req.UserID)
 		if err == nil {
 			for _, c := range creds {
+				credIDEncoded := base64.RawURLEncoding.EncodeToString(c.CredentialID)
 				allowCredentials = append(allowCredentials, map[string]any{
 					"type": "public-key",
-					"id":   base64.RawURLEncoding.EncodeToString(c.CredentialID),
+					"id":   credIDEncoded,
 				})
+				if c.PRFSupported && len(c.PRFSalt) > 0 {
+					evalByCredential[credIDEncoded] = map[string]string{
+						"first": base64.RawURLEncoding.EncodeToString(c.PRFSalt),
+					}
+					hasPRF = true
+				}
 			}
 		}
 		options["allowCredentials"] = allowCredentials
+
+		if hasPRF {
+			options["extensions"] = map[string]any{
+				"prf": map[string]any{
+					"evalByCredential": evalByCredential,
+				},
+			}
+		}
 	}
 
 	writeJSON(w, http.StatusOK, options)
@@ -329,10 +388,14 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{
+	resp := map[string]any{
 		"userId":        stored.UserID,
 		"authenticated": true,
-	})
+	}
+	if stored.PRFSupported {
+		resp["prfSupported"] = true
+	}
+	writeJSON(w, http.StatusOK, resp)
 }
 
 // --- HTTP helpers ---

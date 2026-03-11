@@ -64,7 +64,7 @@ describe("PasskeyRegisterComponent", () => {
 
   it("should call PasskeyService.register with userId and username", () => {
     mockService.register.mockReturnValue(
-      of({ credentialId: "cid", registered: true }),
+      of({ credentialId: "cid", registered: true, prfSupported: false }),
     );
 
     host.reg().register();
@@ -74,7 +74,7 @@ describe("PasskeyRegisterComponent", () => {
 
   it("should emit registered output on success", () => {
     mockService.register.mockReturnValue(
-      of({ credentialId: "cid", registered: true }),
+      of({ credentialId: "cid", registered: true, prfSupported: false }),
     );
 
     host.reg().register();
@@ -83,6 +83,7 @@ describe("PasskeyRegisterComponent", () => {
     expect(host.registeredResult).toEqual({
       credentialId: "cid",
       registered: true,
+      prfSupported: false,
     });
   });
 
@@ -102,7 +103,7 @@ describe("PasskeyRegisterComponent", () => {
     expect(reg.loading()).toBe(false);
 
     mockService.register.mockReturnValue(
-      of({ credentialId: "cid", registered: true }),
+      of({ credentialId: "cid", registered: true, prfSupported: false }),
     );
     reg.register();
 

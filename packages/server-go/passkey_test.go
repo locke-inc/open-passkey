@@ -119,6 +119,22 @@ func TestBeginRegistration_Success(t *testing.T) {
 	if resp["attestation"] != "none" {
 		t.Errorf("attestation: got %v, want none", resp["attestation"])
 	}
+	// Verify PRF extension is included
+	extensions, ok := resp["extensions"].(map[string]any)
+	if !ok {
+		t.Fatal("response missing extensions object")
+	}
+	prf, ok := extensions["prf"].(map[string]any)
+	if !ok {
+		t.Fatal("extensions missing prf object")
+	}
+	eval, ok := prf["eval"].(map[string]any)
+	if !ok {
+		t.Fatal("prf missing eval object")
+	}
+	if eval["first"] == nil || eval["first"] == "" {
+		t.Error("prf.eval.first is missing or empty")
+	}
 }
 
 func TestBeginRegistration_MissingFields(t *testing.T) {
@@ -310,5 +326,130 @@ func TestMemoryCredentialStore_NotFound(t *testing.T) {
 	_, err := store.Get([]byte{99})
 	if err == nil {
 		t.Error("expected error for nonexistent credential")
+	}
+}
+
+// --- PRF extension tests ---
+
+func TestMemoryCredentialStore_PRFFields(t *testing.T) {
+	store := passkey.NewMemoryCredentialStore()
+	cred := passkey.StoredCredential{
+		CredentialID:  []byte{10, 20, 30},
+		PublicKeyCOSE: []byte{40, 50, 60},
+		SignCount:     0,
+		UserID:        "user-prf",
+		PRFSalt:       []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32},
+		PRFSupported:  true,
+	}
+	if err := store.Store(cred); err != nil {
+		t.Fatalf("Store failed: %v", err)
+	}
+
+	got, err := store.Get([]byte{10, 20, 30})
+	if err != nil {
+		t.Fatalf("Get failed: %v", err)
+	}
+	if !got.PRFSupported {
+		t.Error("expected PRFSupported to be true")
+	}
+	if len(got.PRFSalt) != 32 {
+		t.Errorf("expected PRFSalt length 32, got %d", len(got.PRFSalt))
+	}
+}
+
+func TestBeginAuthentication_WithPRFCredentials(t *testing.T) {
+	cs := passkey.NewMemoryChallengeStore()
+	credStore := passkey.NewMemoryCredentialStore()
+
+	// Store two PRF-enabled credentials for the same user
+	credStore.Store(passkey.StoredCredential{
+		CredentialID: []byte{1, 2, 3},
+		UserID:       "alice",
+		PRFSalt:      []byte{10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 1, 2, 3, 4, 5, 6, 7},
+		PRFSupported: true,
+	})
+	credStore.Store(passkey.StoredCredential{
+		CredentialID: []byte{4, 5, 6},
+		UserID:       "alice",
+		PRFSalt:      []byte{7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38},
+		PRFSupported: true,
+	})
+
+	p, err := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  cs,
+		CredentialStore: credStore,
+	})
+	if err != nil {
+		t.Fatalf("failed to create Passkey: %v", err)
+	}
+
+	w := postJSON(p.BeginAuthentication, map[string]string{"userId": "alice"})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	resp := decodeResponse(t, w)
+	extensions, ok := resp["extensions"].(map[string]any)
+	if !ok {
+		t.Fatal("response missing extensions for PRF-enabled credentials")
+	}
+	prf, ok := extensions["prf"].(map[string]any)
+	if !ok {
+		t.Fatal("extensions missing prf object")
+	}
+	evalByCredential, ok := prf["evalByCredential"].(map[string]any)
+	if !ok {
+		t.Fatal("prf missing evalByCredential object")
+	}
+	if len(evalByCredential) != 2 {
+		t.Errorf("expected 2 entries in evalByCredential, got %d", len(evalByCredential))
+	}
+}
+
+func TestBeginAuthentication_NoPRFWithoutUserId(t *testing.T) {
+	p := newTestPasskey(t)
+	w := postJSON(p.BeginAuthentication, map[string]string{})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	resp := decodeResponse(t, w)
+	if resp["extensions"] != nil {
+		t.Error("discoverable flow should not include extensions")
+	}
+}
+
+func TestBeginAuthentication_NoPRFForNonPRFCredentials(t *testing.T) {
+	cs := passkey.NewMemoryChallengeStore()
+	credStore := passkey.NewMemoryCredentialStore()
+
+	// Store a credential without PRF
+	credStore.Store(passkey.StoredCredential{
+		CredentialID: []byte{1, 2, 3},
+		UserID:       "bob",
+	})
+
+	p, err := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  cs,
+		CredentialStore: credStore,
+	})
+	if err != nil {
+		t.Fatalf("failed to create Passkey: %v", err)
+	}
+
+	w := postJSON(p.BeginAuthentication, map[string]string{"userId": "bob"})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	resp := decodeResponse(t, w)
+	if resp["extensions"] != nil {
+		t.Error("non-PRF credentials should not include extensions")
 	}
 }

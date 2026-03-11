@@ -27,6 +27,8 @@ type StoredCredential struct {
 	PublicKeyCOSE []byte
 	SignCount     uint32
 	UserID        string
+	PRFSalt       []byte // 32-byte random salt for PRF eval (nil if PRF not used)
+	PRFSupported  bool   // whether this credential was registered with PRF
 }
 
 // CredentialStore manages WebAuthn credential persistence.
