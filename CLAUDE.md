@@ -110,7 +110,7 @@ npm test
 
 ### Run all tests
 ```bash
-cd packages/core-go && go test ./... && cd ../server-go && go test ./... && cd ../core-ts && npm test && cd ../angular && npm test
+./scripts/test-all.sh
 ```
 
 ## Terminology
@@ -139,8 +139,8 @@ All binary data in vectors is base64url-encoded (no padding).
 ### Completed
 - [x] Repository scaffolding and monorepo structure
 - [x] Shared test vector generation tooling (`tools/vecgen/`)
-- [x] 25 test vectors: 9 registration + 10 ES256 authentication + 6 hybrid ML-DSA-65-ES256 authentication
-- [x] `core-go`: `webauthn.VerifyRegistration()` + `webauthn.VerifyAuthentication()` — all 25 spec vectors passing
+- [x] 31 test vectors: 13 registration + 12 ES256 authentication + 6 hybrid ML-DSA-65-ES256 authentication
+- [x] `core-go`: `webauthn.VerifyRegistration()` + `webauthn.VerifyAuthentication()` — all 31 spec vectors passing
 - [x] `core-go`: ES256, ML-DSA-65, and ML-DSA-65-ES256 composite signature verification
 - [x] `core-go`: Algorithm dispatch — reads COSE `alg` from stored key, verifies with correct algorithm
 - [x] `server-go`: HTTP handlers (`BeginRegistration`, `FinishRegistration`, `BeginAuthentication`, `FinishAuthentication`)
@@ -149,13 +149,13 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] `server-go`: Config validation, challenge generation, discoverable credentials support
 - [x] `server-go`: Hybrid-preferred `pubKeyCredParams` (ML-DSA-65-ES256 first, ML-DSA-65 second, ES256 fallback)
 - [x] 28 isolated httptest-based tests for server-go (all passing)
-- [x] `core-ts`: TypeScript port — `verifyRegistration()` + `verifyAuthentication()` — all 25 spec vectors passing
+- [x] `core-ts`: TypeScript port — `verifyRegistration()` + `verifyAuthentication()` — all 31 spec vectors passing
 - [x] `core-ts`: ES256 via Node `crypto`, ML-DSA-65 via `@noble/post-quantum`, composite ML-DSA-65-ES256
 - [x] `core-ts`: COSE algorithm constants exported (`COSE_ALG_ES256`, `COSE_ALG_MLDSA65`, `COSE_ALG_COMPOSITE_MLDSA65_ES256`)
-- [x] Cross-language vector architecture proven (Go + TypeScript pass same 25 vectors)
+- [x] Cross-language vector architecture proven (Go + TypeScript pass same 31 vectors)
 - [x] User presence (UP) flag enforcement — always required per spec
 - [x] User verification (UV) flag enforcement — configurable via `RequireUserVerification`
-- [x] Attestation format validation — only `none` accepted, unsupported formats rejected
+- [x] Attestation format validation — `none` and `packed` (self-attestation + full x5c) supported
 - [x] Token binding handling — `status: "present"` rejected, `"supported"` allowed
 - [x] `server-go`: Input validation — RPID format (bare domain), Origin format (requires scheme)
 - [x] `server-go`: `CredentialStore.Delete()` method for credential revocation
@@ -163,12 +163,16 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] `angular`: Headless `PasskeyRegisterComponent` + `PasskeyLoginComponent` (content projection, signal-based)
 - [x] `angular`: `PasskeyService` — injectable service wrapping browser WebAuthn API + HTTP calls to server-go
 - [x] `angular`: `providePasskey()` provider function with configurable `baseUrl`
-- [x] `angular`: 28 isolated Jest tests (4 util, 11 service, 6 register component, 7 login component)
+- [x] `angular`: 37 isolated Jest tests (4 util, 13 service, 6 register component, 7 login component + 7 additional)
+- [x] Backup flags (BE/BS) — exposed as named fields, spec conformance check (BS=1 with BE=0 rejected)
+- [x] Packed attestation — self-attestation and full (x5c) attestation verification
+- [x] `server-go`: userHandle verification — cross-checks credential owner in discoverable flow
+- [x] `angular`: `PasskeyService` sends `userHandle` from authenticator response
 
 ### Next
 - [ ] `packages/react/` — React hooks and components
 
 ### Backlog
 - [ ] `spec/schema/` — JSON Schema for vector file validation
-- [ ] Additional attestation formats beyond "none" (packed, TPM, Android)
-- [ ] Backup flags (BE/BS) enforcement options
+- [ ] Additional attestation formats (TPM, Android)
+- [ ] Backup flags enforcement policies (RequireSingleDevice, RequireBackupEligible)

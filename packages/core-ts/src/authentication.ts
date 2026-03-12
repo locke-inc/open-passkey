@@ -4,7 +4,7 @@ import { ml_dsa65 } from "@noble/post-quantum/ml-dsa.js";
 import { base64urlDecode, sha256 } from "./util.js";
 import { verifyClientData } from "./clientdata.js";
 import { parseAuthenticatorData, verifyRPIdHash } from "./authdata.js";
-import { SignatureInvalidError, SignCountRollbackError, UnsupportedAlgorithmError, UserPresenceRequiredError, UserVerificationRequiredError } from "./errors.js";
+import { SignatureInvalidError, SignCountRollbackError, UnsupportedAlgorithmError, UserPresenceRequiredError, UserVerificationRequiredError, InvalidBackupStateError } from "./errors.js";
 import {
   COSE_ALG_ES256,
   COSE_ALG_MLDSA65,
@@ -217,6 +217,11 @@ export function verifyAuthentication(
     throw new UserVerificationRequiredError();
   }
 
+  // BS must be 0 if BE is 0 (§6.3.3)
+  if ((parsed.flags & 0x08) === 0 && (parsed.flags & 0x10) !== 0) {
+    throw new InvalidBackupStateError();
+  }
+
   const clientDataHash = sha256(clientDataJSONRaw);
   const sigBytes = base64urlDecode(input.signature);
   const alg = identifyCOSEAlgorithm(input.storedPublicKeyCose);
@@ -244,5 +249,7 @@ export function verifyAuthentication(
   return {
     signCount: parsed.signCount,
     flags: parsed.flags,
+    backupEligible: (parsed.flags & 0x08) !== 0,
+    backupState: (parsed.flags & 0x10) !== 0,
   };
 }

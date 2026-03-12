@@ -262,7 +262,7 @@ describe("PasskeyService", () => {
       allowCredentials: [{ type: "public-key", id: "cred-abc" }],
     };
 
-    function mockWebAuthnGet(withPrf = false): void {
+    function mockWebAuthnGet(opts: { withPrf?: boolean; userHandle?: ArrayBuffer } = {}): void {
       const rawId = new Uint8Array([200, 201]).buffer;
       const clientDataJSON = new Uint8Array([7, 8]).buffer;
       const authenticatorData = new Uint8Array([9, 10]).buffer;
@@ -272,9 +272,14 @@ describe("PasskeyService", () => {
         id: "cred-abc",
         rawId,
         type: "public-key",
-        response: { clientDataJSON, authenticatorData, signature },
+        response: {
+          clientDataJSON,
+          authenticatorData,
+          signature,
+          userHandle: opts.userHandle ?? null,
+        },
         getClientExtensionResults: () =>
-          withPrf
+          opts.withPrf
             ? { prf: { results: { first: prfOutput } } }
             : {},
       });
@@ -413,7 +418,7 @@ describe("PasskeyService", () => {
     }));
 
     it("should extract prfOutput from extension results during authentication", fakeAsync(() => {
-      mockWebAuthnGet(true);
+      mockWebAuthnGet({ withPrf: true });
       let result: any;
       service.authenticate("user-1").subscribe((r) => (result = r));
 
@@ -436,6 +441,37 @@ describe("PasskeyService", () => {
       expect(getArg.publicKey.extensions).toBeUndefined();
 
       httpTesting.expectOne("/passkey/login/finish").flush({ userId: "user-1", authenticated: true });
+    }));
+
+    it("should send userHandle in discoverable flow when authenticator provides it", fakeAsync(() => {
+      // "alice" as UTF-8 bytes
+      const userHandleBytes = new TextEncoder().encode("alice").buffer;
+      mockWebAuthnGet({ userHandle: userHandleBytes });
+      service.authenticate().subscribe();
+
+      httpTesting.expectOne("/passkey/login/begin").flush(beginResponse);
+      tick();
+
+      const finishReq = httpTesting.expectOne("/passkey/login/finish");
+      const body = finishReq.request.body;
+      // userHandle should be base64url-encoded
+      expect(body.credential.response.userHandle).toBeDefined();
+      expect(typeof body.credential.response.userHandle).toBe("string");
+      expect(body.credential.response.userHandle.length).toBeGreaterThan(0);
+      finishReq.flush({ userId: "alice", authenticated: true });
+    }));
+
+    it("should omit userHandle when authenticator does not provide it", fakeAsync(() => {
+      mockWebAuthnGet(); // no userHandle
+      service.authenticate("user-1").subscribe();
+
+      httpTesting.expectOne("/passkey/login/begin").flush(beginResponse);
+      tick();
+
+      const finishReq = httpTesting.expectOne("/passkey/login/finish");
+      const body = finishReq.request.body;
+      expect(body.credential.response.userHandle).toBeUndefined();
+      finishReq.flush({ userId: "user-1", authenticated: true });
     }));
   });
 });

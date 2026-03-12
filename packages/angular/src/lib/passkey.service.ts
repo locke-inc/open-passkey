@@ -209,6 +209,10 @@ export class PasskeyService {
           const prfOutput: ArrayBuffer | undefined =
             extResults?.prf?.results?.first;
 
+          const userHandle = response.userHandle
+            ? base64urlEncode(response.userHandle)
+            : undefined;
+
           const body: FinishAuthenticationRequest = {
             userId: userId ?? "",
             credential: {
@@ -221,6 +225,7 @@ export class PasskeyService {
                   response.authenticatorData,
                 ),
                 signature: base64urlEncode(response.signature),
+                userHandle,
               },
             },
           };

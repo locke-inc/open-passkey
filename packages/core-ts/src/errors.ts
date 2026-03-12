@@ -74,3 +74,15 @@ export class TokenBindingUnsupportedError extends WebAuthnError {
     super("token_binding_unsupported");
   }
 }
+
+export class InvalidBackupStateError extends WebAuthnError {
+  constructor() {
+    super("invalid_backup_state");
+  }
+}
+
+export class InvalidAttestationStatementError extends WebAuthnError {
+  constructor(message?: string) {
+    super("invalid_attestation_statement", message);
+  }
+}

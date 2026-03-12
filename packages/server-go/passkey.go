@@ -345,6 +345,7 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 				ClientDataJSON    string `json:"clientDataJSON"`
 				AuthenticatorData string `json:"authenticatorData"`
 				Signature         string `json:"signature"`
+				UserHandle        string `json:"userHandle,omitempty"`
 			} `json:"response"`
 		} `json:"credential"`
 	}
@@ -370,6 +371,19 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "credential not found")
 		return
+	}
+
+	// For discoverable flow, verify userHandle matches credential owner
+	if req.Credential.Response.UserHandle != "" {
+		userHandleBytes, err := base64.RawURLEncoding.DecodeString(req.Credential.Response.UserHandle)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid userHandle encoding")
+			return
+		}
+		if string(userHandleBytes) != stored.UserID {
+			writeError(w, http.StatusBadRequest, "userHandle does not match credential owner")
+			return
+		}
 	}
 
 	result, err := webauthn.VerifyAuthentication(webauthn.AuthenticationInput{

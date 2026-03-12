@@ -2,7 +2,7 @@
 
 An open-source library for adding passkey authentication to any app. Built on [WebAuthn](https://www.w3.org/TR/webauthn-3/) with hybrid post-quantum signature verification (ML-DSA-65-ES256) that works today in Go and TypeScript.
 
-> **Status:** Production-ready for ES256 passkeys with `none` attestation. Post-quantum algorithms verified but awaiting browser support.
+> **Status:** Production-ready for ES256 passkeys. Post-quantum algorithms verified but awaiting browser support.
 
 ## Hybrid Post-Quantum Support
 
@@ -14,39 +14,34 @@ open-passkey implements **ML-DSA-65-ES256** hybrid composite signatures ([draft-
 | **ML-DSA-65** (PQ only) | `-49` | NIST FIPS 204 | Yes | Yes |
 | **ES256** (ECDSA P-256) | `-7` | Generally Available | Yes | Yes |
 
-**How it works:** During registration, the server advertises preferred algorithms in `pubKeyCredParams`. During authentication, the core libraries read the COSE `alg` field from the stored credential and dispatch to the correct verifier automatically. ES256, ML-DSA-65, or the composite ML-DSA-65-ES256 path. No application code changes needed.
-
-> **Browser support note:** As of early 2026, no major browser authenticator produces ML-DSA-65 or composite signatures natively. Credentials use ES256 until platform support arrives. Both cores verify all three algorithms today so that when authenticators catch up, your deployment is already protected.
+During registration, the server advertises preferred algorithms in `pubKeyCredParams`. During authentication, the core libraries read the COSE `alg` field from the stored credential and dispatch to the correct verifier automatically. No application code changes needed when PQ support arrives in browsers.
 
 ## Architecture
 
-open-passkey separates concerns into two layers. The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Framework bindings** are thin adapters that wire the core into specific frameworks. Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography.
-
 ```
 open-passkey/
-├── spec/vectors/        # Shared JSON test vectors
+├── spec/vectors/        # Shared JSON test vectors (31 vectors, 3 ceremonies)
 ├── packages/
 │   ├── core-go/         # Go core protocol
 │   ├── server-go/       # Go HTTP bindings
 │   ├── core-ts/         # TypeScript core protocol
-│   └── angular/         # Angular components
+│   └── angular/         # Angular components + service
 └── tools/vecgen/        # Test vector generation
 ```
+
+The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Framework bindings** are thin adapters. Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography.
 
 ## Packages
 
 ### core-go
 
-Go core protocol. Registration and authentication ceremony verification. ES256, ML-DSA-65, ML-DSA-65-ES256 composite.
+Go core protocol. Registration and authentication verification with ES256, ML-DSA-65, and ML-DSA-65-ES256 composite.
 
 Dependencies: Go stdlib `crypto`, [`fxamacker/cbor`](https://github.com/fxamacker/cbor), [`cloudflare/circl`](https://github.com/cloudflare/circl).
-
-25 spec vectors passing.
 
 ```go
 import "github.com/locke-inc/open-passkey/packages/core-go/webauthn"
 
-// Registration
 result, err := webauthn.VerifyRegistration(webauthn.RegistrationInput{
     RPID:              "example.com",
     ExpectedChallenge: challengeB64URL,
@@ -54,9 +49,8 @@ result, err := webauthn.VerifyRegistration(webauthn.RegistrationInput{
     ClientDataJSON:    credential.Response.ClientDataJSON,
     AttestationObject: credential.Response.AttestationObject,
 })
-// result.CredentialID, result.PublicKeyCOSE -- store for future auth
+// result.CredentialID, result.PublicKeyCOSE, result.BackupEligible, result.AttestationFormat
 
-// Authentication: dispatches to ES256, ML-DSA-65, or ML-DSA-65-ES256
 result, err := webauthn.VerifyAuthentication(webauthn.AuthenticationInput{
     RPID:                "example.com",
     ExpectedChallenge:   challengeB64URL,
@@ -67,21 +61,12 @@ result, err := webauthn.VerifyAuthentication(webauthn.AuthenticationInput{
     AuthenticatorData:   credential.Response.AuthenticatorData,
     Signature:           credential.Response.Signature,
 })
-```
-
-**Algorithm constants:**
-
-```go
-webauthn.AlgES256                  // -7  (ECDSA P-256)
-webauthn.AlgMLDSA65                // -49 (ML-DSA-65 / Dilithium3)
-webauthn.AlgCompositeMLDSA65ES256  // -52 (hybrid composite)
+// result.SignCount, result.BackupEligible, result.BackupState
 ```
 
 ### server-go
 
-Go HTTP bindings. Challenge management, 4 ceremony handlers, pluggable store interfaces. Works with any Go router. Defaults to hybrid ML-DSA-65-ES256 preferred, with ML-DSA-65 and ES256 as fallbacks in `pubKeyCredParams`.
-
-28 tests passing.
+Go HTTP bindings. Challenge management, 4 ceremony handlers, pluggable store interfaces. Works with any Go router.
 
 ```go
 import "github.com/locke-inc/open-passkey/packages/server-go"
@@ -101,176 +86,99 @@ mux.HandleFunc("POST /passkey/login/begin",     p.BeginAuthentication)
 mux.HandleFunc("POST /passkey/login/finish",    p.FinishAuthentication)
 ```
 
-**Pluggable interfaces:** `ChallengeStore` (single-use challenge storage; in-memory default provided) and `CredentialStore` (credential persistence; you implement for your DB — must implement `Store`, `Get`, `GetByUser`, `Update`, `Delete`).
+Pluggable `ChallengeStore` and `CredentialStore` interfaces. In-memory defaults included for development. Discoverable credentials supported with `userHandle` verification.
 
 ### core-ts
 
-TypeScript core. Full parity with Go utilizing the same 25 spec vectors. ES256, ML-DSA-65, and composite verification.
+TypeScript core. Full parity with Go — same 31 spec vectors. ES256, ML-DSA-65, and composite verification.
 
 Dependencies: Node `crypto`, [`@noble/post-quantum`](https://github.com/paulmillr/noble-post-quantum), `cbor-x`.
 
 ```typescript
-import {
-  verifyRegistration,
-  verifyAuthentication,
-  COSE_ALG_ES256,                    // -7
-  COSE_ALG_MLDSA65,                  // -49
-  COSE_ALG_COMPOSITE_MLDSA65_ES256,  // -52
-} from "@open-passkey/core";
+import { verifyRegistration, verifyAuthentication } from "@open-passkey/core";
 ```
 
-The API mirrors the Go core. Same `verifyRegistration` / `verifyAuthentication` functions, same automatic algorithm dispatch based on the stored COSE key.
+Same API shape as Go. Automatic algorithm dispatch based on the stored COSE key.
 
 ### angular
 
-Headless Angular components and injectable service. Content projection for custom UI. Handles WebAuthn ceremony and server communication.
-
-28 tests passing.
+Headless Angular components and injectable service. Content projection for custom UI.
 
 ```typescript
-// app.config.ts
 import { providePasskey } from "@open-passkey/angular";
 
-export const appConfig = {
-  providers: [
-    provideHttpClient(),
-    providePasskey({ baseUrl: "/passkey" }),
-  ],
-};
+// In app.config.ts
+providers: [provideHttpClient(), providePasskey({ baseUrl: "/passkey" })]
 ```
 
 ```html
-<!-- Registration -->
 <passkey-register [userId]="userId" [username]="username"
-                  (registered)="onRegistered($event)"
-                  (error)="onError($event)" #reg>
-  <button (click)="reg.register()" [disabled]="reg.loading()">
-    Register Passkey
-  </button>
+                  (registered)="onRegistered($event)" #reg>
+  <button (click)="reg.register()" [disabled]="reg.loading()">Register Passkey</button>
 </passkey-register>
 
-<!-- Authentication -->
 <passkey-login [userId]="userId"
-               (authenticated)="onAuthenticated($event)"
-               (error)="onError($event)" #login>
-  <button (click)="login.login()" [disabled]="login.loading()">
-    Sign in with Passkey
-  </button>
+               (authenticated)="onAuthenticated($event)" #login>
+  <button (click)="login.login()" [disabled]="login.loading()">Sign In</button>
 </passkey-login>
 ```
 
-**Service API:**
+## Features
 
-```typescript
-import { PasskeyService } from "@open-passkey/angular";
+- **Attestation:** `none` and `packed` (self-attestation + full x5c certificate chain)
+- **Backup flags:** BE/BS exposed in results, spec conformance enforced (§6.3.3)
+- **PRF extension:** Salt generation, per-credential evaluation, output passthrough
+- **userHandle:** Cross-checked against credential owner in discoverable flow
+- **Sign count:** Rollback detection per §7.2
+- **Token binding:** `"present"` rejected, `"supported"` allowed
 
-@Component({ ... })
-class MyComponent {
-  private passkey = inject(PasskeyService);
+## Testing
 
-  register() {
-    this.passkey.register(userId, username).subscribe(result => { ... });
-  }
-  login() {
-    this.passkey.authenticate(userId).subscribe(result => { ... });
-  }
-}
-```
-
-The client passes through whatever algorithm the server and authenticator negotiate. No client-side changes needed for PQ support.
-
-## Cross-Language Testing
-
-Every implementation runs against the same JSON test vectors in `spec/vectors/`. These contain real WebAuthn payloads generated by a software authenticator, covering both happy paths and failure modes. When a bug is found in any language, a new vector is added and all implementations gain the test case automatically.
-
-**Registration** (9 vectors):
-- ES256 + none attestation
-- RP ID mismatch
-- Challenge mismatch
-- Origin mismatch
-- Wrong ceremony type
-- User Presence (UP) flag missing
-- User Verified (UV) flag missing (passes — UV optional by default)
-- Packed attestation format rejected
-- Token binding present rejected
-
-**Authentication** (10 vectors):
-- ES256 signature
-- RP ID mismatch
-- Challenge mismatch
-- Tampered signature
-- Wrong ceremony type
-- User Presence (UP) flag missing
-- User Verified (UV) flag missing (passes — UV optional by default)
-- Sign count both zero (passes per spec)
-- Sign count rollback detected
-- Token binding "supported" (passes — only "present" rejected)
-
-**Hybrid PQ** (6 vectors):
-- ML-DSA-65-ES256 composite
-- RP ID mismatch
-- Challenge mismatch
-- ML-DSA component tampered
-- ECDSA component tampered
-- Wrong ceremony type
+31 shared test vectors across 3 ceremony files, verified in both Go and TypeScript:
 
 ```bash
-# Go core
-cd packages/core-go && go test ./... -v
-
-# Go server
-cd packages/server-go && go test ./... -v
-
-# TypeScript core
-cd packages/core-ts && npm test
-
-# Angular
-cd packages/angular && npm test
+./scripts/test-all.sh
 ```
+
+| Package | Tests | Description |
+|---------|-------|-------------|
+| core-go | 31 vectors | Spec vector verification |
+| core-ts | 31 vectors | Same vectors, TypeScript |
+| server-go | 31 tests | HTTP handlers, stores, userHandle |
+| angular | 37 tests | Components, service, PRF, userHandle |
 
 ## Development
 
-### Prerequisites
-
-- Go 1.21+
-- Node.js 18+ (for TypeScript packages)
-
-### Generate test vectors
-
-The vector generator uses a software authenticator to produce real WebAuthn payloads:
+**Prerequisites:** Go 1.21+, Node.js 18+
 
 ```bash
-cd tools/vecgen
-go run main.go -out ../../spec/vectors
+# Generate test vectors
+cd tools/vecgen && go run main.go -out ../../spec/vectors
+
+# Run all tests
+./scripts/test-all.sh
 ```
 
 ## Roadmap
 
-- [x] Go core: registration + authentication verification
-- [x] Go HTTP server bindings: 4 handlers, pluggable stores
-- [x] TypeScript core: same 25 spec vectors, full parity
-- [x] Angular bindings: headless components, injectable service
-- [x] Hybrid PQ: ML-DSA-65-ES256 composite in Go + TypeScript
-- [x] 25 shared test vectors across 3 ceremonies
-- [x] Sign count rollback detection
-- [x] PRF extension support
-- [x] User presence / user verification flag enforcement
-- [x] Attestation format validation (`none` only; rejects unsupported formats)
-- [x] Token binding handling
-- [ ] React component bindings
-- [ ] Additional attestation formats (packed, TPM, Android)
-- [ ] Backup flags (BE/BS) enforcement options
+- [x] ES256 + ML-DSA-65 + ML-DSA-65-ES256 composite verification (Go + TypeScript)
+- [x] Go HTTP server bindings with pluggable stores
+- [x] Angular headless components + service
+- [x] Packed attestation (self + x5c)
+- [x] Backup flags, userHandle verification, PRF extension
+- [x] 31 shared cross-language test vectors
+- [ ] React hooks and components
+- [ ] Additional attestation formats (TPM, Android)
 
 ## Contributing
 
-Strict TDD. To add a new test case:
+Strict TDD. To add a test case:
 
-1. Add a vector to `spec/vectors/` (or update `tools/vecgen/main.go` and regenerate)
-2. Run tests in all languages. The new vector should fail.
-3. Implement the fix in each language.
-4. All vectors pass = done.
+1. Update `tools/vecgen/main.go` and regenerate vectors
+2. Run `./scripts/test-all.sh` — new vector should fail
+3. Implement in each language until all pass
 
-**New language implementation:** Create `packages/core-{lang}/`, write a test runner that loads `spec/vectors/*.json`, implement until all 25 vectors pass.
+**New language:** Create `packages/core-{lang}/`, load `spec/vectors/*.json`, implement until all 31 vectors pass.
 
 ## License
 

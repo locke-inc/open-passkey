@@ -13,6 +13,8 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -22,6 +24,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/cloudflare/circl/sign/mldsa/mldsa65"
 	"github.com/fxamacker/cbor/v2"
@@ -205,6 +208,105 @@ func makeAttestationObjectWithFmt(authData []byte, fmt string) []byte {
 	data, err := cbor.Marshal(obj)
 	if err != nil {
 		log.Fatalf("attestationObject marshal failed: %v", err)
+	}
+	return data
+}
+
+// makePackedSelfAttestationObject creates a packed attestation object with self-attestation.
+// The signature is over authData || SHA256(clientDataJSON), signed by the authenticator's key.
+func (a *softAuthenticator) makePackedSelfAttestationObject(authData, clientDataJSON []byte) []byte {
+	clientDataHash := sha256.Sum256(clientDataJSON)
+	sigInput := append(authData, clientDataHash[:]...)
+	hash := sha256.Sum256(sigInput)
+
+	r, s, err := ecdsa.Sign(rand.Reader, a.privateKey, hash[:])
+	if err != nil {
+		log.Fatalf("packed self-attestation signing failed: %v", err)
+	}
+	sig := marshalDER(r, s)
+
+	obj := map[string]interface{}{
+		"fmt": "packed",
+		"attStmt": map[string]interface{}{
+			"alg": -7, // ES256
+			"sig": sig,
+		},
+		"authData": authData,
+	}
+	data, err := cbor.Marshal(obj)
+	if err != nil {
+		log.Fatalf("packed attestationObject marshal failed: %v", err)
+	}
+	return data
+}
+
+// makePackedFullAttestationObject creates a packed attestation object with x5c (full attestation).
+// Uses a self-signed certificate containing the authenticator's public key.
+func (a *softAuthenticator) makePackedFullAttestationObject(authData, clientDataJSON []byte) ([]byte, []byte) {
+	// Create a self-signed certificate for the authenticator key
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "Test Attestation"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &a.privateKey.PublicKey, a.privateKey)
+	if err != nil {
+		log.Fatalf("creating attestation certificate: %v", err)
+	}
+
+	clientDataHash := sha256.Sum256(clientDataJSON)
+	sigInput := append(authData, clientDataHash[:]...)
+	hash := sha256.Sum256(sigInput)
+
+	r, s, err := ecdsa.Sign(rand.Reader, a.privateKey, hash[:])
+	if err != nil {
+		log.Fatalf("packed full attestation signing failed: %v", err)
+	}
+	sig := marshalDER(r, s)
+
+	obj := map[string]interface{}{
+		"fmt": "packed",
+		"attStmt": map[string]interface{}{
+			"alg": -7, // ES256
+			"sig": sig,
+			"x5c": [][]byte{certDER},
+		},
+		"authData": authData,
+	}
+	data, err := cbor.Marshal(obj)
+	if err != nil {
+		log.Fatalf("packed full attestationObject marshal failed: %v", err)
+	}
+	return data, certDER
+}
+
+// makePackedSelfAttestationObjectBadSig creates a packed self-attestation with a tampered signature.
+func (a *softAuthenticator) makePackedSelfAttestationObjectBadSig(authData, clientDataJSON []byte) []byte {
+	clientDataHash := sha256.Sum256(clientDataJSON)
+	sigInput := append(authData, clientDataHash[:]...)
+	hash := sha256.Sum256(sigInput)
+
+	r, s, err := ecdsa.Sign(rand.Reader, a.privateKey, hash[:])
+	if err != nil {
+		log.Fatalf("packed self-attestation signing failed: %v", err)
+	}
+	sig := marshalDER(r, s)
+	// Tamper with the signature
+	sig[len(sig)-1] ^= 0xFF
+
+	obj := map[string]interface{}{
+		"fmt": "packed",
+		"attStmt": map[string]interface{}{
+			"alg": -7,
+			"sig": sig,
+		},
+		"authData": authData,
+	}
+	data, err := cbor.Marshal(obj)
+	if err != nil {
+		log.Fatalf("packed attestationObject marshal failed: %v", err)
 	}
 	return data
 }
@@ -609,7 +711,7 @@ func generateRegistrationVectors() VectorFile {
 		})
 	}
 
-	// --- Packed attestation (unsupported format) ---
+	// --- Packed attestation with empty attStmt (invalid) ---
 	{
 		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
 		flags := byte(0x01 | 0x04 | 0x40)
@@ -617,8 +719,8 @@ func generateRegistrationVectors() VectorFile {
 		attestationObject := makeAttestationObjectWithFmt(authData, "packed")
 
 		vectors.Vectors = append(vectors.Vectors, TestVector{
-			Name:        "registration_packed_attestation",
-			Description: "Registration with fmt 'packed' attestation format, which is not supported.",
+			Name:        "registration_packed_attestation_empty_stmt",
+			Description: "Registration with fmt 'packed' but empty attStmt (missing alg and sig).",
 			Input: map[string]any{
 				"rpId":              rpID,
 				"expectedChallenge": challenge,
@@ -635,7 +737,143 @@ func generateRegistrationVectors() VectorFile {
 			},
 			Expected: Expected{
 				Success: false,
-				Error:   "unsupported_attestation_format",
+				Error:   "invalid_attestation_statement",
+			},
+		})
+	}
+
+	// --- Packed self-attestation (valid) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x04 | 0x40)
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := auth.makePackedSelfAttestationObject(authData, clientDataJSON)
+
+		rpIDHash := sha256.Sum256([]byte(rpID))
+		signCount := uint32(0)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_packed_self_attestation",
+			Description: "A valid registration with packed self-attestation (no x5c). Signature verified against credential public key.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:       true,
+				CredentialID:  b64Encode(auth.credentialID),
+				PublicKeyCOSE: b64Encode(auth.publicKeyCOSE),
+				SignCount:     &signCount,
+				RPIDHash:      b64Encode(rpIDHash[:]),
+			},
+		})
+	}
+
+	// --- Packed self-attestation with bad signature ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x04 | 0x40)
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := auth.makePackedSelfAttestationObjectBadSig(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_packed_self_attestation_bad_sig",
+			Description: "Registration with packed self-attestation where the signature is tampered.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "signature_invalid",
+			},
+		})
+	}
+
+	// --- Packed full attestation with x5c (valid) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x04 | 0x40)
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject, _ := auth.makePackedFullAttestationObject(authData, clientDataJSON)
+
+		rpIDHash := sha256.Sum256([]byte(rpID))
+		signCount := uint32(0)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_packed_full_attestation",
+			Description: "A valid registration with packed full attestation (x5c present). Signature verified against x5c[0] certificate.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:       true,
+				CredentialID:  b64Encode(auth.credentialID),
+				PublicKeyCOSE: b64Encode(auth.publicKeyCOSE),
+				SignCount:     &signCount,
+				RPIDHash:      b64Encode(rpIDHash[:]),
+			},
+		})
+	}
+
+	// --- Backup state without backup eligible (invalid per §6.3.3) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x10 | 0x40) // UP + BS + AT (BE=0, BS=1 is invalid)
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := makeAttestationObject(authData)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_backup_state_without_eligible",
+			Description: "Registration where BS=1 but BE=0, which is invalid per spec §6.3.3.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "invalid_backup_state",
 			},
 		})
 	}
@@ -1013,6 +1251,76 @@ func generateAuthenticationVectors() VectorFile {
 			Expected: Expected{
 				Success: false,
 				Error:   "sign_count_rollback",
+			},
+		})
+	}
+
+	// --- Backup eligible flag set (should pass) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x08) // UP + BE
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		signCount := auth.signCount
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_backup_eligible",
+			Description: "Authentication where BE flag (bit 3) is set. Should pass and report backupEligible: true.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:   true,
+				SignCount: &signCount,
+			},
+		})
+	}
+
+	// --- Backup state without eligible (invalid) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x10) // UP + BS (BE=0, BS=1 is invalid)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_backup_state_without_eligible",
+			Description: "Authentication where BS=1 but BE=0, which is invalid per spec §6.3.3.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "invalid_backup_state",
 			},
 		})
 	}

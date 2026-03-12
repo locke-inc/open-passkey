@@ -536,6 +536,145 @@ func TestMemoryChallengeStore_ExpiredCleanup(t *testing.T) {
 	}
 }
 
+// --- userHandle verification tests ---
+
+func TestFinishAuthentication_UserHandleMismatch(t *testing.T) {
+	cs := passkey.NewMemoryChallengeStore()
+	credStore := passkey.NewMemoryCredentialStore()
+
+	credStore.Store(passkey.StoredCredential{
+		CredentialID:  []byte{1, 2, 3},
+		PublicKeyCOSE: []byte{4, 5, 6},
+		UserID:        "alice",
+	})
+
+	p, _ := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  cs,
+		CredentialStore: credStore,
+	})
+
+	// Store a challenge for alice
+	cs.Store("alice", "test-challenge", 5*60*1e9)
+
+	// userHandle encodes "bob" but credential belongs to "alice"
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"userId": "alice",
+		"credential": map[string]any{
+			"id":    "AQID", // base64url of [1,2,3]
+			"rawId": "AQID",
+			"type":  "public-key",
+			"response": map[string]any{
+				"clientDataJSON":    "fake",
+				"authenticatorData": "fake",
+				"signature":         "fake",
+				"userHandle":        "Ym9i", // base64url of "bob"
+			},
+		},
+	})
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for userHandle mismatch, got %d: %s", w.Code, w.Body.String())
+	}
+	resp := decodeResponse(t, w)
+	if resp["error"] != "userHandle does not match credential owner" {
+		t.Errorf("unexpected error: %v", resp["error"])
+	}
+}
+
+func TestFinishAuthentication_UserHandleMatch(t *testing.T) {
+	cs := passkey.NewMemoryChallengeStore()
+	credStore := passkey.NewMemoryCredentialStore()
+
+	credStore.Store(passkey.StoredCredential{
+		CredentialID:  []byte{1, 2, 3},
+		PublicKeyCOSE: []byte{4, 5, 6},
+		UserID:        "alice",
+	})
+
+	p, _ := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  cs,
+		CredentialStore: credStore,
+	})
+
+	cs.Store("alice", "test-challenge", 5*60*1e9)
+
+	// userHandle encodes "alice" — matches credential owner
+	// This will still fail at verification (fake data) but should get past the userHandle check
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"userId": "alice",
+		"credential": map[string]any{
+			"id":    "AQID",
+			"rawId": "AQID",
+			"type":  "public-key",
+			"response": map[string]any{
+				"clientDataJSON":    "fake",
+				"authenticatorData": "fake",
+				"signature":         "fake",
+				"userHandle":        "YWxpY2U", // base64url of "alice"
+			},
+		},
+	})
+	// Should fail with verification error, NOT userHandle mismatch
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+	resp := decodeResponse(t, w)
+	errMsg := resp["error"].(string)
+	if errMsg == "userHandle does not match credential owner" {
+		t.Error("should have passed userHandle check but didn't")
+	}
+}
+
+func TestFinishAuthentication_NoUserHandle(t *testing.T) {
+	cs := passkey.NewMemoryChallengeStore()
+	credStore := passkey.NewMemoryCredentialStore()
+
+	credStore.Store(passkey.StoredCredential{
+		CredentialID:  []byte{1, 2, 3},
+		PublicKeyCOSE: []byte{4, 5, 6},
+		UserID:        "alice",
+	})
+
+	p, _ := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  cs,
+		CredentialStore: credStore,
+	})
+
+	cs.Store("alice", "test-challenge", 5*60*1e9)
+
+	// No userHandle — non-discoverable flow, should skip the check
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"userId": "alice",
+		"credential": map[string]any{
+			"id":    "AQID",
+			"rawId": "AQID",
+			"type":  "public-key",
+			"response": map[string]any{
+				"clientDataJSON":    "fake",
+				"authenticatorData": "fake",
+				"signature":         "fake",
+			},
+		},
+	})
+	// Should fail with verification error, NOT userHandle error
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+	resp := decodeResponse(t, w)
+	errMsg := resp["error"].(string)
+	if errMsg == "userHandle does not match credential owner" || errMsg == "invalid userHandle encoding" {
+		t.Errorf("should have skipped userHandle check but got: %s", errMsg)
+	}
+}
+
 func TestBeginAuthentication_NoPRFForNonPRFCredentials(t *testing.T) {
 	cs := passkey.NewMemoryChallengeStore()
 	credStore := passkey.NewMemoryCredentialStore()

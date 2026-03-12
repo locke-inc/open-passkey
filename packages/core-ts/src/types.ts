@@ -13,6 +13,10 @@ export interface RegistrationResult {
   signCount: number;
   rpIdHash: Uint8Array;
   flags: number;
+  backupEligible: boolean;
+  backupState: boolean;
+  attestationFormat: string;
+  attestationX5C?: Uint8Array[];
 }
 
 export interface AuthenticationInput {
@@ -30,4 +34,6 @@ export interface AuthenticationInput {
 export interface AuthenticationResult {
   signCount: number;
   flags: number;
+  backupEligible: boolean;
+  backupState: boolean;
 }

@@ -94,6 +94,7 @@ export interface FinishAuthenticationRequest {
       clientDataJSON: string;
       authenticatorData: string;
       signature: string;
+      userHandle?: string;
     };
   };
 }

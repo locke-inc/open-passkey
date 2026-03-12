@@ -72,6 +72,8 @@ var sentinelErrors = map[string]error{
 	"user_verification_required":      webauthn.ErrUserVerificationRequired,
 	"unsupported_attestation_format":  webauthn.ErrUnsupportedAttestationFormat,
 	"token_binding_unsupported":       webauthn.ErrTokenBindingUnsupported,
+	"invalid_backup_state":            webauthn.ErrInvalidBackupState,
+	"invalid_attestation_statement":   webauthn.ErrInvalidAttestationStatement,
 }
 
 func assertExpectedError(t *testing.T, err error, expectedCode string) {

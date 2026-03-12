@@ -32,6 +32,8 @@ export {
   UserVerificationRequiredError,
   UnsupportedAttestationFormatError,
   TokenBindingUnsupportedError,
+  InvalidBackupStateError,
+  InvalidAttestationStatementError,
 } from "./errors.js";
 export {
   COSE_ALG_ES256,

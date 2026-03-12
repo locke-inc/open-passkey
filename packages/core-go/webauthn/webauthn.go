@@ -16,6 +16,7 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/subtle"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -60,8 +61,10 @@ var (
 	ErrSignCountRollback            = errors.New("sign_count_rollback")
 	ErrUserPresenceRequired         = errors.New("user_presence_required")
 	ErrUserVerificationRequired     = errors.New("user_verification_required")
-	ErrUnsupportedAttestationFormat = errors.New("unsupported_attestation_format")
-	ErrTokenBindingUnsupported      = errors.New("token_binding_unsupported")
+	ErrUnsupportedAttestationFormat    = errors.New("unsupported_attestation_format")
+	ErrTokenBindingUnsupported         = errors.New("token_binding_unsupported")
+	ErrInvalidBackupState              = errors.New("invalid_backup_state")
+	ErrInvalidAttestationStatement     = errors.New("invalid_attestation_statement")
 )
 
 // --- Public input/output types ---
@@ -76,11 +79,15 @@ type RegistrationInput struct {
 }
 
 type RegistrationResult struct {
-	CredentialID  []byte
-	PublicKeyCOSE []byte
-	SignCount     uint32
-	RPIDHash      []byte
-	Flags         byte
+	CredentialID      []byte
+	PublicKeyCOSE     []byte
+	SignCount         uint32
+	RPIDHash          []byte
+	Flags             byte
+	BackupEligible    bool     // BE flag (bit 3): credential can be backed up/synced
+	BackupState       bool     // BS flag (bit 4): credential is currently backed up
+	AttestationFormat string   // "none" or "packed"
+	AttestationX5C    [][]byte // x5c certificate chain (nil for "none" and self-attestation)
 }
 
 type AuthenticationInput struct {
@@ -96,8 +103,10 @@ type AuthenticationInput struct {
 }
 
 type AuthenticationResult struct {
-	SignCount uint32
-	Flags     byte
+	SignCount      uint32
+	Flags          byte
+	BackupEligible bool
+	BackupState    bool
 }
 
 // --- clientDataJSON parsing ---
@@ -201,12 +210,25 @@ func verifyRPIDHash(authDataRPIDHash []byte, rpID string) error {
 
 // --- Attestation object ---
 
-type attestationObject struct {
-	Fmt      string `cbor:"fmt"`
-	AuthData []byte `cbor:"authData"`
+type attestationStatement struct {
+	Alg int
+	Sig []byte
+	X5C [][]byte // nil for self-attestation
 }
 
-func decodeAttestationObject(attObjB64 string) ([]byte, error) {
+type decodedAttestation struct {
+	Fmt      string
+	AuthData []byte
+	AttStmt  *attestationStatement // nil for "none"
+}
+
+type attestationObject struct {
+	Fmt      string          `cbor:"fmt"`
+	AuthData []byte          `cbor:"authData"`
+	AttStmt  cbor.RawMessage `cbor:"attStmt"`
+}
+
+func decodeAttestationObject(attObjB64 string) (*decodedAttestation, error) {
 	raw, err := b64Decode(attObjB64)
 	if err != nil {
 		return nil, fmt.Errorf("decoding attestationObject: %w", err)
@@ -215,10 +237,93 @@ func decodeAttestationObject(attObjB64 string) ([]byte, error) {
 	if err := cborDecMode.Unmarshal(raw, &obj); err != nil {
 		return nil, fmt.Errorf("CBOR decoding attestationObject: %w", err)
 	}
-	if obj.Fmt != "none" {
+	switch obj.Fmt {
+	case "none":
+		return &decodedAttestation{Fmt: "none", AuthData: obj.AuthData}, nil
+	case "packed":
+		stmt, err := decodePackedAttStmt(obj.AttStmt)
+		if err != nil {
+			return nil, err
+		}
+		return &decodedAttestation{Fmt: "packed", AuthData: obj.AuthData, AttStmt: stmt}, nil
+	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedAttestationFormat, obj.Fmt)
 	}
-	return obj.AuthData, nil
+}
+
+func decodePackedAttStmt(raw cbor.RawMessage) (*attestationStatement, error) {
+	var m map[string]cbor.RawMessage
+	if err := cborDecMode.Unmarshal(raw, &m); err != nil {
+		return nil, fmt.Errorf("%w: decoding attStmt", ErrInvalidAttestationStatement)
+	}
+
+	algRaw, ok := m["alg"]
+	if !ok {
+		return nil, fmt.Errorf("%w: missing alg", ErrInvalidAttestationStatement)
+	}
+	var alg int
+	if err := cborDecMode.Unmarshal(algRaw, &alg); err != nil {
+		return nil, fmt.Errorf("%w: decoding alg", ErrInvalidAttestationStatement)
+	}
+
+	sigRaw, ok := m["sig"]
+	if !ok {
+		return nil, fmt.Errorf("%w: missing sig", ErrInvalidAttestationStatement)
+	}
+	var sig []byte
+	if err := cborDecMode.Unmarshal(sigRaw, &sig); err != nil {
+		return nil, fmt.Errorf("%w: decoding sig", ErrInvalidAttestationStatement)
+	}
+
+	stmt := &attestationStatement{Alg: alg, Sig: sig}
+
+	if x5cRaw, ok := m["x5c"]; ok {
+		var x5c [][]byte
+		if err := cborDecMode.Unmarshal(x5cRaw, &x5c); err != nil {
+			return nil, fmt.Errorf("%w: decoding x5c", ErrInvalidAttestationStatement)
+		}
+		stmt.X5C = x5c
+	}
+
+	return stmt, nil
+}
+
+// verifyPackedAttestation verifies a packed attestation statement per WebAuthn §8.2.
+func verifyPackedAttestation(att *decodedAttestation, clientDataJSONRaw, credentialKey []byte) error {
+	if att.AttStmt.X5C != nil {
+		// Full attestation: verify with x5c[0] certificate
+		return verifyPackedFullAttestation(att.AttStmt, att.AuthData, clientDataJSONRaw)
+	}
+	// Self-attestation: verify with credential public key
+	return verifySignature(credentialKey, att.AuthData, clientDataJSONRaw, att.AttStmt.Sig)
+}
+
+func verifyPackedFullAttestation(stmt *attestationStatement, authData, clientDataJSONRaw []byte) error {
+	if len(stmt.X5C) == 0 {
+		return fmt.Errorf("%w: x5c is empty", ErrInvalidAttestationStatement)
+	}
+	cert, err := x509.ParseCertificate(stmt.X5C[0])
+	if err != nil {
+		return fmt.Errorf("parsing attestation certificate: %w", err)
+	}
+
+	clientDataHash := sha256.Sum256(clientDataJSONRaw)
+	verifyData := append(authData, clientDataHash[:]...)
+	hash := sha256.Sum256(verifyData)
+
+	switch stmt.Alg {
+	case AlgES256:
+		ecKey, ok := cert.PublicKey.(*ecdsa.PublicKey)
+		if !ok {
+			return ErrSignatureInvalid
+		}
+		if !ecdsa.VerifyASN1(ecKey, hash[:], stmt.Sig) {
+			return ErrSignatureInvalid
+		}
+	default:
+		return fmt.Errorf("%w: attestation alg %d", ErrUnsupportedAlg, stmt.Alg)
+	}
+	return nil
 }
 
 // --- COSE key decoding (multi-algorithm) ---
@@ -436,17 +541,17 @@ func verifySignature(coseKeyData, authData, clientDataJSON, signatureBytes []byt
 // --- Public API ---
 
 func VerifyRegistration(input RegistrationInput) (*RegistrationResult, error) {
-	_, err := verifyClientData(input.ClientDataJSON, "webauthn.create", input.ExpectedChallenge, input.ExpectedOrigin)
+	clientDataJSONRaw, err := verifyClientData(input.ClientDataJSON, "webauthn.create", input.ExpectedChallenge, input.ExpectedOrigin)
 	if err != nil {
 		return nil, err
 	}
 
-	authData, err := decodeAttestationObject(input.AttestationObject)
+	att, err := decodeAttestationObject(input.AttestationObject)
 	if err != nil {
 		return nil, err
 	}
 
-	pad, err := parseAuthenticatorData(authData, true)
+	pad, err := parseAuthenticatorData(att.AuthData, true)
 	if err != nil {
 		return nil, err
 	}
@@ -462,13 +567,32 @@ func VerifyRegistration(input RegistrationInput) (*RegistrationResult, error) {
 		return nil, ErrUserVerificationRequired
 	}
 
-	return &RegistrationResult{
-		CredentialID:  pad.CredentialID,
-		PublicKeyCOSE: pad.CredentialKey,
-		SignCount:     pad.SignCount,
-		RPIDHash:      pad.RPIDHash,
-		Flags:         pad.Flags,
-	}, nil
+	// BS must be 0 if BE is 0 (§6.3.3)
+	if pad.Flags&0x08 == 0 && pad.Flags&0x10 != 0 {
+		return nil, ErrInvalidBackupState
+	}
+
+	// Verify packed attestation if present
+	if att.Fmt == "packed" {
+		if err := verifyPackedAttestation(att, clientDataJSONRaw, pad.CredentialKey); err != nil {
+			return nil, err
+		}
+	}
+
+	result := &RegistrationResult{
+		CredentialID:      pad.CredentialID,
+		PublicKeyCOSE:     pad.CredentialKey,
+		SignCount:         pad.SignCount,
+		RPIDHash:          pad.RPIDHash,
+		Flags:             pad.Flags,
+		BackupEligible:    pad.Flags&0x08 != 0,
+		BackupState:       pad.Flags&0x10 != 0,
+		AttestationFormat: att.Fmt,
+	}
+	if att.AttStmt != nil && att.AttStmt.X5C != nil {
+		result.AttestationX5C = att.AttStmt.X5C
+	}
+	return result, nil
 }
 
 func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, error) {
@@ -498,6 +622,11 @@ func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, err
 		return nil, ErrUserVerificationRequired
 	}
 
+	// BS must be 0 if BE is 0 (§6.3.3)
+	if pad.Flags&0x08 == 0 && pad.Flags&0x10 != 0 {
+		return nil, ErrInvalidBackupState
+	}
+
 	sigBytes, err := b64Decode(input.Signature)
 	if err != nil {
 		return nil, fmt.Errorf("decoding signature: %w", err)
@@ -514,8 +643,10 @@ func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, err
 	}
 
 	return &AuthenticationResult{
-		SignCount: pad.SignCount,
-		Flags:     pad.Flags,
+		SignCount:      pad.SignCount,
+		Flags:          pad.Flags,
+		BackupEligible: pad.Flags&0x08 != 0,
+		BackupState:    pad.Flags&0x10 != 0,
 	}, nil
 }
 
