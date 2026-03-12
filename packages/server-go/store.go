@@ -46,6 +46,10 @@ type CredentialStore interface {
 
 	// Update updates an existing credential (e.g., sign count after authentication).
 	Update(cred StoredCredential) error
+
+	// Delete removes a credential by its credential ID.
+	// Returns ErrCredentialNotFound if not found.
+	Delete(credentialID []byte) error
 }
 
 // --- In-memory challenge store ---
@@ -55,11 +59,14 @@ type challengeEntry struct {
 	expiresAt time.Time
 }
 
+const challengeCleanupInterval = 100
+
 // MemoryChallengeStore is a thread-safe, in-memory ChallengeStore.
 // Suitable for development, testing, and single-instance deployments.
 type MemoryChallengeStore struct {
-	mu      sync.Mutex
-	entries map[string]challengeEntry
+	mu         sync.Mutex
+	entries    map[string]challengeEntry
+	writeCount int
 }
 
 func NewMemoryChallengeStore() *MemoryChallengeStore {
@@ -74,6 +81,16 @@ func (s *MemoryChallengeStore) Store(key, challenge string, timeout time.Duratio
 	s.entries[key] = challengeEntry{
 		challenge: challenge,
 		expiresAt: time.Now().Add(timeout),
+	}
+	s.writeCount++
+	if s.writeCount >= challengeCleanupInterval {
+		s.writeCount = 0
+		now := time.Now()
+		for k, e := range s.entries {
+			if now.After(e.expiresAt) {
+				delete(s.entries, k)
+			}
+		}
 	}
 	return nil
 }
@@ -141,6 +158,18 @@ func (s *MemoryCredentialStore) Update(cred StoredCredential) error {
 	for i, c := range s.creds {
 		if bytesEqual(c.CredentialID, cred.CredentialID) {
 			s.creds[i] = cred
+			return nil
+		}
+	}
+	return ErrCredentialNotFound
+}
+
+func (s *MemoryCredentialStore) Delete(credentialID []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, c := range s.creds {
+		if bytesEqual(c.CredentialID, credentialID) {
+			s.creds = append(s.creds[:i], s.creds[i+1:]...)
 			return nil
 		}
 	}

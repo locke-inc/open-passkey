@@ -4,6 +4,7 @@ export interface RegistrationInput {
   expectedOrigin: string;
   clientDataJSON: string; // base64url-encoded
   attestationObject: string; // base64url-encoded
+  requireUserVerification?: boolean;
 }
 
 export interface RegistrationResult {
@@ -11,6 +12,7 @@ export interface RegistrationResult {
   publicKeyCose: Uint8Array;
   signCount: number;
   rpIdHash: Uint8Array;
+  flags: number;
 }
 
 export interface AuthenticationInput {
@@ -22,8 +24,10 @@ export interface AuthenticationInput {
   clientDataJSON: string; // base64url-encoded
   authenticatorData: string; // base64url-encoded
   signature: string; // base64url-encoded
+  requireUserVerification?: boolean;
 }
 
 export interface AuthenticationResult {
   signCount: number;
+  flags: number;
 }

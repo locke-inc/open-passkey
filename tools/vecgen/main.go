@@ -167,11 +167,38 @@ func makeClientDataJSON(typ, challenge, origin string) []byte {
 	return data
 }
 
+func makeClientDataJSONWithTokenBinding(typ, challenge, origin string, tokenBinding map[string]string) []byte {
+	cd := map[string]any{
+		"type":         typ,
+		"challenge":    challenge,
+		"origin":       origin,
+		"tokenBinding": tokenBinding,
+	}
+	data, err := json.Marshal(cd)
+	if err != nil {
+		log.Fatalf("clientDataJSON marshal failed: %v", err)
+	}
+	return data
+}
+
 // --- Attestation object (none format) ---
 
 func makeAttestationObject(authData []byte) []byte {
 	obj := map[string]interface{}{
 		"fmt":      "none",
+		"attStmt":  map[string]interface{}{},
+		"authData": authData,
+	}
+	data, err := cbor.Marshal(obj)
+	if err != nil {
+		log.Fatalf("attestationObject marshal failed: %v", err)
+	}
+	return data
+}
+
+func makeAttestationObjectWithFmt(authData []byte, fmt string) []byte {
+	obj := map[string]interface{}{
+		"fmt":      fmt,
 		"attStmt":  map[string]interface{}{},
 		"authData": authData,
 	}
@@ -514,6 +541,139 @@ func generateRegistrationVectors() VectorFile {
 		})
 	}
 
+	// --- UP flag missing ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x40) // AT set, UP cleared
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := makeAttestationObject(authData)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_up_missing",
+			Description: "Registration where the User Present (UP) flag is not set in authenticator data.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "user_presence_required",
+			},
+		})
+	}
+
+	// --- UV flag missing (should still pass — UV not required by default) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x40) // UP + AT, UV cleared
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := makeAttestationObject(authData)
+
+		rpIDHash := sha256.Sum256([]byte(rpID))
+		signCount := uint32(0)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_uv_missing",
+			Description: "Registration where the User Verified (UV) flag is not set. Should pass since UV is not required by default.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:      true,
+				CredentialID: b64Encode(auth.credentialID),
+				PublicKeyCOSE: b64Encode(auth.publicKeyCOSE),
+				SignCount:    &signCount,
+				RPIDHash:     b64Encode(rpIDHash[:]),
+			},
+		})
+	}
+
+	// --- Packed attestation (unsupported format) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x04 | 0x40)
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := makeAttestationObjectWithFmt(authData, "packed")
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_packed_attestation",
+			Description: "Registration with fmt 'packed' attestation format, which is not supported.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "unsupported_attestation_format",
+			},
+		})
+	}
+
+	// --- Token binding present (unsupported) ---
+	{
+		clientDataJSON := makeClientDataJSONWithTokenBinding("webauthn.create", challenge, origin, map[string]string{
+			"status": "present",
+			"id":     "dGVzdC1iaW5kaW5nLWlk",
+		})
+		flags := byte(0x01 | 0x04 | 0x40)
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		attestationObject := makeAttestationObject(authData)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "registration_token_binding_present",
+			Description: "Registration where clientDataJSON includes tokenBinding with status 'present', which we cannot verify.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "token_binding_unsupported",
+			},
+		})
+	}
+
 	return vectors
 }
 
@@ -709,6 +869,188 @@ func generateAuthenticationVectors() VectorFile {
 			Expected: Expected{
 				Success: false,
 				Error:   "type_mismatch",
+			},
+		})
+	}
+
+	// --- UP flag missing ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x00) // UP cleared
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_up_missing",
+			Description: "Authentication where the User Present (UP) flag is not set in authenticator data.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "user_presence_required",
+			},
+		})
+	}
+
+	// --- UV flag missing (should still pass — UV not required by default) ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01) // UP set, UV cleared
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		signCount := auth.signCount
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_uv_missing",
+			Description: "Authentication where the User Verified (UV) flag is not set. Should pass since UV is not required by default.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:   true,
+				SignCount: &signCount,
+			},
+		})
+	}
+
+	// --- Sign count both zero (should pass per spec) ---
+	{
+		auth2 := newSoftAuthenticator()
+		auth2.signCount = 0
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x04) // UP + UV
+		authData := auth2.makeAuthenticatorData(rpID, flags, false)
+		signature := auth2.sign(authData, clientDataJSON)
+
+		signCount := uint32(0)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_sign_count_zero_zero",
+			Description: "Authentication where both stored and reported sign counts are zero. Per spec, this is fine (authenticators that don't increment).",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": b64Encode(auth2.publicKeyCOSE),
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth2.credentialID),
+					"rawId": b64Encode(auth2.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:   true,
+				SignCount: &signCount,
+			},
+		})
+	}
+
+	// --- Sign count rollback ---
+	{
+		auth3 := newSoftAuthenticator()
+		auth3.signCount = 3 // authenticator reports 3
+		clientDataJSON := makeClientDataJSON("webauthn.get", challenge, origin)
+		flags := byte(0x01 | 0x04)
+		authData := auth3.makeAuthenticatorData(rpID, flags, false)
+		signature := auth3.sign(authData, clientDataJSON)
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_sign_count_rollback",
+			Description: "Authentication where stored sign count (5) is greater than reported sign count (3), indicating a possible cloned authenticator.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": b64Encode(auth3.publicKeyCOSE),
+				"storedSignCount":     5, // stored is 5, reported is 3
+				"credential": map[string]any{
+					"id":    b64Encode(auth3.credentialID),
+					"rawId": b64Encode(auth3.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success: false,
+				Error:   "sign_count_rollback",
+			},
+		})
+	}
+
+	// --- Token binding "supported" (should pass) ---
+	{
+		clientDataJSON := makeClientDataJSONWithTokenBinding("webauthn.get", challenge, origin, map[string]string{
+			"status": "supported",
+		})
+		flags := byte(0x01 | 0x04)
+		authData := auth.makeAuthenticatorData(rpID, flags, false)
+		signature := auth.sign(authData, clientDataJSON)
+
+		signCount := auth.signCount
+
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "authentication_token_binding_supported",
+			Description: "Authentication where clientDataJSON includes tokenBinding with status 'supported'. This is fine — only 'present' is rejected.",
+			Input: map[string]any{
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
+				"storedPublicKeyCose": storedPublicKey,
+				"storedSignCount":     0,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"authenticatorData": b64Encode(authData),
+						"signature":         b64Encode(signature),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:   true,
+				SignCount: &signCount,
 			},
 		})
 	}

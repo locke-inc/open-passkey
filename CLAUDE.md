@@ -139,8 +139,8 @@ All binary data in vectors is base64url-encoded (no padding).
 ### Completed
 - [x] Repository scaffolding and monorepo structure
 - [x] Shared test vector generation tooling (`tools/vecgen/`)
-- [x] 16 test vectors: 5 registration + 5 ES256 authentication + 6 hybrid ML-DSA-65-ES256 authentication
-- [x] `core-go`: `webauthn.VerifyRegistration()` + `webauthn.VerifyAuthentication()` — all 16 spec vectors passing
+- [x] 25 test vectors: 9 registration + 10 ES256 authentication + 6 hybrid ML-DSA-65-ES256 authentication
+- [x] `core-go`: `webauthn.VerifyRegistration()` + `webauthn.VerifyAuthentication()` — all 25 spec vectors passing
 - [x] `core-go`: ES256, ML-DSA-65, and ML-DSA-65-ES256 composite signature verification
 - [x] `core-go`: Algorithm dispatch — reads COSE `alg` from stored key, verifies with correct algorithm
 - [x] `server-go`: HTTP handlers (`BeginRegistration`, `FinishRegistration`, `BeginAuthentication`, `FinishAuthentication`)
@@ -148,11 +148,18 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] `server-go`: `CredentialStore` interface + `MemoryCredentialStore`
 - [x] `server-go`: Config validation, challenge generation, discoverable credentials support
 - [x] `server-go`: Hybrid-preferred `pubKeyCredParams` (ML-DSA-65-ES256 first, ML-DSA-65 second, ES256 fallback)
-- [x] 16 isolated httptest-based tests for server-go (all passing)
-- [x] `core-ts`: TypeScript port — `verifyRegistration()` + `verifyAuthentication()` — all 16 spec vectors passing
+- [x] 28 isolated httptest-based tests for server-go (all passing)
+- [x] `core-ts`: TypeScript port — `verifyRegistration()` + `verifyAuthentication()` — all 25 spec vectors passing
 - [x] `core-ts`: ES256 via Node `crypto`, ML-DSA-65 via `@noble/post-quantum`, composite ML-DSA-65-ES256
 - [x] `core-ts`: COSE algorithm constants exported (`COSE_ALG_ES256`, `COSE_ALG_MLDSA65`, `COSE_ALG_COMPOSITE_MLDSA65_ES256`)
-- [x] Cross-language vector architecture proven (Go + TypeScript pass same 16 vectors)
+- [x] Cross-language vector architecture proven (Go + TypeScript pass same 25 vectors)
+- [x] User presence (UP) flag enforcement — always required per spec
+- [x] User verification (UV) flag enforcement — configurable via `RequireUserVerification`
+- [x] Attestation format validation — only `none` accepted, unsupported formats rejected
+- [x] Token binding handling — `status: "present"` rejected, `"supported"` allowed
+- [x] `server-go`: Input validation — RPID format (bare domain), Origin format (requires scheme)
+- [x] `server-go`: `CredentialStore.Delete()` method for credential revocation
+- [x] `server-go`: `MemoryChallengeStore` lazy cleanup of expired entries
 - [x] `angular`: Headless `PasskeyRegisterComponent` + `PasskeyLoginComponent` (content projection, signal-based)
 - [x] `angular`: `PasskeyService` — injectable service wrapping browser WebAuthn API + HTTP calls to server-go
 - [x] `angular`: `providePasskey()` provider function with configurable `baseUrl`
@@ -164,5 +171,4 @@ All binary data in vectors is base64url-encoded (no padding).
 ### Backlog
 - [ ] `spec/schema/` — JSON Schema for vector file validation
 - [ ] Additional attestation formats beyond "none" (packed, TPM, Android)
-- [ ] User presence / user verification flag enforcement options
-- [ ] Sign count rollback detection
+- [ ] Backup flags (BE/BS) enforcement options

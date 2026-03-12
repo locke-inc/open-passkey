@@ -57,17 +57,22 @@ var (
 	ErrAuthDataTooShort  = errors.New("authenticator_data_too_short")
 	ErrNoCredentialData  = errors.New("no_attested_credential_data")
 	ErrUnsupportedAlg    = errors.New("unsupported_cose_algorithm")
-	ErrSignCountRollback = errors.New("sign_count_rollback")
+	ErrSignCountRollback            = errors.New("sign_count_rollback")
+	ErrUserPresenceRequired         = errors.New("user_presence_required")
+	ErrUserVerificationRequired     = errors.New("user_verification_required")
+	ErrUnsupportedAttestationFormat = errors.New("unsupported_attestation_format")
+	ErrTokenBindingUnsupported      = errors.New("token_binding_unsupported")
 )
 
 // --- Public input/output types ---
 
 type RegistrationInput struct {
-	RPID              string
-	ExpectedChallenge string // base64url-encoded
-	ExpectedOrigin    string
-	ClientDataJSON    string // base64url-encoded
-	AttestationObject string // base64url-encoded
+	RPID                    string
+	ExpectedChallenge       string // base64url-encoded
+	ExpectedOrigin          string
+	ClientDataJSON          string // base64url-encoded
+	AttestationObject       string // base64url-encoded
+	RequireUserVerification bool   // If true, UV flag (bit 2) must be set. Default false.
 }
 
 type RegistrationResult struct {
@@ -75,29 +80,37 @@ type RegistrationResult struct {
 	PublicKeyCOSE []byte
 	SignCount     uint32
 	RPIDHash      []byte
+	Flags         byte
 }
 
 type AuthenticationInput struct {
-	RPID                string
-	ExpectedChallenge   string // base64url-encoded
-	ExpectedOrigin      string
-	StoredPublicKeyCOSE []byte
-	StoredSignCount     uint32
-	ClientDataJSON      string // base64url-encoded
-	AuthenticatorData   string // base64url-encoded
-	Signature           string // base64url-encoded
+	RPID                    string
+	ExpectedChallenge       string // base64url-encoded
+	ExpectedOrigin          string
+	StoredPublicKeyCOSE     []byte
+	StoredSignCount         uint32
+	ClientDataJSON          string // base64url-encoded
+	AuthenticatorData       string // base64url-encoded
+	Signature               string // base64url-encoded
+	RequireUserVerification bool   // If true, UV flag (bit 2) must be set. Default false.
 }
 
 type AuthenticationResult struct {
 	SignCount uint32
+	Flags     byte
 }
 
 // --- clientDataJSON parsing ---
 
+type tokenBindingData struct {
+	Status string `json:"status"`
+}
+
 type clientData struct {
-	Type      string `json:"type"`
-	Challenge string `json:"challenge"`
-	Origin    string `json:"origin"`
+	Type         string            `json:"type"`
+	Challenge    string            `json:"challenge"`
+	Origin       string            `json:"origin"`
+	TokenBinding *tokenBindingData `json:"tokenBinding,omitempty"`
 }
 
 func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expectedOrigin string) ([]byte, error) {
@@ -119,6 +132,9 @@ func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expect
 	}
 	if cd.Origin != expectedOrigin {
 		return nil, ErrOriginMismatch
+	}
+	if cd.TokenBinding != nil && cd.TokenBinding.Status == "present" {
+		return nil, ErrTokenBindingUnsupported
 	}
 
 	return raw, nil
@@ -186,6 +202,7 @@ func verifyRPIDHash(authDataRPIDHash []byte, rpID string) error {
 // --- Attestation object ---
 
 type attestationObject struct {
+	Fmt      string `cbor:"fmt"`
 	AuthData []byte `cbor:"authData"`
 }
 
@@ -197,6 +214,9 @@ func decodeAttestationObject(attObjB64 string) ([]byte, error) {
 	var obj attestationObject
 	if err := cborDecMode.Unmarshal(raw, &obj); err != nil {
 		return nil, fmt.Errorf("CBOR decoding attestationObject: %w", err)
+	}
+	if obj.Fmt != "none" {
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedAttestationFormat, obj.Fmt)
 	}
 	return obj.AuthData, nil
 }
@@ -435,11 +455,19 @@ func VerifyRegistration(input RegistrationInput) (*RegistrationResult, error) {
 		return nil, err
 	}
 
+	if pad.Flags&0x01 == 0 {
+		return nil, ErrUserPresenceRequired
+	}
+	if input.RequireUserVerification && pad.Flags&0x04 == 0 {
+		return nil, ErrUserVerificationRequired
+	}
+
 	return &RegistrationResult{
 		CredentialID:  pad.CredentialID,
 		PublicKeyCOSE: pad.CredentialKey,
 		SignCount:     pad.SignCount,
 		RPIDHash:      pad.RPIDHash,
+		Flags:         pad.Flags,
 	}, nil
 }
 
@@ -463,6 +491,13 @@ func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, err
 		return nil, err
 	}
 
+	if pad.Flags&0x01 == 0 {
+		return nil, ErrUserPresenceRequired
+	}
+	if input.RequireUserVerification && pad.Flags&0x04 == 0 {
+		return nil, ErrUserVerificationRequired
+	}
+
 	sigBytes, err := b64Decode(input.Signature)
 	if err != nil {
 		return nil, fmt.Errorf("decoding signature: %w", err)
@@ -480,6 +515,7 @@ func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, err
 
 	return &AuthenticationResult{
 		SignCount: pad.SignCount,
+		Flags:     pad.Flags,
 	}, nil
 }
 

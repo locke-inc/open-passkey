@@ -3,6 +3,7 @@ package passkey_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -419,6 +420,119 @@ func TestBeginAuthentication_NoPRFWithoutUserId(t *testing.T) {
 	resp := decodeResponse(t, w)
 	if resp["extensions"] != nil {
 		t.Error("discoverable flow should not include extensions")
+	}
+}
+
+// --- Input validation tests (Step 4) ---
+
+func TestNew_InvalidRPID_WithScheme(t *testing.T) {
+	_, err := passkey.New(passkey.Config{
+		RPID:            "https://example.com",
+		Origin:          "https://example.com",
+		ChallengeStore:  passkey.NewMemoryChallengeStore(),
+		CredentialStore: passkey.NewMemoryCredentialStore(),
+	})
+	if err == nil {
+		t.Fatal("expected error for RPID with scheme")
+	}
+}
+
+func TestNew_InvalidRPID_WithPath(t *testing.T) {
+	_, err := passkey.New(passkey.Config{
+		RPID:            "example.com/path",
+		Origin:          "https://example.com",
+		ChallengeStore:  passkey.NewMemoryChallengeStore(),
+		CredentialStore: passkey.NewMemoryCredentialStore(),
+	})
+	if err == nil {
+		t.Fatal("expected error for RPID with path")
+	}
+}
+
+func TestNew_InvalidRPID_WithPort(t *testing.T) {
+	_, err := passkey.New(passkey.Config{
+		RPID:            "example.com:8080",
+		Origin:          "https://example.com",
+		ChallengeStore:  passkey.NewMemoryChallengeStore(),
+		CredentialStore: passkey.NewMemoryCredentialStore(),
+	})
+	if err == nil {
+		t.Fatal("expected error for RPID with port")
+	}
+}
+
+func TestNew_InvalidOrigin_NoScheme(t *testing.T) {
+	_, err := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		Origin:          "example.com",
+		ChallengeStore:  passkey.NewMemoryChallengeStore(),
+		CredentialStore: passkey.NewMemoryCredentialStore(),
+	})
+	if err == nil {
+		t.Fatal("expected error for Origin without scheme")
+	}
+}
+
+func TestNew_ValidOrigin_HTTP(t *testing.T) {
+	_, err := passkey.New(passkey.Config{
+		RPID:            "localhost",
+		RPDisplayName:   "Test",
+		Origin:          "http://localhost",
+		ChallengeStore:  passkey.NewMemoryChallengeStore(),
+		CredentialStore: passkey.NewMemoryCredentialStore(),
+	})
+	if err != nil {
+		t.Fatalf("http:// origin should be allowed: %v", err)
+	}
+}
+
+// --- Credential Store Delete tests (Step 5) ---
+
+func TestMemoryCredentialStore_Delete(t *testing.T) {
+	store := passkey.NewMemoryCredentialStore()
+	store.Store(passkey.StoredCredential{CredentialID: []byte{1}, UserID: "alice"})
+	store.Store(passkey.StoredCredential{CredentialID: []byte{2}, UserID: "alice"})
+
+	if err := store.Delete([]byte{1}); err != nil {
+		t.Fatalf("Delete failed: %v", err)
+	}
+
+	// Should not be found anymore
+	_, err := store.Get([]byte{1})
+	if err == nil {
+		t.Error("expected error after delete")
+	}
+
+	// Other credential should still exist
+	_, err = store.Get([]byte{2})
+	if err != nil {
+		t.Fatalf("second credential should still exist: %v", err)
+	}
+}
+
+func TestMemoryCredentialStore_Delete_NotFound(t *testing.T) {
+	store := passkey.NewMemoryCredentialStore()
+	err := store.Delete([]byte{99})
+	if err == nil {
+		t.Error("expected error for deleting nonexistent credential")
+	}
+}
+
+// --- Challenge Store Cleanup tests (Step 6) ---
+
+func TestMemoryChallengeStore_ExpiredCleanup(t *testing.T) {
+	store := passkey.NewMemoryChallengeStore()
+
+	// Store 100 challenges with 1ns timeout (effectively expired immediately)
+	for i := 0; i < 100; i++ {
+		store.Store(fmt.Sprintf("key-%d", i), "challenge", 1)
+	}
+
+	// The 100th Store should trigger cleanup. All 100 entries should be expired.
+	// Trying to consume any of them should fail.
+	_, err := store.Consume("key-0")
+	if err == nil {
+		t.Error("expected expired challenge to not be consumable")
 	}
 }
 

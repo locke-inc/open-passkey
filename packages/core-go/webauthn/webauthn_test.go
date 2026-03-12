@@ -3,6 +3,7 @@ package webauthn_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,6 +57,37 @@ func b64Encode(data []byte) string {
 	return base64.RawURLEncoding.EncodeToString(data)
 }
 
+// sentinelErrors maps vector error codes to sentinel errors for errors.Is matching.
+var sentinelErrors = map[string]error{
+	"type_mismatch":                   webauthn.ErrTypeMismatch,
+	"challenge_mismatch":              webauthn.ErrChallengeMismatch,
+	"origin_mismatch":                 webauthn.ErrOriginMismatch,
+	"rp_id_mismatch":                  webauthn.ErrRPIDMismatch,
+	"signature_invalid":               webauthn.ErrSignatureInvalid,
+	"authenticator_data_too_short":    webauthn.ErrAuthDataTooShort,
+	"no_attested_credential_data":     webauthn.ErrNoCredentialData,
+	"unsupported_cose_algorithm":      webauthn.ErrUnsupportedAlg,
+	"sign_count_rollback":             webauthn.ErrSignCountRollback,
+	"user_presence_required":          webauthn.ErrUserPresenceRequired,
+	"user_verification_required":      webauthn.ErrUserVerificationRequired,
+	"unsupported_attestation_format":  webauthn.ErrUnsupportedAttestationFormat,
+	"token_binding_unsupported":       webauthn.ErrTokenBindingUnsupported,
+}
+
+func assertExpectedError(t *testing.T, err error, expectedCode string) {
+	t.Helper()
+	sentinel, ok := sentinelErrors[expectedCode]
+	if ok {
+		if !errors.Is(err, sentinel) {
+			t.Errorf("error: got %q, want errors.Is(%q)", err.Error(), expectedCode)
+		}
+	} else {
+		if err.Error() != expectedCode {
+			t.Errorf("error: got %q, want %q", err.Error(), expectedCode)
+		}
+	}
+}
+
 // --- Registration ceremony tests ---
 
 func TestRegistrationVectors(t *testing.T) {
@@ -106,9 +138,7 @@ func TestRegistrationVectors(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error %q, got success", vec.Expected.Error)
 				}
-				if err.Error() != vec.Expected.Error {
-					t.Errorf("error: got %q, want %q", err.Error(), vec.Expected.Error)
-				}
+				assertExpectedError(t, err, vec.Expected.Error)
 			}
 		})
 	}
@@ -166,9 +196,7 @@ func testAuthenticationVectorFile(t *testing.T, filename string) {
 				if err == nil {
 					t.Fatalf("expected error %q, got success", vec.Expected.Error)
 				}
-				if err.Error() != vec.Expected.Error {
-					t.Errorf("error: got %q, want %q", err.Error(), vec.Expected.Error)
-				}
+				assertExpectedError(t, err, vec.Expected.Error)
 			}
 		})
 	}

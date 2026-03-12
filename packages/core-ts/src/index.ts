@@ -28,6 +28,10 @@ export {
   SignatureInvalidError,
   UnsupportedAlgorithmError,
   SignCountRollbackError,
+  UserPresenceRequiredError,
+  UserVerificationRequiredError,
+  UnsupportedAttestationFormatError,
+  TokenBindingUnsupportedError,
 } from "./errors.js";
 export {
   COSE_ALG_ES256,

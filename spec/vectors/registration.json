@@ -6,10 +6,10 @@
       "description": "A valid registration ceremony with 'none' attestation, ES256 credential.",
       "input": {
         "credential": {
-          "id": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
-          "rawId": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
           "response": {
-            "attestationObject": "o2hhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAII599JK7o7ZQ6HcrWe7hxBdiL2n9-iVPGcxwWUd560MXpQECAyYgASFYICnzeSpCqSBXLBidlSM30_IZp2Y9zfsoofLG_EkjqGUWIlggew5WGphHuHWjvi-2LxCZOtDbgBSkYJJEnKSzr7jbD0RjZm10ZG5vbmVnYXR0U3RtdKA",
+            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0"
           },
           "type": "public-key"
@@ -20,8 +20,8 @@
       },
       "expected": {
         "success": true,
-        "credentialId": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
-        "publicKeyCose": "pQECAyYgASFYICnzeSpCqSBXLBidlSM30_IZp2Y9zfsoofLG_EkjqGUWIlggew5WGphHuHWjvi-2LxCZOtDbgBSkYJJEnKSzr7jbD0Q",
+        "credentialId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+        "publicKeyCose": "pQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
         "signCount": 0,
         "rpIdHash": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUc"
       }
@@ -31,10 +31,10 @@
       "description": "Registration where the relying party passes a different rpId than what the authenticator signed.",
       "input": {
         "credential": {
-          "id": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
-          "rawId": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
           "response": {
-            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAII599JK7o7ZQ6HcrWe7hxBdiL2n9-iVPGcxwWUd560MXpQECAyYgASFYICnzeSpCqSBXLBidlSM30_IZp2Y9zfsoofLG_EkjqGUWIlggew5WGphHuHWjvi-2LxCZOtDbgBSkYJJEnKSzr7jbD0Q",
+            "attestationObject": "o2dhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHpjZm10ZG5vbmU",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0"
           },
           "type": "public-key"
@@ -53,10 +53,10 @@
       "description": "Registration where the challenge in clientDataJSON does not match the expected challenge.",
       "input": {
         "credential": {
-          "id": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
-          "rawId": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
           "response": {
-            "attestationObject": "o2hhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAII599JK7o7ZQ6HcrWe7hxBdiL2n9-iVPGcxwWUd560MXpQECAyYgASFYICnzeSpCqSBXLBidlSM30_IZp2Y9zfsoofLG_EkjqGUWIlggew5WGphHuHWjvi-2LxCZOtDbgBSkYJJEnKSzr7jbD0RjZm10ZG5vbmVnYXR0U3RtdKA",
+            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJkM0p2Ym1jdFkyaGhiR3hsYm1kbExYWmhiSFZsIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5jcmVhdGUifQ"
           },
           "type": "public-key"
@@ -75,10 +75,10 @@
       "description": "Registration where the origin in clientDataJSON does not match the expected origin.",
       "input": {
         "credential": {
-          "id": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
-          "rawId": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
           "response": {
-            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAII599JK7o7ZQ6HcrWe7hxBdiL2n9-iVPGcxwWUd560MXpQECAyYgASFYICnzeSpCqSBXLBidlSM30_IZp2Y9zfsoofLG_EkjqGUWIlggew5WGphHuHWjvi-2LxCZOtDbgBSkYJJEnKSzr7jbD0Q",
+            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vcGhpc2hpbmcuY29tIiwidHlwZSI6IndlYmF1dGhuLmNyZWF0ZSJ9"
           },
           "type": "public-key"
@@ -97,10 +97,10 @@
       "description": "Registration where clientDataJSON type is 'webauthn.get' instead of 'webauthn.create'.",
       "input": {
         "credential": {
-          "id": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
-          "rawId": "jn30krujtlDodytZ7uHEF2Ivaf36JU8ZzHBZR3nrQxc",
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
           "response": {
-            "attestationObject": "o2dhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAII599JK7o7ZQ6HcrWe7hxBdiL2n9-iVPGcxwWUd560MXpQECAyYgASFYICnzeSpCqSBXLBidlSM30_IZp2Y9zfsoofLG_EkjqGUWIlggew5WGphHuHWjvi-2LxCZOtDbgBSkYJJEnKSzr7jbD0RjZm10ZG5vbmU",
+            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uZ2V0In0"
           },
           "type": "public-key"
@@ -112,6 +112,97 @@
       "expected": {
         "success": false,
         "error": "type_mismatch"
+      }
+    },
+    {
+      "name": "registration_up_missing",
+      "description": "Registration where the User Present (UP) flag is not set in authenticator data.",
+      "input": {
+        "credential": {
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "response": {
+            "attestationObject": "o2hhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHpjZm10ZG5vbmVnYXR0U3RtdKA",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "cmVnaXN0cmF0aW9uLWNoYWxsZW5nZS0wMTIzNDU2Nzg5",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com"
+      },
+      "expected": {
+        "success": false,
+        "error": "user_presence_required"
+      }
+    },
+    {
+      "name": "registration_uv_missing",
+      "description": "Registration where the User Verified (UV) flag is not set. Should pass since UV is not required by default.",
+      "input": {
+        "credential": {
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "response": {
+            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdBAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "cmVnaXN0cmF0aW9uLWNoYWxsZW5nZS0wMTIzNDU2Nzg5",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com"
+      },
+      "expected": {
+        "success": true,
+        "credentialId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+        "publicKeyCose": "pQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHo",
+        "signCount": 0,
+        "rpIdHash": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUc"
+      }
+    },
+    {
+      "name": "registration_packed_attestation",
+      "description": "Registration with fmt 'packed' attestation format, which is not supported.",
+      "input": {
+        "credential": {
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "response": {
+            "attestationObject": "o2NmbXRmcGFja2VkZ2F0dFN0bXSgaGF1dGhEYXRhWKSjeab27q-5pV43jBGANOJ1Hmgvq58tMKsT0hJVhs4ZR0UAAAAAAAAAAAAAAAAAAAAAAAAAAAAgy9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB-lAQIDJiABIVggp5WzgoagWzzxvdHL8AibW1kcBzNQeY8QrJHpSzfy15ciWCDJShgMxoiuGu3eB4KuA_R6VOzTkt75AWuBK5mRsBZQeg",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "cmVnaXN0cmF0aW9uLWNoYWxsZW5nZS0wMTIzNDU2Nzg5",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com"
+      },
+      "expected": {
+        "success": false,
+        "error": "unsupported_attestation_format"
+      }
+    },
+    {
+      "name": "registration_token_binding_present",
+      "description": "Registration where clientDataJSON includes tokenBinding with status 'present', which we cannot verify.",
+      "input": {
+        "credential": {
+          "id": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "rawId": "y9DUDti7wd5pANqfBHuiNLS1zxm2INCxbSgPdfiWbB8",
+          "response": {
+            "attestationObject": "o2dhdHRTdG10oGhhdXRoRGF0YViko3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUdFAAAAAAAAAAAAAAAAAAAAAAAAAAAAIMvQ1A7Yu8HeaQDanwR7ojS0tc8ZtiDQsW0oD3X4lmwfpQECAyYgASFYIKeVs4KGoFs88b3Ry_AIm1tZHAczUHmPEKyR6Us38teXIlggyUoYDMaIrhrt3geCrgP0elTs05Le-QFrgSuZkbAWUHpjZm10ZG5vbmU",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0b2tlbkJpbmRpbmciOnsiaWQiOiJkR1Z6ZEMxaWFXNWthVzVuTFdsayIsInN0YXR1cyI6InByZXNlbnQifSwidHlwZSI6IndlYmF1dGhuLmNyZWF0ZSJ9"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "cmVnaXN0cmF0aW9uLWNoYWxsZW5nZS0wMTIzNDU2Nzg5",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com"
+      },
+      "expected": {
+        "success": false,
+        "error": "token_binding_unsupported"
       }
     }
   ]

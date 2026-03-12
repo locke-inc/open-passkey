@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/locke-inc/open-passkey/packages/core-go/webauthn"
@@ -71,6 +72,12 @@ func (c *Config) validate() error {
 	}
 	if c.CredentialStore == nil {
 		return fmt.Errorf("%w: CredentialStore is required", ErrInvalidConfig)
+	}
+	if strings.Contains(c.RPID, "://") || strings.Contains(c.RPID, "/") || strings.Contains(c.RPID, ":") {
+		return fmt.Errorf("%w: RPID must be a bare domain (got %q)", ErrInvalidConfig, c.RPID)
+	}
+	if !strings.HasPrefix(c.Origin, "https://") && !strings.HasPrefix(c.Origin, "http://") {
+		return fmt.Errorf("%w: Origin must start with https:// or http:// (got %q)", ErrInvalidConfig, c.Origin)
 	}
 	return nil
 }

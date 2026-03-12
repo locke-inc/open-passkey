@@ -50,3 +50,27 @@ export class SignCountRollbackError extends WebAuthnError {
     super("sign_count_rollback");
   }
 }
+
+export class UserPresenceRequiredError extends WebAuthnError {
+  constructor() {
+    super("user_presence_required");
+  }
+}
+
+export class UserVerificationRequiredError extends WebAuthnError {
+  constructor() {
+    super("user_verification_required");
+  }
+}
+
+export class UnsupportedAttestationFormatError extends WebAuthnError {
+  constructor(fmt: string) {
+    super("unsupported_attestation_format", `unsupported attestation format: ${fmt}`);
+  }
+}
+
+export class TokenBindingUnsupportedError extends WebAuthnError {
+  constructor() {
+    super("token_binding_unsupported");
+  }
+}

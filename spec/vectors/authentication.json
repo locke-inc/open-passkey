@@ -6,19 +6,19 @@
       "description": "A valid authentication ceremony with ES256 signature.",
       "input": {
         "credential": {
-          "id": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
-          "rawId": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
           "response": {
             "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
-            "signature": "MEUCIQD5WPTyQzwIJH8yNKSlSn69ZyeM1dqVlzaLAJy7Gb_f6gIgOzwYL6_nUgNIXzqMeWbqkLib3gwROteauSWEna1HjcM"
+            "signature": "MEQCIGayR-5JMqXKXc5_hpCuIADHNMkRHrbPuIwASgSGFT0HAiBq0yOREPLiorfIqLhrGYTAAKMoij0Ij_oGGP-FhZsVEw"
           },
           "type": "public-key"
         },
         "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
         "expectedOrigin": "https://example.com",
         "rpId": "example.com",
-        "storedPublicKeyCose": "pQECAyYgASFYIKOxzc2-eS2J2X5ursb1kEt3q1zTlq67WG0tmWVXEGSgIlggvF35UCoFuR7QnnTb-Xs_-B0m42V68iYXDmHLZkRQF1A",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
         "storedSignCount": 0
       },
       "expected": {
@@ -31,19 +31,19 @@
       "description": "Authentication where the relying party passes a different rpId than what the authenticator signed.",
       "input": {
         "credential": {
-          "id": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
-          "rawId": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
           "response": {
             "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
-            "signature": "MEUCIFjIB9eCiUjL-V9lIzhEADwsl-2QZLp8EBMXnfgHfM0VAiEAgyjmPn4YG1GCmF1dYvF-ge3sy7mUio1jlvCqYXXUUiw"
+            "signature": "MEQCIGSAAxo4JGDjQ5OcdVHcds9vYcSuabGKUyDLQusaPLNDAiACk9amF0aE4-uXXDfqR3uFlAIcxg77V4_R2H8vYB7Igg"
           },
           "type": "public-key"
         },
         "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
         "expectedOrigin": "https://example.com",
         "rpId": "evil.com",
-        "storedPublicKeyCose": "pQECAyYgASFYIKOxzc2-eS2J2X5ursb1kEt3q1zTlq67WG0tmWVXEGSgIlggvF35UCoFuR7QnnTb-Xs_-B0m42V68iYXDmHLZkRQF1A",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
         "storedSignCount": 0
       },
       "expected": {
@@ -56,19 +56,19 @@
       "description": "Authentication where the challenge in clientDataJSON does not match the expected challenge.",
       "input": {
         "credential": {
-          "id": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
-          "rawId": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
           "response": {
             "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJkM0p2Ym1jdFkyaGhiR3hsYm1kbExYWmhiSFZsIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
-            "signature": "MEQCIH2wGVS8zdX8Pr3uPESCHgVra2p8NDxVUEZsNb_AlqnrAiBEJf610eqLRPwQPfQz-Gk-l_E--Ilxiy-9mm2MmcCSEQ"
+            "signature": "MEUCIQDgXER6Hd_WKO8z4NMaED0iC3DIVX9pHRUiyMRqtNrsKQIgRv40MObGQwyZmuSuInmEumMi9Nuz8-lYYFbRTdf_f7c"
           },
           "type": "public-key"
         },
         "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
         "expectedOrigin": "https://example.com",
         "rpId": "example.com",
-        "storedPublicKeyCose": "pQECAyYgASFYIKOxzc2-eS2J2X5ursb1kEt3q1zTlq67WG0tmWVXEGSgIlggvF35UCoFuR7QnnTb-Xs_-B0m42V68iYXDmHLZkRQF1A",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
         "storedSignCount": 0
       },
       "expected": {
@@ -81,19 +81,19 @@
       "description": "Authentication with a valid structure but a tampered/invalid signature.",
       "input": {
         "credential": {
-          "id": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
-          "rawId": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
           "response": {
             "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
-            "signature": "MEYCIQCoVbSnDhfjQoEXGeJBY39Gmlp85zJbt8hONQUv0RPEvAIhAI80Y1B3SNwWZBlfu7afJ6eXLpnWun2kVmDOpvi4ny5x"
+            "signature": "MEQCIHceRXcQtHfMCGkNs7Dx1_BA3yedsMRDvuO3ySSGAbSzAiBTqVchk6MsLBgbq5gLLdYDKKskDXulhq1J5bWFLZLaDw"
           },
           "type": "public-key"
         },
         "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
         "expectedOrigin": "https://example.com",
         "rpId": "example.com",
-        "storedPublicKeyCose": "pQECAyYgASFYIKOxzc2-eS2J2X5ursb1kEt3q1zTlq67WG0tmWVXEGSgIlggvF35UCoFuR7QnnTb-Xs_-B0m42V68iYXDmHLZkRQF1A",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
         "storedSignCount": 0
       },
       "expected": {
@@ -106,24 +106,149 @@
       "description": "Authentication where clientDataJSON type is 'webauthn.create' instead of 'webauthn.get'.",
       "input": {
         "credential": {
-          "id": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
-          "rawId": "3UG3VYIA1n7dJLQ8ygFMWkdzJ5k2VL9sDUpPRZr1jzY",
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
           "response": {
             "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
             "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5jcmVhdGUifQ",
-            "signature": "MEQCIFWKomMHqJgJ0ogP6aXruzTsmo9sod425JA24UN5zto9AiB9gBz0Diipuw1F21EVD8CvX6fAvPaccxm3x1-SxI4UJQ"
+            "signature": "MEUCIAjBGX44wIPdFcnso8FYRht2bP4El0L-og6RFx27QCKNAiEA4YRy2ccKiN53XnDvRk2Uo8tGFDhDKxs2G9VOH90HGPg"
           },
           "type": "public-key"
         },
         "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
         "expectedOrigin": "https://example.com",
         "rpId": "example.com",
-        "storedPublicKeyCose": "pQECAyYgASFYIKOxzc2-eS2J2X5ursb1kEt3q1zTlq67WG0tmWVXEGSgIlggvF35UCoFuR7QnnTb-Xs_-B0m42V68iYXDmHLZkRQF1A",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
         "storedSignCount": 0
       },
       "expected": {
         "success": false,
         "error": "type_mismatch"
+      }
+    },
+    {
+      "name": "authentication_up_missing",
+      "description": "Authentication where the User Present (UP) flag is not set in authenticator data.",
+      "input": {
+        "credential": {
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "response": {
+            "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcAAAAAAQ",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
+            "signature": "MEQCIGUYhMOnFDZEJVeX4GnBjEhQW0SFvtbi0PpUY7cMvAOdAiBNJ_3tJFe0iQRM0sUg-4oWjJc0ZjrAFjpIYanIhEvY3A"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
+        "storedSignCount": 0
+      },
+      "expected": {
+        "success": false,
+        "error": "user_presence_required"
+      }
+    },
+    {
+      "name": "authentication_uv_missing",
+      "description": "Authentication where the User Verified (UV) flag is not set. Should pass since UV is not required by default.",
+      "input": {
+        "credential": {
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "response": {
+            "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcBAAAAAQ",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
+            "signature": "MEUCIQDcseTRd8S3lToquK1621gj-Fa6XcLsV_H5fBPWznlltQIgXHKn10bClR4HdvOEgCtpJK41Ihpo-0km0--EMgt91LI"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
+        "storedSignCount": 0
+      },
+      "expected": {
+        "success": true,
+        "signCount": 1
+      }
+    },
+    {
+      "name": "authentication_sign_count_zero_zero",
+      "description": "Authentication where both stored and reported sign counts are zero. Per spec, this is fine (authenticators that don't increment).",
+      "input": {
+        "credential": {
+          "id": "PcnCeDlxRuHxCz6gw-PSfqFSluRlrk74LHrm-3FAvcM",
+          "rawId": "PcnCeDlxRuHxCz6gw-PSfqFSluRlrk74LHrm-3FAvcM",
+          "response": {
+            "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAA",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
+            "signature": "MEUCIQCA08jhGaElSOiIuZM63SN-643m26n8j19XYYM-Xa0A2gIgH_X4v7nacb99R1lwBSRcBEU83nCBbjHpgkku-IICNpc"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com",
+        "storedPublicKeyCose": "pQECAyYgASFYIDwbRJVI5RKKtdUDEwDNsP48j_9VkK1SU3qwlmeqsXKoIlggOENOSRb2iEYWssBzIBfJDXFP3Uoa6FRhIn2VLoOzJwU",
+        "storedSignCount": 0
+      },
+      "expected": {
+        "success": true,
+        "signCount": 0
+      }
+    },
+    {
+      "name": "authentication_sign_count_rollback",
+      "description": "Authentication where stored sign count (5) is greater than reported sign count (3), indicating a possible cloned authenticator.",
+      "input": {
+        "credential": {
+          "id": "IjVkbIbBffUknpg6b8pj3K9gNsmKOC2ejWv-I_CEgmk",
+          "rawId": "IjVkbIbBffUknpg6b8pj3K9gNsmKOC2ejWv-I_CEgmk",
+          "response": {
+            "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAw",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInR5cGUiOiJ3ZWJhdXRobi5nZXQifQ",
+            "signature": "MEUCIQCAemrhPvXRtvD8WNmjHckRjpEbom_4OHNU9E-eirKNuAIgcbr-Wn5RvAfujLHZAMG-NJfiVUqBCgsrOSJ0iLS1SWA"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com",
+        "storedPublicKeyCose": "pSFYIOcNddsvtIkRTvW6HtAfjoG8nnm1wgo4SyJzgPxU-NHbIlgg-psiHcqM6N7pMU3kOqM8-mMWAJjKjRp51TywaWjnuCkBAgMmIAE",
+        "storedSignCount": 5
+      },
+      "expected": {
+        "success": false,
+        "error": "sign_count_rollback"
+      }
+    },
+    {
+      "name": "authentication_token_binding_supported",
+      "description": "Authentication where clientDataJSON includes tokenBinding with status 'supported'. This is fine — only 'present' is rejected.",
+      "input": {
+        "credential": {
+          "id": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "rawId": "VEBiN4hpDSfy068NIpZIv0roeVXuoY8ah6ZYUXqbknQ",
+          "response": {
+            "authenticatorData": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUcFAAAAAQ",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJZWFYwYUdWdWRHbGpZWFJwYjI0dFkyaGhiR3hsYm1kbExUQXhNak0wTlRZIiwib3JpZ2luIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInRva2VuQmluZGluZyI6eyJzdGF0dXMiOiJzdXBwb3J0ZWQifSwidHlwZSI6IndlYmF1dGhuLmdldCJ9",
+            "signature": "MEUCIB0sDMQ_VB1MridKjiSPwErTW0nrpV2kQUCWwt95OBpPAiEA3fmzNns9Zrz8K6QydxGoK7YT6b0Xk2VmEjKnMmb3MbY"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "YXV0aGVudGljYXRpb24tY2hhbGxlbmdlLTAxMjM0NTY",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com",
+        "storedPublicKeyCose": "pQECAyYgASFYIDviU0EDEnouDBCgdAUFKgSVItUJI2pLYYEOWXR5xRjiIlgg9y9Jus2k4sGBvzrFeRFm-DiUhXttkBIHptsnxGEu_pM",
+        "storedSignCount": 0
+      },
+      "expected": {
+        "success": true,
+        "signCount": 1
       }
     }
   ]

@@ -3,12 +3,14 @@ import {
   TypeMismatchError,
   ChallengeMismatchError,
   OriginMismatchError,
+  TokenBindingUnsupportedError,
 } from "./errors.js";
 
 interface ClientData {
   type: string;
   challenge: string;
   origin: string;
+  tokenBinding?: { status: string };
 }
 
 export function verifyClientData(
@@ -24,6 +26,7 @@ export function verifyClientData(
   if (cd.type !== expectedType) throw new TypeMismatchError();
   if (cd.challenge !== expectedChallenge) throw new ChallengeMismatchError();
   if (cd.origin !== expectedOrigin) throw new OriginMismatchError();
+  if (cd.tokenBinding?.status === "present") throw new TokenBindingUnsupportedError();
 
   return raw;
 }
