@@ -17,8 +17,9 @@ run() {
 
 run "core-go"    "packages/core-go"    "go test ./... -v"
 run "server-go"  "packages/server-go"  "go test ./... -v"
-run "core-ts"    "packages/core-ts"    "npm test"
-run "angular"    "packages/angular"    "npm test"
+run "core-ts"          "packages/core-ts"          "npm test"
+run "authenticator-ts"  "packages/authenticator-ts"  "npm test"
+run "angular"          "packages/angular"          "npm test"
 
 if [ $FAIL -ne 0 ]; then
   echo "SOME TESTS FAILED"
