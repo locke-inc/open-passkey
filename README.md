@@ -20,13 +20,14 @@ During registration, the server advertises preferred algorithms in `pubKeyCredPa
 
 ```
 open-passkey/
-├── spec/vectors/        # Shared JSON test vectors (31 vectors, 3 ceremonies)
+├── spec/vectors/           # Shared JSON test vectors (31 vectors, 3 ceremonies)
 ├── packages/
-│   ├── core-go/         # Go core protocol
-│   ├── server-go/       # Go HTTP bindings
-│   ├── core-ts/         # TypeScript core protocol
-│   └── angular/         # Angular components + service
-└── tools/vecgen/        # Test vector generation
+│   ├── core-go/            # Go core protocol
+│   ├── server-go/          # Go HTTP bindings
+│   ├── core-ts/            # TypeScript core protocol
+│   ├── authenticator-ts/   # TypeScript software authenticator
+│   └── angular/            # Angular components + service
+└── tools/vecgen/           # Test vector generation
 ```
 
 The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Framework bindings** are thin adapters. Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography.
@@ -100,6 +101,39 @@ import { verifyRegistration, verifyAuthentication } from "@open-passkey/core";
 
 Same API shape as Go. Automatic algorithm dispatch based on the stored COSE key.
 
+### authenticator-ts
+
+Software WebAuthn authenticator for credential creation and assertion. Useful for testing, CI pipelines, and environments without hardware authenticators. Produces outputs that verify against core-ts and core-go.
+
+Dependencies: `cborg` (CBOR), Web Crypto API.
+
+```typescript
+import { createCredential, getAssertion } from "@open-passkey/authenticator";
+
+// Create a passkey (registration)
+const result = await createCredential({
+  rpId: "example.com",
+  rpName: "My App",
+  userId: new Uint8Array([1, 2, 3, 4]),
+  userName: "alice",
+  challenge: crypto.getRandomValues(new Uint8Array(32)),
+  origin: "https://example.com",
+  algorithms: [-7], // ES256
+});
+// result.response.attestationObject, result.response.clientDataJSON, result.credential
+
+// Authenticate with a stored credential (assertion)
+const assertion = await getAssertion({
+  rpId: "example.com",
+  challenge: crypto.getRandomValues(new Uint8Array(32)),
+  origin: "https://example.com",
+  credential: result.credential,
+});
+// assertion.response.authenticatorData, assertion.response.signature, assertion.response.userHandle
+```
+
+Supports ES256 (ECDSA P-256). Generates `none` attestation, sets UP/UV/BE/BS flags, increments sign count, and converts signatures to DER format per the WebAuthn spec.
+
 ### angular
 
 Headless Angular components and injectable service. Content projection for custom UI.
@@ -145,6 +179,7 @@ providers: [provideHttpClient(), providePasskey({ baseUrl: "/passkey" })]
 | core-go | 31 vectors | Spec vector verification |
 | core-ts | 31 vectors | Same vectors, TypeScript |
 | server-go | 31 tests | HTTP handlers, stores, userHandle |
+| authenticator-ts | 7 tests | Round-trip creation/assertion, DER encoding |
 | angular | 37 tests | Components, service, PRF, userHandle |
 
 ## Development
