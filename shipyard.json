@@ -1,0 +1,29 @@
+{
+  "repo": "open-passkey",
+  "name": "Open Passkey",
+  "type": "library",
+  "language": "go+typescript",
+  "framework": "webauthn",
+  "commands": {
+    "test": "./scripts/test-all.sh",
+    "test:go": "cd packages/core-go && go test ./webauthn/ -v",
+    "test:ts": "cd packages/core-ts && npm test",
+    "test:server": "cd packages/server-go && go test ./... -v",
+    "test:angular": "cd packages/angular && npm test",
+    "vecgen": "cd tools/vecgen && go run main.go -out ../../spec/vectors"
+  },
+  "deploy": {
+    "pipeline": "none",
+    "notes": "Open-source library, published as packages"
+  },
+  "features": [
+    { "id": "lookout-passkeys", "files": ["packages/authenticator-ts/"], "status": "done" }
+  ],
+  "health": {
+    "hasTests": true,
+    "hasCI": false,
+    "hasDocker": false,
+    "hasE2E": false,
+    "mainBranch": "main"
+  }
+}
