@@ -1,0 +1,18 @@
+{
+  "name": "open-passkey-solid-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx server.ts"
+  },
+  "dependencies": {
+    "@open-passkey/express": "file:../../packages/server-express",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "express": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.0.0"
+  }
+}

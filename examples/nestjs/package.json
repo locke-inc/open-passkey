@@ -1,0 +1,22 @@
+{
+  "name": "open-passkey-nestjs-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/main.ts"
+  },
+  "dependencies": {
+    "@open-passkey/nestjs": "file:../../packages/server-nestjs",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "express": "^5.0.0",
+    "reflect-metadata": "^0.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.0.0"
+  }
+}

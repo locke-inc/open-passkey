@@ -1,0 +1,3 @@
+flask
+-e ../../packages/core-py
+-e ../../packages/server-flask

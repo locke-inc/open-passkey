@@ -1,0 +1,20 @@
+{
+  "name": "open-passkey-sveltekit-example",
+  "private": true,
+  "scripts": {
+    "dev": "vite dev --port 3006"
+  },
+  "dependencies": {
+    "@open-passkey/sveltekit": "file:../../packages/server-sveltekit",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "@open-passkey/core": "file:../../packages/core-ts"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^3.0.0",
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "svelte": "^5.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  }
+}

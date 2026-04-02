@@ -1,0 +1,18 @@
+{
+  "name": "open-passkey-hono-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx server.ts"
+  },
+  "dependencies": {
+    "@open-passkey/hono": "file:../../packages/server-hono",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}
