@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "open-passkey"
+version = "0.1.0"
+description = "Core WebAuthn protocol verification library (ES256, ML-DSA-65, ML-DSA-65-ES256 composite)"
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography>=41.0",
+    "cbor2>=5.4",
+]
+
+[project.optional-dependencies]
+pq = ["oqs>=0.9"]
+dev = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

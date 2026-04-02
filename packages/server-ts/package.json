@@ -1,0 +1,29 @@
+{
+  "name": "@open-passkey/server",
+  "version": "0.0.1",
+  "description": "Framework-agnostic WebAuthn server handler logic",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "passkey",
+    "webauthn",
+    "fido2",
+    "server"
+  ],
+  "author": "Locke Identity Networks Inc.",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@open-passkey/core": "file:../core-ts"
+  }
+}

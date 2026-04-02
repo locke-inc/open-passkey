@@ -1,0 +1,20 @@
+{
+  "name": "@open-passkey/sdk",
+  "version": "0.0.1",
+  "description": "Framework-agnostic browser SDK for passkey/WebAuthn authentication",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["passkey", "webauthn", "fido2", "browser", "sdk"],
+  "author": "Locke Identity Networks Inc.",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

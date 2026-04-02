@@ -18,6 +18,7 @@ open-passkey/
 │   │   └── webauthn/        # Registration + authentication verification
 │   ├── server-go/           # Go: HTTP handler bindings (Gin, net/http)
 │   ├── core-ts/             # TypeScript: Core WebAuthn protocol library (ES256, ML-DSA-65, ML-DSA-65-ES256)
+│   ├── authenticator-ts/    # TypeScript: Software WebAuthn authenticator (credential creation + assertion)
 │   └── angular/             # Angular: Headless components + PasskeyService
 │       └── src/lib/         # Config, service, register/login components
 └── tools/
@@ -74,6 +75,8 @@ Unlike ES256 (which hashes then signs), ML-DSA signs the message directly:
 - **Isolated framework tests**: Framework bindings (HTTP handlers, UI components) have their own idiomatic test suites.
 - **core-go dependencies**: Go stdlib `crypto` + `fxamacker/cbor/v2` (CBOR) + `cloudflare/circl` (ML-DSA-65).
 - **core-ts dependencies**: Node `crypto` + `cbor-x` (CBOR) + `@noble/post-quantum` (ML-DSA-65). Import with `.js` extension: `from "@noble/post-quantum/ml-dsa.js"`.
+- **authenticator-ts dependencies**: `cborg` (CBOR) + Web Crypto API. ES256 only. Uses `globalThis.crypto.subtle` for key generation and signing. No Node-specific APIs — works in any environment with Web Crypto.
+- **authenticator-ts role**: Software authenticator for testing/CI. Produces `attestationObject`, `clientDataJSON`, `authenticatorData`, and `signature` outputs that verify against core-ts and core-go. Not a core protocol library — it *generates* WebAuthn responses rather than *verifying* them.
 - **TDD workflow**: Write/update vectors first, then implement until tests pass.
 
 ## Commands
@@ -99,6 +102,12 @@ go test ./... -v
 ### Run core-ts tests (shared vector tests)
 ```bash
 cd packages/core-ts
+npm test
+```
+
+### Run authenticator-ts tests (round-trip tests)
+```bash
+cd packages/authenticator-ts
 npm test
 ```
 
@@ -168,6 +177,10 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] Packed attestation — self-attestation and full (x5c) attestation verification
 - [x] `server-go`: userHandle verification — cross-checks credential owner in discoverable flow
 - [x] `angular`: `PasskeyService` sends `userHandle` from authenticator response
+- [x] `authenticator-ts`: Software WebAuthn authenticator — `createCredential()` + `getAssertion()` (ES256)
+- [x] `authenticator-ts`: Round-trip verified against core-ts (`verifyRegistration` + `verifyAuthentication`)
+- [x] `authenticator-ts`: P1363-to-DER signature conversion, sign count tracking, UP/UV/BE/BS flags
+- [x] `authenticator-ts`: 7 Vitest tests (registration round-trip, assertion round-trip, sign count increment, DER encoding, edge cases)
 
 ### Next
 - [ ] `packages/react/` — React hooks and components

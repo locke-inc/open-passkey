@@ -1,0 +1,24 @@
+{
+  "name": "@open-passkey/astro",
+  "version": "0.0.1",
+  "description": "Astro API route handlers for passkey/WebAuthn authentication",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["passkey", "webauthn", "fido2", "astro"],
+  "author": "Locke Identity Networks Inc.",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@open-passkey/server": "file:../server-ts"
+  }
+}

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>OpenPasskey.AspNet</PackageId>
+    <Version>0.1.0</Version>
+    <Description>ASP.NET Core middleware for open-passkey WebAuthn/FIDO2 authentication</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\core-dotnet\OpenPasskey.Core.csproj" />
+  </ItemGroup>
+
+</Project>
