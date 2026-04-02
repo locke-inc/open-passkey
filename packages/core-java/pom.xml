@@ -29,12 +29,8 @@
             <version>${bouncycastle.version}</version>
         </dependency>
 
-        <!-- Bouncy Castle: ML-DSA-65 (post-quantum) -->
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpqc-jdk18on</artifactId>
-            <version>${bouncycastle.version}</version>
-        </dependency>
+        <!-- Bouncy Castle: ML-DSA-65 (post-quantum) - included in bcprov-jdk18on since 1.78 -->
+        <!-- No separate bcpqc-jdk18on artifact exists for jdk18on; PQ crypto is in bcprov -->
 
         <!-- Jackson CBOR -->
         <dependency>

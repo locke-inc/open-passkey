@@ -8,6 +8,8 @@
     "@open-passkey/nuxt": "file:../../packages/server-nuxt",
     "@open-passkey/server": "file:../../packages/server-ts",
     "@open-passkey/core": "file:../../packages/core-ts",
+    "@open-passkey/vue": "file:../../packages/vue",
+    "@open-passkey/sdk": "file:../../packages/sdk-js",
     "nuxt": "^3.14.0",
     "vue": "^3.5.0"
   }

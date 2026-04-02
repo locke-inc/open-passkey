@@ -1,167 +1,42 @@
 <script>
-  const BASE_URL = "/api/passkey";
+  import { createPasskeyClient } from "@open-passkey/svelte";
+
+  const { registerStore, loginStore } = createPasskeyClient({ baseUrl: "/api/passkey" });
 
   let userId = $state("test-user");
   let username = $state("Test User");
-  let pending = $state(false);
   let message = $state("");
-  let messageType = $state("info");
-
-  function base64urlEncode(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  }
-
-  function base64urlDecode(str) {
-    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-    while (base64.length % 4 !== 0) {
-      base64 += "=";
-    }
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes.buffer;
-  }
+  let messageType = $state("success");
 
   async function doRegister() {
-    pending = true;
     message = "";
-    try {
-      const beginRes = await fetch(`${BASE_URL}/register/begin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, username }),
-      });
-      if (!beginRes.ok) {
-        const err = await beginRes.json();
-        throw new Error(err.error || "Failed to begin registration");
-      }
-      const options = await beginRes.json();
-
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge: base64urlDecode(options.challenge),
-          rp: options.rp,
-          user: {
-            id: base64urlDecode(options.user.id),
-            name: options.user.name,
-            displayName: options.user.displayName,
-          },
-          pubKeyCredParams: options.pubKeyCredParams,
-          authenticatorSelection: options.authenticatorSelection,
-          timeout: options.timeout,
-          attestation: options.attestation || "none",
-        },
-      });
-      if (!credential) throw new Error("Credential creation cancelled");
-
-      const response = credential.response;
-      const finishRes = await fetch(`${BASE_URL}/register/finish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          credential: {
-            id: credential.id,
-            rawId: base64urlEncode(credential.rawId),
-            type: credential.type,
-            response: {
-              clientDataJSON: base64urlEncode(response.clientDataJSON),
-              attestationObject: base64urlEncode(response.attestationObject),
-            },
-          },
-        }),
-      });
-      if (!finishRes.ok) {
-        const err = await finishRes.json();
-        throw new Error(err.error || "Failed to finish registration");
-      }
-      message = "Passkey registered successfully!";
-      messageType = "success";
-    } catch (err) {
-      message = err.message || "Registration failed";
-      messageType = "error";
-    } finally {
-      pending = false;
-    }
+    await registerStore.register(userId, username);
   }
 
   async function doLogin() {
-    pending = true;
     message = "";
-    try {
-      const beginRes = await fetch(`${BASE_URL}/login/begin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      if (!beginRes.ok) {
-        const err = await beginRes.json();
-        throw new Error(err.error || "Failed to begin authentication");
-      }
-      const options = await beginRes.json();
-
-      const getOptions = {
-        publicKey: {
-          challenge: base64urlDecode(options.challenge),
-          rpId: options.rpId,
-          timeout: options.timeout,
-          userVerification: options.userVerification || "preferred",
-        },
-      };
-      if (options.allowCredentials) {
-        getOptions.publicKey.allowCredentials = options.allowCredentials.map((c) => ({
-          type: c.type,
-          id: base64urlDecode(c.id),
-        }));
-      }
-
-      const credential = await navigator.credentials.get(getOptions);
-      if (!credential) throw new Error("Authentication cancelled");
-
-      const response = credential.response;
-      const finishPayload = {
-        userId: userId || credential.id,
-        credential: {
-          id: credential.id,
-          rawId: base64urlEncode(credential.rawId),
-          type: credential.type,
-          response: {
-            clientDataJSON: base64urlEncode(response.clientDataJSON),
-            authenticatorData: base64urlEncode(response.authenticatorData),
-            signature: base64urlEncode(response.signature),
-          },
-        },
-      };
-      if (response.userHandle) {
-        finishPayload.credential.response.userHandle = base64urlEncode(response.userHandle);
-      }
-
-      const finishRes = await fetch(`${BASE_URL}/login/finish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finishPayload),
-      });
-      if (!finishRes.ok) {
-        const err = await finishRes.json();
-        throw new Error(err.error || "Failed to finish authentication");
-      }
-      const result = await finishRes.json();
-      message = `Authenticated! User: ${result.userId}`;
-      messageType = "success";
-    } catch (err) {
-      message = err.message || "Authentication failed";
-      messageType = "error";
-    } finally {
-      pending = false;
-    }
+    await loginStore.authenticate(userId);
   }
+
+  $effect(() => {
+    if ($registerStore.status === "success" && $registerStore.result) {
+      message = `Registered! Credential ID: ${$registerStore.result.credentialId}`;
+      messageType = "success";
+    } else if ($registerStore.status === "error" && $registerStore.error) {
+      message = $registerStore.error.message;
+      messageType = "error";
+    }
+  });
+
+  $effect(() => {
+    if ($loginStore.status === "success" && $loginStore.result) {
+      message = `Authenticated! User: ${$loginStore.result.userId}`;
+      messageType = "success";
+    } else if ($loginStore.status === "error" && $loginStore.error) {
+      message = $loginStore.error.message;
+      messageType = "error";
+    }
+  });
 </script>
 
 <svelte:head>
@@ -170,7 +45,7 @@
 
 <div class="container">
   <h1>open-passkey</h1>
-  <p class="subtitle">SvelteKit + Vanilla JS Example</p>
+  <p class="subtitle">SvelteKit + Svelte SDK Example</p>
   <div class="field">
     <label for="userId">User ID</label>
     <input id="userId" bind:value={userId} />
@@ -180,11 +55,11 @@
     <input id="username" bind:value={username} />
   </div>
   <div class="buttons">
-    <button class="primary" disabled={pending} onclick={doRegister}>
-      {pending ? "Working..." : "Register Passkey"}
+    <button class="primary" disabled={$registerStore.status === "pending"} onclick={doRegister}>
+      {$registerStore.status === "pending" ? "Registering..." : "Register Passkey"}
     </button>
-    <button class="secondary" disabled={pending} onclick={doLogin}>
-      {pending ? "Working..." : "Sign In"}
+    <button class="secondary" disabled={$loginStore.status === "pending"} onclick={doLogin}>
+      {$loginStore.status === "pending" ? "Signing in..." : "Sign In"}
     </button>
   </div>
   {#if message}
@@ -204,11 +79,11 @@
   .buttons { display: flex; gap: 8px; margin-top: 16px; }
   button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
   .primary { background: #2563eb; color: #fff; }
-  .primary:hover { background: #1d4ed8; }
+  .primary:hover:not(:disabled) { background: #1d4ed8; }
   .secondary { background: #e5e7eb; color: #1a1a1a; }
-  .secondary:hover { background: #d1d5db; }
+  .secondary:hover:not(:disabled) { background: #d1d5db; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
   .status { margin-top: 20px; padding: 12px; border-radius: 6px; font-size: 0.9rem; }
   .success { background: #d1fae5; color: #065f46; }
   .error { background: #fee2e2; color: #991b1b; }
-  .info { background: #dbeafe; color: #1e40af; }
 </style>

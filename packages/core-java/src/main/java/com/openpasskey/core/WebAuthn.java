@@ -231,12 +231,27 @@ public final class WebAuthn {
 
     /**
      * Parse a COSE key from raw CBOR bytes.
-     * Jackson CBOR maps integer keys to Integer objects.
+     * Jackson CBOR deserializes CBOR integer keys as String objects (e.g., "3" not 3).
+     * This method normalizes all numeric-looking String keys back to Integer so that
+     * lookups with CoseConstants int labels (e.g., LABEL_ALG = 3) work correctly.
      */
     @SuppressWarnings("unchecked")
     static Map<Object, Object> parseCoseKey(byte[] coseKeyBytes) throws WebAuthnException {
         try {
-            return CBOR_MAPPER.readValue(coseKeyBytes, Map.class);
+            Map<Object, Object> raw = CBOR_MAPPER.readValue(coseKeyBytes, Map.class);
+            Map<Object, Object> normalized = new java.util.LinkedHashMap<>();
+            for (Map.Entry<Object, Object> entry : raw.entrySet()) {
+                Object key = entry.getKey();
+                if (key instanceof String) {
+                    try {
+                        key = Integer.parseInt((String) key);
+                    } catch (NumberFormatException ignored) {
+                        // Keep as string if not numeric
+                    }
+                }
+                normalized.put(key, entry.getValue());
+            }
+            return normalized;
         } catch (Exception e) {
             throw new WebAuthnException("unsupported_cose_algorithm",
                     "Failed to decode COSE key CBOR: " + e.getMessage());

@@ -76,6 +76,61 @@ app.include_router(
 )
 ```
 
+### React (with Next.js)
+
+```tsx
+import { PasskeyProvider, usePasskeyRegister, usePasskeyLogin } from "@open-passkey/react";
+
+function App() {
+  return (
+    <PasskeyProvider baseUrl="/api/passkey">
+      <PasskeyDemo />
+    </PasskeyProvider>
+  );
+}
+
+function PasskeyDemo() {
+  const { register, status: regStatus } = usePasskeyRegister();
+  const { authenticate, status: authStatus, result } = usePasskeyLogin();
+  return (
+    <>
+      <button onClick={() => register("user-1", "Alice")} disabled={regStatus === "pending"}>
+        Register Passkey
+      </button>
+      <button onClick={() => authenticate("user-1")} disabled={authStatus === "pending"}>
+        Sign In
+      </button>
+    </>
+  );
+}
+```
+
+### Angular
+
+```typescript
+// app.config.ts
+import { provideHttpClient } from "@angular/common/http";
+import { providePasskey } from "@open-passkey/angular";
+
+export const appConfig = {
+  providers: [provideHttpClient(), providePasskey({ baseUrl: "/passkey" })],
+};
+
+// app.component.ts — headless components with content projection
+@Component({
+  imports: [PasskeyRegisterComponent, PasskeyLoginComponent],
+  template: `
+    <passkey-register [userId]="userId" [username]="name" (registered)="onSuccess($event)" #reg>
+      <button (click)="reg.register()" [disabled]="reg.loading()">Register</button>
+    </passkey-register>
+    <passkey-login [userId]="userId" (authenticated)="onAuth($event)" #login>
+      <button (click)="login.login()" [disabled]="login.loading()">Sign In</button>
+    </passkey-login>
+  `,
+})
+export class AppComponent { /* ... */ }
+```
+
 See [all framework examples](#examples) below.
 
 ## Architecture
@@ -224,10 +279,10 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 | `examples/fastify` | Fastify | 3002 | Vanilla JS |
 | `examples/hono` | Hono | 3003 | Vanilla JS |
 | `examples/nestjs` | NestJS | 3009 | Vanilla JS |
-| `examples/nextjs` | Next.js | 3004 | React SDK |
-| `examples/nuxt` | Nuxt 3 | 3005 | Vue SDK |
-| `examples/sveltekit` | SvelteKit | 3006 | Svelte SDK |
-| `examples/remix` | Remix | 3007 | React SDK |
+| `examples/nextjs` | Next.js | 3004 | React SDK (`@open-passkey/react`) |
+| `examples/nuxt` | Nuxt 3 | 3005 | Vue SDK (`@open-passkey/vue`) |
+| `examples/sveltekit` | SvelteKit | 3006 | Svelte SDK (`@open-passkey/svelte`) |
+| `examples/remix` | Remix | 3007 | React SDK (`@open-passkey/react`) |
 | `examples/astro` | Astro | 3008 | Vanilla JS |
 | `examples/gin` | Go (stdlib) | 4001 | Vanilla JS |
 | `examples/nethttp` | Go net/http | 4002 | Vanilla JS |
@@ -240,8 +295,8 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 | `examples/spring` | Spring Boot | 8080 | Vanilla JS |
 | `examples/aspnet` | ASP.NET Core | 5000 | Vanilla JS |
 | `examples/axum` | Axum (Rust) | 3000 | Vanilla JS |
-| `examples/angular` | Angular | 4200 | Angular SDK |
-| `examples/solid` | SolidJS | 3011 | Solid SDK |
+| `examples/angular` | Angular | 4200+3010 | Angular SDK (`@open-passkey/angular`) |
+| `examples/solid` | SolidJS | 3011+3012 | Solid SDK (`@open-passkey/solid`) |
 
 ## Features
 

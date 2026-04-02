@@ -64,6 +64,7 @@ pub struct RegistrationInput {
 }
 
 /// Successful registration result.
+#[derive(Debug)]
 pub struct RegistrationResult {
     pub credential_id: Vec<u8>,
     pub public_key_cose: Vec<u8>,
@@ -87,6 +88,7 @@ pub struct AuthenticationInput {
 }
 
 /// Successful authentication result.
+#[derive(Debug)]
 pub struct AuthenticationResult {
     pub sign_count: u32,
     pub backup_eligible: bool,

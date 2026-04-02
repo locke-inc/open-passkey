@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.venv/
+package-lock.json
 
 # Build output
 dist/
@@ -21,6 +23,25 @@ Thumbs.db
 *.dll
 *.so
 *.dylib
+
+# .NET
+bin/
+obj/
+
+# Java
+target/
+
+# Python
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Rust
+Cargo.lock
+packages/core-rust/target/
+
+# Angular
+.angular/
 
 # Test output
 coverage/

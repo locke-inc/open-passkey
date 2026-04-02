@@ -1,7 +1,5 @@
-use pqcrypto_dilithium::dilithium3;
-use pqcrypto_traits::sign::{
-    DetachedSignature as DetachedSignatureTrait, PublicKey as PublicKeyTrait,
-};
+use fips204::ml_dsa_65;
+use fips204::traits::{SerDes, Verifier};
 use sha2::{Digest, Sha256};
 
 use crate::types::WebAuthnError;
@@ -26,10 +24,14 @@ pub fn verify_mldsa65(
         return Err(WebAuthnError::SignatureInvalid);
     }
 
-    let pk = dilithium3::PublicKey::from_bytes(public_key_bytes)
+    let pk_array: [u8; 1952] = public_key_bytes
+        .try_into()
+        .map_err(|_| WebAuthnError::SignatureInvalid)?;
+    let pk = ml_dsa_65::PublicKey::try_from_bytes(pk_array)
         .map_err(|_| WebAuthnError::SignatureInvalid)?;
 
-    let sig = dilithium3::DetachedSignature::from_bytes(signature_bytes)
+    let sig_array: [u8; 3309] = signature_bytes
+        .try_into()
         .map_err(|_| WebAuthnError::SignatureInvalid)?;
 
     // Verification data = authData || SHA256(clientDataJSON)
@@ -38,6 +40,9 @@ pub fn verify_mldsa65(
     verification_data.extend_from_slice(auth_data);
     verification_data.extend_from_slice(&client_data_hash);
 
-    dilithium3::verify_detached_signature(&sig, &verification_data, &pk)
-        .map_err(|_| WebAuthnError::SignatureInvalid)
+    if pk.verify(&verification_data, &sig_array, &[]) {
+        Ok(())
+    } else {
+        Err(WebAuthnError::SignatureInvalid)
+    }
 }

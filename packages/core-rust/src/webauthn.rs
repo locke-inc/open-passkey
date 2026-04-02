@@ -129,9 +129,9 @@ pub fn verify_registration(input: RegistrationInput) -> Result<RegistrationResul
         credential_id,
         public_key_cose: cred_public_key_bytes,
         sign_count: auth_data.sign_count,
-        rp_id_hash: auth_data.rp_id_hash,
         backup_eligible: auth_data.backup_eligible(),
         backup_state: auth_data.backup_state(),
+        rp_id_hash: auth_data.rp_id_hash,
     })
 }
 

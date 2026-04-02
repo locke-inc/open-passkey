@@ -1,4 +1,5 @@
-using Org.BouncyCastle.Pqc.Crypto.MLDsa;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
 using PeterO.Cbor;
 
 namespace OpenPasskey.Core;
@@ -21,8 +22,8 @@ internal static class MLDSA65
 
     public static void VerifyWithRawKey(byte[] rawPubKeyBytes, byte[] verifyData, byte[] signature)
     {
-        var pubKeyParams = new MLDsaPublicKeyParameters(MLDsaParameters.ml_dsa_65, rawPubKeyBytes);
-        var signer = new MLDsaSigner();
+        var pubKeyParams = MLDsaPublicKeyParameters.FromEncoding(MLDsaParameters.ml_dsa_65, rawPubKeyBytes);
+        var signer = new MLDsaSigner(MLDsaParameters.ml_dsa_65, false);
         signer.Init(false, pubKeyParams);
         signer.BlockUpdate(verifyData, 0, verifyData.Length);
         bool valid = signer.VerifySignature(signature);

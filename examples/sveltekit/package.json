@@ -7,7 +7,9 @@
   "dependencies": {
     "@open-passkey/sveltekit": "file:../../packages/server-sveltekit",
     "@open-passkey/server": "file:../../packages/server-ts",
-    "@open-passkey/core": "file:../../packages/core-ts"
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "@open-passkey/svelte": "file:../../packages/svelte",
+    "@open-passkey/sdk": "file:../../packages/sdk-js"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^3.0.0",
