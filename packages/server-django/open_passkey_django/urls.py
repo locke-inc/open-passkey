@@ -2,8 +2,8 @@
 
 Usage in your project's urls.py:
 
-    from server_django.views import configure
-    from server_django.stores import MemoryChallengeStore, MemoryCredentialStore
+    from open_passkey_django.views import configure
+    from open_passkey_django.stores import MemoryChallengeStore, MemoryCredentialStore
 
     configure(
         rp_id="example.com",
@@ -14,7 +14,7 @@ Usage in your project's urls.py:
     )
 
     urlpatterns = [
-        path("passkey/", include("server_django.urls")),
+        path("passkey/", include("open_passkey_django.urls")),
     ]
 """
 

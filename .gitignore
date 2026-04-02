@@ -43,6 +43,19 @@ packages/core-rust/target/
 # Angular
 .angular/
 
+# Astro
+.astro/
+
+# Next.js
+.next/
+next-env.d.ts
+
+# Nuxt
+.nuxt/
+
+# SvelteKit
+.svelte-kit/
+
 # Test output
 coverage/
 *.lcov

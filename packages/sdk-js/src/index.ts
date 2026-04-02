@@ -41,6 +41,18 @@ interface BeginAuthenticationResponse {
   extensions?: Record<string, unknown>;
 }
 
+export interface RegistrationResult {
+  credentialId: string;
+  registered: boolean;
+  prfSupported: boolean;
+}
+
+export interface AuthenticationResult {
+  userId: string;
+  authenticated: boolean;
+  prfSupported?: boolean;
+}
+
 export class PasskeyClient {
   private readonly baseUrl: string;
 
@@ -52,7 +64,7 @@ export class PasskeyClient {
   async register(
     userId: string,
     username: string,
-  ): Promise<{ credentialId: string; registered: boolean; prfSupported: boolean }> {
+  ): Promise<RegistrationResult> {
     // Step 1: Get registration options from server
     const beginRes = await fetch(`${this.baseUrl}/register/begin`, {
       method: "POST",
@@ -137,7 +149,7 @@ export class PasskeyClient {
 
   async authenticate(
     userId?: string,
-  ): Promise<{ userId: string; authenticated: boolean; prfSupported?: boolean }> {
+  ): Promise<AuthenticationResult> {
     // Step 1: Get authentication options from server
     const beginRes = await fetch(`${this.baseUrl}/login/begin`, {
       method: "POST",

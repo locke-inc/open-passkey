@@ -1,4 +1,4 @@
-from .passkey import create_passkey_blueprint
+from .passkey import create_passkey_blueprint, PasskeyConfig
 from .stores import (
     ChallengeStore,
     CredentialStore,
@@ -9,6 +9,7 @@ from .stores import (
 
 __all__ = [
     "create_passkey_blueprint",
+    "PasskeyConfig",
     "ChallengeStore",
     "CredentialStore",
     "MemoryChallengeStore",

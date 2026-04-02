@@ -10,7 +10,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from open_passkey_core import verify_authentication, verify_registration
+from open_passkey import verify_authentication, verify_registration
 
 from .stores import PasskeyError, StoredCredential
 

@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "open-passkey-fastapi"
@@ -10,8 +10,11 @@ requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.110",
     "pydantic>=2.0",
-    "open-passkey-core",
+    "open-passkey",
 ]
+
+[tool.setuptools]
+packages = ["open_passkey_fastapi"]
 
 [project.optional-dependencies]
 dev = ["pytest", "httpx", "pytest-asyncio"]

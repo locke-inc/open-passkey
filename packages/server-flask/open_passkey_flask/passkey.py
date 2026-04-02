@@ -1,21 +1,16 @@
-"""FastAPI router exposing 4 POST routes for WebAuthn registration and authentication."""
+"""Flask blueprint exposing 4 POST routes for WebAuthn registration and authentication."""
 
 import json
 import logging
+import os
 import secrets
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from dataclasses import dataclass
 
-from fastapi import APIRouter, HTTPException
+from flask import Blueprint, jsonify, request
 
-from open_passkey_core import verify_authentication, verify_registration
+from open_passkey import verify_authentication, verify_registration
 
-from .models import (
-    BeginAuthenticationRequest,
-    BeginRegistrationRequest,
-    FinishAuthenticationRequest,
-    FinishRegistrationRequest,
-)
 from .stores import (
     ChallengeStore,
     CredentialStore,
@@ -62,26 +57,32 @@ class PasskeyConfig:
             self.credential_store = MemoryCredentialStore()
 
 
-def create_passkey_router(config: PasskeyConfig) -> APIRouter:
-    """Create a FastAPI APIRouter with the 4 WebAuthn endpoints."""
-    router = APIRouter()
+def create_passkey_blueprint(config: PasskeyConfig) -> Blueprint:
+    """Create a Flask Blueprint with the 4 WebAuthn endpoints."""
+    bp = Blueprint("passkey", __name__)
 
-    @router.post("/register/begin")
-    async def begin_registration(req: BeginRegistrationRequest):
+    @bp.route("/register/begin", methods=["POST"])
+    def begin_registration():
+        body = request.get_json(force=True)
+        user_id = body.get("userId", "")
+        username = body.get("username", "")
+        if not user_id or not username:
+            return jsonify({"error": "userId and username are required"}), 400
+
         challenge_bytes = secrets.token_bytes(config.challenge_length)
         challenge = _b64url_encode(challenge_bytes)
 
         prf_salt = secrets.token_bytes(32)
         challenge_data = json.dumps({"challenge": challenge, "prfSalt": _b64url_encode(prf_salt)})
-        config.challenge_store.store(req.userId, challenge_data, config.challenge_timeout_seconds)
+        config.challenge_store.store(user_id, challenge_data, config.challenge_timeout_seconds)
 
-        return {
+        return jsonify({
             "challenge": challenge,
             "rp": {"id": config.rp_id, "name": config.rp_display_name},
             "user": {
-                "id": _b64url_encode(req.userId.encode()),
-                "name": req.username,
-                "displayName": req.username,
+                "id": _b64url_encode(user_id.encode()),
+                "name": username,
+                "displayName": username,
             },
             "pubKeyCredParams": [
                 {"type": "public-key", "alg": -52},
@@ -97,67 +98,74 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
             "extensions": {
                 "prf": {"eval": {"first": _b64url_encode(prf_salt)}},
             },
-        }
+        })
 
-    @router.post("/register/finish")
-    async def finish_registration(req: FinishRegistrationRequest):
+    @bp.route("/register/finish", methods=["POST"])
+    def finish_registration():
+        body = request.get_json(force=True)
+        user_id = body.get("userId", "")
+        credential = body.get("credential", {})
+        prf_supported = body.get("prfSupported", False)
+
         try:
-            challenge_data = json.loads(config.challenge_store.consume(req.userId))
+            challenge_data = json.loads(config.challenge_store.consume(user_id))
         except PasskeyError:
-            raise HTTPException(400, "challenge not found or expired")
+            return jsonify({"error": "challenge not found or expired"}), 400
 
         try:
             result = verify_registration(
                 rp_id=config.rp_id,
                 expected_challenge=challenge_data["challenge"],
                 expected_origin=config.origin,
-                client_data_json=req.credential.response.clientDataJSON,
-                attestation_object=req.credential.response.attestationObject,
+                client_data_json=credential["response"]["clientDataJSON"],
+                attestation_object=credential["response"]["attestationObject"],
             )
         except Exception as e:
             logger.warning("registration verification failed: %s", e)
-            raise HTTPException(400, "registration verification failed")
+            return jsonify({"error": "registration verification failed"}), 400
 
         cred = StoredCredential(
             credential_id=result.credential_id,
             public_key_cose=result.public_key_cose,
             sign_count=result.sign_count,
-            user_id=req.userId,
+            user_id=user_id,
         )
-        prf_enabled = req.prfSupported is True
-        if prf_enabled:
+        if prf_supported:
             cred.prf_salt = _b64url_decode(challenge_data["prfSalt"])
             cred.prf_supported = True
 
         config.credential_store.store(cred)
 
-        return {
+        return jsonify({
             "credentialId": _b64url_encode(result.credential_id),
             "registered": True,
-            "prfSupported": prf_enabled,
-        }
+            "prfSupported": bool(prf_supported),
+        })
 
-    @router.post("/login/begin")
-    async def begin_authentication(req: BeginAuthenticationRequest = BeginAuthenticationRequest()):
+    @bp.route("/login/begin", methods=["POST"])
+    def begin_authentication():
+        body = request.get_json(silent=True) or {}
+        user_id = body.get("userId", "")
+
         challenge_bytes = secrets.token_bytes(config.challenge_length)
         challenge = _b64url_encode(challenge_bytes)
 
-        challenge_key = req.userId if req.userId else challenge
+        challenge_key = user_id if user_id else challenge
         config.challenge_store.store(challenge_key, challenge, config.challenge_timeout_seconds)
 
-        options: dict = {
+        options = {
             "challenge": challenge,
             "rpId": config.rp_id,
             "timeout": int(config.challenge_timeout_seconds * 1000),
             "userVerification": "preferred",
         }
 
-        if req.userId:
+        if user_id:
             allow_credentials = []
             eval_by_credential = {}
             has_prf = False
             try:
-                creds = config.credential_store.get_by_user(req.userId)
+                creds = config.credential_store.get_by_user(user_id)
                 for c in creds:
                     cred_id_encoded = _b64url_encode(c.credential_id)
                     allow_credentials.append({"type": "public-key", "id": cred_id_encoded})
@@ -170,24 +178,29 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
             if has_prf:
                 options["extensions"] = {"prf": {"evalByCredential": eval_by_credential}}
 
-        return options
+        return jsonify(options)
 
-    @router.post("/login/finish")
-    async def finish_authentication(req: FinishAuthenticationRequest):
+    @bp.route("/login/finish", methods=["POST"])
+    def finish_authentication():
+        body = request.get_json(force=True)
+        user_id = body.get("userId", "")
+        credential = body.get("credential", {})
+
         try:
-            challenge = config.challenge_store.consume(req.userId)
+            challenge = config.challenge_store.consume(user_id)
         except PasskeyError:
-            raise HTTPException(400, "challenge not found or expired")
+            return jsonify({"error": "challenge not found or expired"}), 400
 
-        cred_id_bytes = _b64url_decode(req.credential.id)
+        cred_id_bytes = _b64url_decode(credential["id"])
         try:
             stored = config.credential_store.get(cred_id_bytes)
         except PasskeyError:
-            raise HTTPException(400, "credential not found")
+            return jsonify({"error": "credential not found"}), 400
 
-        if req.credential.response.userHandle:
-            if _b64url_decode(req.credential.response.userHandle).decode() != stored.user_id:
-                raise HTTPException(400, "userHandle does not match credential owner")
+        user_handle = credential.get("response", {}).get("userHandle", "")
+        if user_handle:
+            if _b64url_decode(user_handle).decode() != stored.user_id:
+                return jsonify({"error": "userHandle does not match credential owner"}), 400
 
         try:
             result = verify_authentication(
@@ -196,20 +209,20 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
                 expected_origin=config.origin,
                 stored_public_key_cose=stored.public_key_cose,
                 stored_sign_count=stored.sign_count,
-                client_data_json=req.credential.response.clientDataJSON,
-                authenticator_data=req.credential.response.authenticatorData,
-                signature=req.credential.response.signature,
+                client_data_json=credential["response"]["clientDataJSON"],
+                authenticator_data=credential["response"]["authenticatorData"],
+                signature=credential["response"]["signature"],
             )
         except Exception as e:
             logger.warning("authentication verification failed: %s", e)
-            raise HTTPException(400, "authentication verification failed")
+            return jsonify({"error": "authentication verification failed"}), 400
 
         stored.sign_count = result.sign_count
         config.credential_store.update(stored)
 
-        resp: dict = {"userId": stored.user_id, "authenticated": True}
+        resp = {"userId": stored.user_id, "authenticated": True}
         if stored.prf_supported:
             resp["prfSupported"] = True
-        return resp
+        return jsonify(resp)
 
-    return router
+    return bp

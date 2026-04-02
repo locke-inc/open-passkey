@@ -1,6 +1,7 @@
 {
   "name": "open-passkey-sveltekit-example",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite dev --port 3006"
   },
