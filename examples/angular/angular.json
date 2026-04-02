@@ -14,7 +14,9 @@
             "index": "src/index.html",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.json",
-            "styles": ["src/styles.css"]
+            "styles": ["src/styles.css"],
+            "polyfills": ["zone.js"],
+            "preserveSymlinks": true
           }
         },
         "serve": {
