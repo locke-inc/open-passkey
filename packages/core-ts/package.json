@@ -24,6 +24,6 @@
   },
   "dependencies": {
     "@noble/post-quantum": "0.5.4",
-    "cbor-x": "1.6.3"
+    "cbor-x": "1.6.4"
   }
 }
