@@ -1,0 +1,21 @@
+[package]
+name = "open-passkey-core"
+version = "0.1.0"
+edition = "2021"
+description = "WebAuthn/FIDO2 core protocol verification library with post-quantum support"
+license = "MIT"
+
+[dependencies]
+p256 = { version = "0.13", features = ["ecdsa", "sha256"] }
+ecdsa = { version = "0.16", features = ["der"] }
+sha2 = "0.10"
+ciborium = "0.2"
+base64ct = { version = "1", features = ["alloc"] }
+serde_json = "1"
+fips204 = "0.4"
+x509-cert = { version = "0.2", features = ["std"] }
+der = "0.7"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

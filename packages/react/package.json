@@ -1,0 +1,25 @@
+{
+  "name": "@open-passkey/react",
+  "version": "0.0.1",
+  "description": "React hooks for passkey (WebAuthn/FIDO2) authentication",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Locke Identity Networks Inc.",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@open-passkey/sdk": "file:../sdk-js"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "typescript": "~5.7.0"
+  }
+}

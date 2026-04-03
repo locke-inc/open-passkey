@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>open-passkey — Hono Example</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>open-passkey</h1>
+  <p class="subtitle">Hono Example</p>
+  <div class="field">
+    <label for="userId">User ID</label>
+    <input type="text" id="userId" value="test-user">
+  </div>
+  <div class="field">
+    <label for="username">Username</label>
+    <input type="text" id="username" value="Test User">
+  </div>
+  <div class="buttons">
+    <button class="primary" onclick="doRegister()">Register Passkey</button>
+    <button class="secondary" onclick="doLogin()">Sign In</button>
+  </div>
+  <div id="status"></div>
+  <script src="/passkey.js"></script>
+  <script>
+    const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/passkey" });
+    function showStatus(msg, type) {
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.className = type;
+    }
+    async function doRegister() {
+      try {
+        showStatus("Starting registration...", "info");
+        const result = await passkey.register(document.getElementById("userId").value, document.getElementById("username").value);
+        showStatus("Registered! Credential ID: " + result.credentialId, "success");
+      } catch (e) { showStatus("Registration failed: " + e.message, "error"); }
+    }
+    async function doLogin() {
+      try {
+        showStatus("Starting authentication...", "info");
+        const result = await passkey.authenticate(document.getElementById("userId").value);
+        showStatus("Authenticated! User: " + result.userId, "success");
+      } catch (e) { showStatus("Authentication failed: " + e.message, "error"); }
+    }
+  </script>
+</body>
+</html>

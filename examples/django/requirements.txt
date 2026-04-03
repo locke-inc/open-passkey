@@ -1,0 +1,3 @@
+django
+-e ../../packages/core-py
+-e ../../packages/server-django

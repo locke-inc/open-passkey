@@ -13,7 +13,7 @@ The library guarantees:
 - **Algorithm dispatch integrity.** The COSE key's `alg` field determines which verification path runs, and each decoder independently validates both `kty` and `alg`, preventing cross-algorithm confusion.
 - **Challenge, origin, RP ID, and type verification** during both registration and authentication ceremonies.
 - **Sign count rollback detection.** If the stored sign count is non-zero and the authenticator's reported count is not greater, authentication is rejected (detects cloned authenticators per WebAuthn spec section 7.2 step 21).
-- **Cross-language consistency.** Go and TypeScript implementations produce identical results for identical inputs, verified by shared test vectors.
+- **Cross-language consistency.** All six implementations (Go, TypeScript, Python, Java, .NET, Rust) produce identical results for identical inputs, verified by 31 shared test vectors.
 
 ### Out of Scope (Caller Responsibility)
 
@@ -22,28 +22,63 @@ The library guarantees:
 - **Rate limiting.** The library does not throttle authentication attempts. Implement rate limiting in your application to prevent brute-force attacks.
 - **Credential-to-user binding.** The library verifies that a signature is valid for a given public key, but does not enforce that a credential belongs to a specific user. That is the `CredentialStore` implementation's responsibility.
 - **Session management.** Post-authentication token issuance and session handling are entirely the consumer's responsibility.
-- **Request body limits.** The `server-go` HTTP handlers enforce a 128KB body limit. If you use `core-go` directly, enforce limits at your HTTP layer.
-- **Error message filtering.** The `server-go` handlers return generic error messages to HTTP clients and log details server-side. If you use `core-go` directly, do not expose its error strings (e.g., `rp_id_mismatch`, `signature_invalid`) to end users, as they provide an oracle for attackers to refine forged credentials.
-- **Panic recovery.** Add panic recovery middleware to your HTTP server. While the library handles malformed input gracefully, defense-in-depth dictates that unexpected panics should produce a generic 500 response rather than exposing stack traces.
-- **CORS.** The `server-go` handlers do not set CORS headers. Configure CORS middleware appropriate to your deployment.
+- **Request body limits.** The Go server bindings (`server-go`) enforce a 128KB body limit. Other server packages rely on their framework's default limits. If you use any core library directly, enforce limits at your HTTP layer.
+- **Error message filtering.** Server packages return generic error messages to HTTP clients and log details server-side. If you use core libraries directly, do not expose error strings (e.g., `rp_id_mismatch`, `signature_invalid`) to end users, as they provide an oracle for attackers to refine forged credentials.
+- **Panic/exception recovery.** Add panic recovery middleware (Go), exception handlers (Python/Java/.NET), or error boundaries (TypeScript/Rust) to your HTTP server. While the library handles malformed input gracefully, defense-in-depth dictates that unexpected errors should produce a generic 500 response rather than exposing stack traces.
+- **CORS.** Server packages do not set CORS headers. Configure CORS middleware appropriate to your deployment.
 
 ### Known Properties
 
-- **ECDSA signature malleability.** For any valid ECDSA signature `(r, s)`, the signature `(r, n-s)` is also mathematically valid. Both Go's `crypto/ecdsa` and Node.js's `crypto` module accept high-S signatures. This is not exploitable in WebAuthn because signatures are verified and discarded (never stored, compared, or used as identifiers), and challenges are single-use.
-- **ML-DSA-65 is non-malleable by design.** Both `cloudflare/circl` and `@noble/post-quantum` enforce FIPS 204's strict coefficient checks.
+- **ECDSA signature malleability.** For any valid ECDSA signature `(r, s)`, the signature `(r, n-s)` is also mathematically valid. All six language implementations accept high-S signatures (Go `crypto/ecdsa`, Node.js `crypto`, Python `cryptography`, Java BouncyCastle, .NET `System.Security.Cryptography`, Rust `p256`). This is not exploitable in WebAuthn because signatures are verified and discarded (never stored, compared, or used as identifiers), and challenges are single-use.
+- **ML-DSA-65 is non-malleable by design.** All implementations enforce FIPS 204's strict coefficient checks: Go (`cloudflare/circl`), TypeScript (`@noble/post-quantum`), Python (`oqs`/liboqs), Java (BouncyCastle), .NET (BouncyCastle.Cryptography), Rust (`fips204`).
 
 ## Dependencies
 
-Security-critical runtime dependencies:
+Security-critical runtime dependencies per language:
 
-| Package | Language | Purpose | Notes |
-|---------|----------|---------|-------|
-| `cloudflare/circl` | Go | ML-DSA-65 | Maintained by Cloudflare cryptography team |
-| `fxamacker/cbor/v2` | Go | CBOR decoding | Extensively fuzz-tested, configured to reject duplicate map keys |
-| `@noble/post-quantum` | TypeScript | ML-DSA-65 | By paulmillr (noble crypto suite). Pinned to exact version. |
-| `cbor-x` | TypeScript | CBOR decoding | Pinned to exact version |
+### Go
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `cloudflare/circl` | ML-DSA-65 | Maintained by Cloudflare cryptography team |
+| `fxamacker/cbor/v2` | CBOR decoding | Extensively fuzz-tested, configured to reject duplicate map keys |
 
-The library has no other runtime dependencies beyond language standard libraries (`crypto/ecdsa`, `crypto/sha256`, `node:crypto`).
+Plus Go stdlib `crypto/ecdsa`, `crypto/sha256`.
+
+### TypeScript
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `@noble/post-quantum` | ML-DSA-65 | By paulmillr (noble crypto suite). Pinned to exact version. |
+| `cbor-x` | CBOR decoding | Pinned to exact version |
+
+Plus Node.js `crypto` module.
+
+### Python
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `cryptography` | ES256 (ECDSA P-256) | PyCA maintained, widely audited |
+| `oqs` (liboqs) | ML-DSA-65 | Open Quantum Safe project, wraps liboqs C library |
+| `cbor2` | CBOR decoding | Pure Python CBOR implementation |
+
+### Java
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `org.bouncycastle:bcprov-jdk18on` | ES256 + ML-DSA-65 | BouncyCastle provider, PQ crypto included since 1.78 |
+| `com.fasterxml.jackson.dataformat:jackson-dataformat-cbor` | CBOR decoding | Jackson ecosystem |
+
+### .NET
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `BouncyCastle.Cryptography` | ML-DSA-65 | BouncyCastle for .NET |
+| `PeterO.Cbor` | CBOR decoding | Widely used .NET CBOR library |
+
+Plus `System.Security.Cryptography` for ES256.
+
+### Rust
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `p256` + `ecdsa` | ES256 (ECDSA P-256) | RustCrypto project |
+| `fips204` | ML-DSA-65 | FIPS 204 implementation |
+| `ciborium` | CBOR decoding | Pure Rust CBOR implementation |
 
 ## Reporting Vulnerabilities
 

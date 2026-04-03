@@ -1,0 +1,24 @@
+{
+  "name": "@open-passkey/vue",
+  "version": "0.0.1",
+  "description": "Vue 3 composables for passkey (WebAuthn/FIDO2) authentication",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Locke Identity Networks Inc.",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@open-passkey/sdk": "file:../sdk-js"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.0"
+  },
+  "devDependencies": {
+    "vue": "^3.5.0",
+    "typescript": "~5.7.0"
+  }
+}

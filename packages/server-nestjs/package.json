@@ -1,0 +1,30 @@
+{
+  "name": "@open-passkey/nestjs",
+  "version": "0.0.1",
+  "description": "NestJS passkey/WebAuthn server module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["passkey", "webauthn", "fido2", "nestjs"],
+  "author": "Locke Identity Networks Inc.",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@types/node": "^25.5.0",
+    "reflect-metadata": "^0.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@open-passkey/server": "file:../server-ts"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-passkey-django"
+version = "0.1.0"
+description = "Django views for open-passkey WebAuthn/FIDO2 authentication"
+requires-python = ">=3.10"
+dependencies = [
+    "django>=4.2",
+    "open-passkey-server",
+]
+
+[tool.setuptools]
+packages = ["open_passkey_django"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-django"]

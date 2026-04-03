@@ -1,0 +1,18 @@
+{
+  "name": "open-passkey-fastify-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx server.ts"
+  },
+  "dependencies": {
+    "@open-passkey/fastify": "file:../../packages/server-fastify",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "fastify": "^5.0.0",
+    "@fastify/static": "^8.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}

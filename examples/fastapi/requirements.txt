@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+-e ../../packages/core-py
+-e ../../packages/server-fastapi

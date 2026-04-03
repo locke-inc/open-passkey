@@ -1,0 +1,62 @@
+---
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>open-passkey Astro Example</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>open-passkey</h1>
+      <p class="subtitle">Astro + Vanilla JS Example</p>
+      <div class="field">
+        <label for="userId">User ID</label>
+        <input id="userId" value="test-user" />
+      </div>
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" value="Test User" />
+      </div>
+      <div class="buttons">
+        <button id="registerBtn" class="primary">Register Passkey</button>
+        <button id="loginBtn" class="secondary">Sign In</button>
+      </div>
+      <div id="status"></div>
+    </div>
+    <script is:inline src="/passkey.js"></script>
+    <script is:inline>
+      const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/api/passkey" });
+      const statusEl = document.getElementById("status");
+
+      function showStatus(text, type) {
+        statusEl.textContent = text;
+        statusEl.className = type;
+      }
+
+      document.getElementById("registerBtn").addEventListener("click", async () => {
+        const userId = document.getElementById("userId").value;
+        const username = document.getElementById("username").value;
+        try {
+          showStatus("Registering...", "info");
+          await passkey.register(userId, username);
+          showStatus("Passkey registered successfully!", "success");
+        } catch (err) {
+          showStatus(err.message || "Registration failed", "error");
+        }
+      });
+
+      document.getElementById("loginBtn").addEventListener("click", async () => {
+        const userId = document.getElementById("userId").value;
+        try {
+          showStatus("Signing in...", "info");
+          const result = await passkey.authenticate(userId);
+          showStatus("Authenticated! User: " + result.userId, "success");
+        } catch (err) {
+          showStatus(err.message || "Authentication failed", "error");
+        }
+      });
+    </script>
+  </body>
+</html>

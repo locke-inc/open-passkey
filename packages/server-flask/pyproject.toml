@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-passkey-flask"
+version = "0.1.0"
+description = "Flask blueprint for open-passkey WebAuthn/FIDO2 authentication"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0",
+    "open-passkey-server",
+]
+
+[tool.setuptools]
+packages = ["open_passkey_flask"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-flask"]

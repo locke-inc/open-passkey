@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-passkey-fastapi"
+version = "0.1.0"
+description = "FastAPI router for open-passkey WebAuthn/FIDO2 authentication"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "pydantic>=2.0",
+    "open-passkey-server",
+]
+
+[tool.setuptools]
+packages = ["open_passkey_fastapi"]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx", "pytest-asyncio"]

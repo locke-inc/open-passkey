@@ -1,0 +1,17 @@
+{
+  "name": "open-passkey-astro-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 3008"
+  },
+  "dependencies": {
+    "@open-passkey/astro": "file:../../packages/server-astro",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "astro": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

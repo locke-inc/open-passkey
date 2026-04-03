@@ -1,0 +1,16 @@
+[package]
+name = "open-passkey-axum"
+version = "0.1.0"
+edition = "2021"
+description = "Axum handlers for open-passkey WebAuthn/FIDO2 authentication"
+
+[dependencies]
+axum = { version = "0.7", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+rand = "0.8"
+open-passkey-core = { path = "../core-rust" }
+tracing = "0.1"
+thiserror = "1"

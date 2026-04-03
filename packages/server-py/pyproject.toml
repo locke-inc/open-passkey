@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-passkey-server"
+version = "0.1.0"
+description = "Shared server logic for open-passkey WebAuthn/FIDO2 authentication"
+requires-python = ">=3.10"
+dependencies = [
+    "open-passkey",
+]
+
+[tool.setuptools]
+packages = ["open_passkey_server"]

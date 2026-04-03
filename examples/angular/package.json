@@ -1,0 +1,36 @@
+{
+  "name": "open-passkey-angular-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "concurrently \"npx tsx server.ts\" \"npx ng serve --port 4200 --proxy-config proxy.conf.json\"",
+    "server": "npx tsx server.ts",
+    "client": "npx ng serve --port 4200 --proxy-config proxy.conf.json"
+  },
+  "dependencies": {
+    "@angular/animations": "^19.2.19",
+    "@angular/common": "^19.2.19",
+    "@angular/compiler": "^19.2.19",
+    "@angular/core": "^19.2.19",
+    "@angular/platform-browser": "^19.2.19",
+    "@angular/platform-browser-dynamic": "^19.2.19",
+    "@open-passkey/angular": "file:../../packages/angular/dist",
+    "@open-passkey/sdk": "file:../../packages/sdk-js",
+    "@open-passkey/core": "file:../../packages/core-ts",
+    "@open-passkey/express": "file:../../packages/server-express",
+    "@open-passkey/server": "file:../../packages/server-ts",
+    "express": "^5.0.0",
+    "rxjs": "^7.8.1",
+    "tslib": "^2.8.0",
+    "zone.js": "~0.15.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^19.2.0",
+    "@angular/cli": "^19.2.0",
+    "@angular/compiler-cli": "^19.2.0",
+    "@types/express": "^5.0.0",
+    "concurrently": "^9.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "~5.7.0"
+  }
+}
