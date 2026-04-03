@@ -1,0 +1,46 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /packages/core-go
+    schedule:
+      interval: weekly
+  - package-ecosystem: gomod
+    directory: /packages/server-go
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /packages/core-ts
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /packages/sdk-js
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /packages/authenticator-ts
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /packages/angular
+    schedule:
+      interval: weekly
+  - package-ecosystem: pip
+    directory: /packages/core-py
+    schedule:
+      interval: weekly
+  - package-ecosystem: maven
+    directory: /packages/core-java
+    schedule:
+      interval: weekly
+  - package-ecosystem: nuget
+    directory: /packages/core-dotnet
+    schedule:
+      interval: weekly
+  - package-ecosystem: cargo
+    directory: /packages/core-rust
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
