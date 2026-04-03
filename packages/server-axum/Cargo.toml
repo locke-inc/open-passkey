@@ -12,3 +12,5 @@ serde_json = "1"
 base64 = "0.22"
 rand = "0.8"
 open-passkey-core = { path = "../core-rust" }
+tracing = "0.1"
+thiserror = "1"

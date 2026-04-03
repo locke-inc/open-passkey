@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using OpenPasskey.Core;
 
 namespace OpenPasskey.AspNet;
 
@@ -37,6 +38,12 @@ public static class PasskeyEndpoints
                 ctx.Response.ContentType = "application/json";
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
             }
+            catch (WebAuthnException ex)
+            {
+                ctx.Response.StatusCode = 400;
+                ctx.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
+            }
         });
 
         endpoints.MapPost($"{prefix}/register/finish", async (HttpContext ctx) =>
@@ -54,6 +61,12 @@ public static class PasskeyEndpoints
             catch (PasskeyException ex)
             {
                 ctx.Response.StatusCode = ex.StatusCode;
+                ctx.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
+            }
+            catch (WebAuthnException ex)
+            {
+                ctx.Response.StatusCode = 400;
                 ctx.Response.ContentType = "application/json";
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
             }
@@ -80,6 +93,12 @@ public static class PasskeyEndpoints
                 ctx.Response.ContentType = "application/json";
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
             }
+            catch (WebAuthnException ex)
+            {
+                ctx.Response.StatusCode = 400;
+                ctx.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
+            }
         });
 
         endpoints.MapPost($"{prefix}/login/finish", async (HttpContext ctx) =>
@@ -96,6 +115,12 @@ public static class PasskeyEndpoints
             catch (PasskeyException ex)
             {
                 ctx.Response.StatusCode = ex.StatusCode;
+                ctx.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
+            }
+            catch (WebAuthnException ex)
+            {
+                ctx.Response.StatusCode = 400;
                 ctx.Response.ContentType = "application/json";
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
             }

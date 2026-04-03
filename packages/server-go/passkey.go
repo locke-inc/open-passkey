@@ -419,6 +419,17 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// Handler returns an http.Handler with all passkey routes registered.
+// Routes are registered without a prefix — use http.StripPrefix if mounting under a path.
+func (p *Passkey) Handler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /register/begin", p.BeginRegistration)
+	mux.HandleFunc("POST /register/finish", p.FinishRegistration)
+	mux.HandleFunc("POST /login/begin", p.BeginAuthentication)
+	mux.HandleFunc("POST /login/finish", p.FinishAuthentication)
+	return mux
+}
+
 // --- HTTP helpers ---
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

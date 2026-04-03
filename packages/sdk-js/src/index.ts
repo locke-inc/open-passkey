@@ -100,12 +100,15 @@ export class PasskeyClient {
       },
     };
 
-    // Handle PRF extension
+    // Handle PRF extension — decode base64url salt values to ArrayBuffer
     if (options.extensions?.prf) {
-      createOptions.publicKey!.extensions = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        prf: options.extensions.prf as any,
-      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const prf = structuredClone(options.extensions.prf) as any;
+      if (prf.eval) {
+        if (prf.eval.first) prf.eval.first = base64urlDecode(prf.eval.first);
+        if (prf.eval.second) prf.eval.second = base64urlDecode(prf.eval.second);
+      }
+      createOptions.publicKey!.extensions = { prf };
     }
 
     // Step 3: Call WebAuthn API
@@ -179,12 +182,21 @@ export class PasskeyClient {
       }));
     }
 
-    // Handle PRF extension
+    // Handle PRF extension — decode base64url salt values to ArrayBuffer
     if (options.extensions?.prf) {
-      getOptions.publicKey!.extensions = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        prf: options.extensions.prf as any,
-      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const prf = structuredClone(options.extensions.prf) as any;
+      if (prf.evalByCredential) {
+        for (const vals of Object.values(prf.evalByCredential) as any[]) {
+          if (vals.first) vals.first = base64urlDecode(vals.first);
+          if (vals.second) vals.second = base64urlDecode(vals.second);
+        }
+      }
+      if (prf.eval) {
+        if (prf.eval.first) prf.eval.first = base64urlDecode(prf.eval.first);
+        if (prf.eval.second) prf.eval.second = base64urlDecode(prf.eval.second);
+      }
+      getOptions.publicKey!.extensions = { prf };
     }
 
     // Step 3: Call WebAuthn API

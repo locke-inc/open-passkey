@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	passkey "github.com/locke-inc/open-passkey/packages/server-chi"
+	passkey "github.com/locke-inc/open-passkey/packages/server-go"
 )
 
 func main() {
@@ -24,8 +24,11 @@ func main() {
 
 	r := chi.NewRouter()
 
-	// Passkey API routes
-	r.Mount("/passkey", p.Routes())
+	// Passkey API routes — Chi accepts http.HandlerFunc directly
+	r.Post("/passkey/register/begin", p.BeginRegistration)
+	r.Post("/passkey/register/finish", p.FinishRegistration)
+	r.Post("/passkey/login/begin", p.BeginAuthentication)
+	r.Post("/passkey/login/finish", p.FinishAuthentication)
 
 	// Shared static files (passkey.js, style.css)
 	sharedFS := http.FileServer(http.Dir("../shared"))
@@ -35,7 +38,7 @@ func main() {
 	// Local static files (index.html)
 	r.Handle("/*", http.FileServer(http.Dir("public")))
 
-	fmt.Println("Chi (server-chi) example running on http://localhost:4005")
+	fmt.Println("Chi (server-go) example running on http://localhost:4005")
 	if err := http.ListenAndServe(":4005", r); err != nil {
 		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
 		os.Exit(1)

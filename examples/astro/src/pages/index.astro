@@ -27,7 +27,7 @@
     </div>
     <script is:inline src="/passkey.js"></script>
     <script is:inline>
-      const BASE_URL = "/api/passkey";
+      const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/api/passkey" });
       const statusEl = document.getElementById("status");
 
       function showStatus(text, type) {
@@ -40,7 +40,7 @@
         const username = document.getElementById("username").value;
         try {
           showStatus("Registering...", "info");
-          await registerPasskey(BASE_URL, userId, username);
+          await passkey.register(userId, username);
           showStatus("Passkey registered successfully!", "success");
         } catch (err) {
           showStatus(err.message || "Registration failed", "error");
@@ -51,7 +51,7 @@
         const userId = document.getElementById("userId").value;
         try {
           showStatus("Signing in...", "info");
-          const result = await authenticatePasskey(BASE_URL, userId);
+          const result = await passkey.authenticate(userId);
           showStatus("Authenticated! User: " + result.userId, "success");
         } catch (err) {
           showStatus(err.message || "Authentication failed", "error");

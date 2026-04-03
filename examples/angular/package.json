@@ -15,6 +15,7 @@
     "@angular/platform-browser": "^19.2.19",
     "@angular/platform-browser-dynamic": "^19.2.19",
     "@open-passkey/angular": "file:../../packages/angular/dist",
+    "@open-passkey/sdk": "file:../../packages/sdk-js",
     "@open-passkey/core": "file:../../packages/core-ts",
     "@open-passkey/express": "file:../../packages/server-express",
     "@open-passkey/server": "file:../../packages/server-ts",

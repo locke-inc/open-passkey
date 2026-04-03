@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>com.openpasskey</groupId>
-            <artifactId>open-passkey-core-java</artifactId>
+            <artifactId>core-java</artifactId>
             <version>0.1.0</version>
         </dependency>
         <dependency>

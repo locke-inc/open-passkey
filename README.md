@@ -38,25 +38,30 @@ app.use("/passkey", createPasskeyRouter({
 app.listen(3001);
 ```
 
-### Go (Fiber)
+### Go (any framework)
 
 ```go
 import (
-    passkey "github.com/locke-inc/open-passkey/packages/server-fiber"
-    "github.com/gofiber/fiber/v2"
+    "net/http"
+    passkey "github.com/locke-inc/open-passkey/packages/server-go"
 )
 
-app := fiber.New()
 p, _ := passkey.New(passkey.Config{
     RPID:            "localhost",
     RPDisplayName:   "My App",
-    Origin:          "http://localhost:4004",
+    Origin:          "http://localhost:4001",
     ChallengeStore:  passkey.NewMemoryChallengeStore(),
     CredentialStore: passkey.NewMemoryCredentialStore(),
 })
-p.RegisterRoutes(app, "/passkey")
-app.Listen(":4004")
+mux := http.NewServeMux()
+mux.HandleFunc("POST /passkey/register/begin", p.BeginRegistration)
+mux.HandleFunc("POST /passkey/register/finish", p.FinishRegistration)
+mux.HandleFunc("POST /passkey/login/begin", p.BeginAuthentication)
+mux.HandleFunc("POST /passkey/login/finish", p.FinishAuthentication)
+http.ListenAndServe(":4001", mux)
 ```
+
+Handlers are standard `http.HandlerFunc` — works directly with Chi, Gorilla, net/http, etc. For Echo and Fiber, see the examples for thin adapter wrappers.
 
 ### FastAPI (Python)
 
@@ -105,15 +110,29 @@ function PasskeyDemo() {
 }
 ```
 
+### Vanilla JS (any backend)
+
+```html
+<script src="https://unpkg.com/@open-passkey/sdk/dist/open-passkey.iife.js"></script>
+<script>
+  const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/passkey" });
+
+  // Register
+  const reg = await passkey.register("user-1", "Alice");
+
+  // Authenticate
+  const auth = await passkey.authenticate("user-1");
+</script>
+```
+
 ### Angular
 
 ```typescript
 // app.config.ts
-import { provideHttpClient } from "@angular/common/http";
 import { providePasskey } from "@open-passkey/angular";
 
 export const appConfig = {
-  providers: [provideHttpClient(), providePasskey({ baseUrl: "/passkey" })],
+  providers: [providePasskey({ baseUrl: "/passkey" })],
 };
 
 // app.component.ts — headless components with content projection
@@ -146,7 +165,7 @@ open-passkey/
 │   ├── core-dotnet/        # .NET core protocol
 │   ├── core-rust/          # Rust core protocol
 │   ├── server-ts/          # Shared TS server logic (Passkey class)
-│   ├── server-go/          # Go HTTP bindings (stdlib)
+│   ├── server-go/          # Go HTTP bindings (stdlib http.HandlerFunc)
 │   ├── server-express/     # Express.js
 │   ├── server-fastify/     # Fastify
 │   ├── server-hono/        # Hono (edge-compatible)
@@ -156,13 +175,10 @@ open-passkey/
 │   ├── server-sveltekit/   # SvelteKit
 │   ├── server-remix/       # Remix
 │   ├── server-astro/       # Astro
-│   ├── server-nethttp/     # Go net/http
-│   ├── server-echo/        # Go Echo
-│   ├── server-fiber/       # Go Fiber
-│   ├── server-chi/         # Go Chi
-│   ├── server-flask/       # Flask
-│   ├── server-fastapi/     # FastAPI
-│   ├── server-django/      # Django
+│   ├── server-py/          # Shared Python server logic (PasskeyHandler)
+│   ├── server-flask/       # Flask (thin wrapper around server-py)
+│   ├── server-fastapi/     # FastAPI (thin wrapper around server-py)
+│   ├── server-django/      # Django (thin wrapper around server-py)
 │   ├── server-spring/      # Spring Boot
 │   ├── server-aspnet/      # ASP.NET Core
 │   ├── server-axum/        # Axum (Rust)
@@ -177,7 +193,7 @@ open-passkey/
 └── tools/vecgen/           # Test vector generator
 ```
 
-The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Framework bindings** are thin adapters (~50-80 lines). Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography.
+The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Server packages** (`server-ts`, `server-go`, `server-py`) contain shared business logic; **framework bindings** are thin adapters (~50-80 lines). **Frontend SDKs** all wrap `@open-passkey/sdk` (`PasskeyClient`), which handles the browser WebAuthn API and HTTP calls — framework packages only add framework-specific state management (React hooks, Vue refs, Svelte stores, Angular DI). Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography or client logic.
 
 ## Packages
 
@@ -221,17 +237,13 @@ All share `@open-passkey/server` — a framework-agnostic `Passkey` class with c
 | `@open-passkey/remix` | Remix | `createPasskeyActions(config)` → action functions |
 | `@open-passkey/astro` | Astro | `createPasskeyEndpoints(config)` → API routes |
 
-#### Go (5 bindings)
+#### Go (1 package, all frameworks)
 
-Each is a separate Go module. Pluggable `ChallengeStore` and `CredentialStore` interfaces.
+Single Go module with standard `http.HandlerFunc` handlers. Pluggable `ChallengeStore` and `CredentialStore` interfaces. Works directly with any framework that accepts `http.HandlerFunc` (Chi, Gorilla, net/http). For Echo and Fiber, examples show thin adapter wrappers (~5 lines).
 
-| Package | Framework | Init Pattern |
-|---------|-----------|-------------|
-| `server-go` | stdlib | `p.BeginRegistration` etc. as `http.HandlerFunc` |
-| `server-nethttp` | net/http | `http.Handle("/passkey/", p.Handler())` |
-| `server-echo` | Echo | `p.RegisterRoutes(e, "/passkey")` |
-| `server-fiber` | Fiber | `p.RegisterRoutes(app, "/passkey")` |
-| `server-chi` | Chi | `r.Mount("/passkey", p.Routes())` |
+| Package | Init Pattern |
+|---------|-------------|
+| `server-go` | `p.BeginRegistration` etc. as `http.HandlerFunc`, or `p.Handler()` as `http.Handler` |
 
 #### Python (3 bindings)
 
@@ -251,16 +263,18 @@ Each is a separate Go module. Pluggable `ChallengeStore` and `CredentialStore` i
 
 ### Frontend SDKs
 
-Client-side only. Call the browser WebAuthn API and communicate with any open-passkey server over HTTP.
+Client-side only. All wrap `@open-passkey/sdk` (`PasskeyClient`), which handles the browser WebAuthn API, base64url encoding, PRF extension decoding, and HTTP calls to any open-passkey server. Framework packages add only framework-specific state management.
 
-| Package | Framework | API |
-|---------|-----------|-----|
-| `@open-passkey/sdk` | Vanilla JS | `new PasskeyClient({ baseUrl })` |
-| `@open-passkey/react` | React | `usePasskeyRegister()`, `usePasskeyLogin()` |
-| `@open-passkey/vue` | Vue 3 | `usePasskeyRegister()`, `usePasskeyLogin()` |
-| `@open-passkey/svelte` | Svelte | `createPasskeyClient()` → stores |
-| `@open-passkey/solid` | SolidJS | `createPasskeyRegister()`, `createPasskeyLogin()` |
-| `@open-passkey/angular` | Angular | `PasskeyRegisterComponent`, `PasskeyLoginComponent` |
+| Package | Framework | API | Wraps |
+|---------|-----------|-----|-------|
+| `@open-passkey/sdk` | Vanilla JS / `<script>` tag | `new PasskeyClient({ baseUrl })` | — (canonical) |
+| `@open-passkey/react` | React | `usePasskeyRegister()`, `usePasskeyLogin()` | PasskeyClient |
+| `@open-passkey/vue` | Vue 3 | `usePasskeyRegister()`, `usePasskeyLogin()` | PasskeyClient |
+| `@open-passkey/svelte` | Svelte | `createPasskeyClient()` → stores | PasskeyClient |
+| `@open-passkey/solid` | SolidJS | `createPasskeyRegister()`, `createPasskeyLogin()` | PasskeyClient |
+| `@open-passkey/angular` | Angular | `PasskeyRegisterComponent`, `PasskeyLoginComponent` | PasskeyClient |
+
+The SDK also ships an IIFE bundle (`dist/open-passkey.iife.js`) for use via `<script>` tag — all server-only examples (Go, Python, Rust, .NET, Java, Node.js) use this.
 
 ## Examples
 
@@ -275,26 +289,26 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 
 | Example | Framework | Port | Frontend |
 |---------|-----------|------|----------|
-| `examples/express` | Express | 3001 | Vanilla JS |
-| `examples/fastify` | Fastify | 3002 | Vanilla JS |
-| `examples/hono` | Hono | 3003 | Vanilla JS |
-| `examples/nestjs` | NestJS | 3009 | Vanilla JS |
+| `examples/express` | Express | 3001 | SDK (`<script>`) |
+| `examples/fastify` | Fastify | 3002 | SDK (`<script>`) |
+| `examples/hono` | Hono | 3003 | SDK (`<script>`) |
+| `examples/nestjs` | NestJS | 3009 | SDK (`<script>`) |
 | `examples/nextjs` | Next.js | 3004 | React SDK (`@open-passkey/react`) |
 | `examples/nuxt` | Nuxt 3 | 3005 | Vue SDK (`@open-passkey/vue`) |
 | `examples/sveltekit` | SvelteKit | 3006 | Svelte SDK (`@open-passkey/svelte`) |
 | `examples/remix` | Remix | 3007 | React SDK (`@open-passkey/react`) |
-| `examples/astro` | Astro | 3008 | Vanilla JS |
-| `examples/gin` | Go (stdlib) | 4001 | Vanilla JS |
-| `examples/nethttp` | Go net/http | 4002 | Vanilla JS |
-| `examples/echo` | Go Echo | 4003 | Vanilla JS |
-| `examples/fiber` | Go Fiber | 4004 | Vanilla JS |
-| `examples/chi` | Go Chi | 4005 | Vanilla JS |
-| `examples/flask` | Flask | 5001 | Vanilla JS |
-| `examples/fastapi` | FastAPI | 5002 | Vanilla JS |
-| `examples/django` | Django | 5003 | Vanilla JS |
-| `examples/spring` | Spring Boot | 8080 | Vanilla JS |
-| `examples/aspnet` | ASP.NET Core | 5000 | Vanilla JS |
-| `examples/axum` | Axum (Rust) | 3000 | Vanilla JS |
+| `examples/astro` | Astro | 3008 | SDK (`<script>`) |
+| `examples/gin` | Go (stdlib) | 4001 | SDK (`<script>`) |
+| `examples/nethttp` | Go net/http | 4002 | SDK (`<script>`) |
+| `examples/echo` | Go Echo | 4003 | SDK (`<script>`) |
+| `examples/fiber` | Go Fiber | 4004 | SDK (`<script>`) |
+| `examples/chi` | Go Chi | 4005 | SDK (`<script>`) |
+| `examples/flask` | Flask | 5001 | SDK (`<script>`) |
+| `examples/fastapi` | FastAPI | 5002 | SDK (`<script>`) |
+| `examples/django` | Django | 5003 | SDK (`<script>`) |
+| `examples/spring` | Spring Boot | 8080 | SDK (`<script>`) |
+| `examples/aspnet` | ASP.NET Core | 5000 | SDK (`<script>`) |
+| `examples/axum` | Axum (Rust) | 3000 | SDK (`<script>`) |
 | `examples/angular` | Angular | 4200+3010 | Angular SDK (`@open-passkey/angular`) |
 | `examples/solid` | SolidJS | 3011+3012 | Solid SDK (`@open-passkey/solid`) |
 
@@ -326,11 +340,11 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 | core-rust | 31 vectors | Same vectors, Rust |
 | server-go | 31 tests | HTTP handlers, stores, userHandle |
 | authenticator-ts | 7 tests | Round-trip creation/assertion |
-| angular | 37 tests | Components, service, PRF |
+| angular | 19 tests | Components, service (wraps SDK) |
 
 ## Development
 
-**Prerequisites:** Go 1.21+, Node.js 18+. Optional: Python 3.10+, JDK 17+, .NET 8+, Rust 1.70+.
+**Prerequisites:** Go 1.21+, Node.js 18+. Optional: Python 3.10+, JDK 17+, .NET 10+, Rust 1.70+.
 
 ```bash
 # Generate test vectors
@@ -343,7 +357,7 @@ cd tools/vecgen && go run main.go -out ../../spec/vectors
 ## Roadmap
 
 - [x] ES256 + ML-DSA-65 + ML-DSA-65-ES256 composite verification (6 languages)
-- [x] 22 server framework bindings (9 TS, 5 Go, 3 Python, 1 Java, 1 .NET, 1 Rust)
+- [x] 18 server packages covering 20 frameworks (9 TS, 5 Go, 3 Python, Spring, ASP.NET, Axum)
 - [x] 6 frontend SDKs (React, Vue, Svelte, Solid, Angular, vanilla JS)
 - [x] Go HTTP server bindings with pluggable stores
 - [x] Packed attestation (self + x5c)

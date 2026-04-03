@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	passkey "github.com/locke-inc/open-passkey/packages/server-nethttp"
+	passkey "github.com/locke-inc/open-passkey/packages/server-go"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 	// Local static files (index.html)
 	mux.Handle("/", http.FileServer(http.Dir("public")))
 
-	fmt.Println("Net/HTTP (server-nethttp) example running on http://localhost:4002")
+	fmt.Println("Net/HTTP (server-go) example running on http://localhost:4002")
 	if err := http.ListenAndServe(":4002", mux); err != nil {
 		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
 		os.Exit(1)

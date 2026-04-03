@@ -9,7 +9,7 @@ description = "Django views for open-passkey WebAuthn/FIDO2 authentication"
 requires-python = ">=3.10"
 dependencies = [
     "django>=4.2",
-    "open-passkey",
+    "open-passkey-server",
 ]
 
 [tool.setuptools]

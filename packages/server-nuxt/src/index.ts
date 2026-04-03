@@ -1,4 +1,4 @@
-import { type H3Event, readBody, createError } from "h3";
+import { type H3Event, readBody, setResponseStatus } from "h3";
 import {
   Passkey,
   PasskeyError,
@@ -28,9 +28,11 @@ async function handle(
     return await fn(body);
   } catch (err) {
     if (err instanceof PasskeyError) {
-      throw createError({ statusCode: err.statusCode, statusMessage: err.message });
+      setResponseStatus(event, err.statusCode);
+      return { error: err.message };
     }
-    throw createError({ statusCode: 500, statusMessage: "internal server error" });
+    setResponseStatus(event, 500);
+    return { error: "internal server error" };
   }
 }
 

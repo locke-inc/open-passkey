@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
-	github.com/locke-inc/open-passkey/packages/server-chi v0.0.0
+	github.com/locke-inc/open-passkey/packages/server-go v0.0.0
 )
 
 require (
@@ -17,5 +17,5 @@ require (
 
 replace (
 	github.com/locke-inc/open-passkey/packages/core-go => ../../packages/core-go
-	github.com/locke-inc/open-passkey/packages/server-chi => ../../packages/server-chi
+	github.com/locke-inc/open-passkey/packages/server-go => ../../packages/server-go
 )

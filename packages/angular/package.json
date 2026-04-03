@@ -7,6 +7,9 @@
     "build": "ng-packagr -p ng-package.json",
     "test": "jest"
   },
+  "dependencies": {
+    "@open-passkey/sdk": "file:../sdk-js"
+  },
   "peerDependencies": {
     "@angular/core": ">=19.0.0",
     "@angular/common": ">=19.0.0",

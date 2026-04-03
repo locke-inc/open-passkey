@@ -3,7 +3,7 @@ from django.http import FileResponse
 import os
 
 from open_passkey_django.views import configure
-from open_passkey_django.stores import MemoryChallengeStore, MemoryCredentialStore
+from open_passkey_server import MemoryChallengeStore, MemoryCredentialStore
 
 configure(
     rp_id="localhost",
@@ -18,15 +18,15 @@ SHARED_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 
 def index(request):
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    return FileResponse(open(os.path.join(STATIC_DIR, "index.html"), "rb"), content_type="text/html")
 
 
 def passkey_js(request):
-    return FileResponse(os.path.join(SHARED_DIR, "passkey.js"), content_type="application/javascript")
+    return FileResponse(open(os.path.join(SHARED_DIR, "passkey.js"), "rb"), content_type="application/javascript")
 
 
 def style_css(request):
-    return FileResponse(os.path.join(SHARED_DIR, "style.css"), content_type="text/css")
+    return FileResponse(open(os.path.join(SHARED_DIR, "style.css"), "rb"), content_type="text/css")
 
 
 urlpatterns = [

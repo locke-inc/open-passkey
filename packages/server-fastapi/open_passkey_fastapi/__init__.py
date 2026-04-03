@@ -1,9 +1,10 @@
-from .passkey import create_passkey_router, PasskeyConfig
-from .stores import (
+from .passkey import create_passkey_router
+from open_passkey_server import (
     ChallengeStore,
     CredentialStore,
     MemoryChallengeStore,
     MemoryCredentialStore,
+    PasskeyConfig,
     StoredCredential,
 )
 

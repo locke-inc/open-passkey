@@ -8,7 +8,7 @@ import {
 } from "@open-passkey/server";
 import { PasskeyService } from "./passkey.service.js";
 
-@Controller()
+@Controller("passkey")
 export class PasskeyController {
   constructor(private readonly passkeyService: PasskeyService) {}
 

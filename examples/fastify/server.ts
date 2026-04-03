@@ -7,8 +7,9 @@ import { passkeyPlugin, MemoryChallengeStore, MemoryCredentialStore } from "@ope
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fastify = Fastify({ logger: true });
 
-fastify.register(fastifyStatic, { root: path.join(__dirname, "public") });
-fastify.register(fastifyStatic, { root: path.join(__dirname, "../shared"), prefix: "/", decorateReply: false });
+fastify.register(fastifyStatic, {
+  root: [path.join(__dirname, "public"), path.join(__dirname, "../shared")],
+});
 
 fastify.register(async (instance) => {
   instance.register(passkeyPlugin, {
@@ -20,4 +21,4 @@ fastify.register(async (instance) => {
   });
 }, { prefix: "/passkey" });
 
-fastify.listen({ port: 3002 }, () => console.log("Fastify example running on http://localhost:3002"));
+fastify.listen({ port: 3002, host: "0.0.0.0" }).then(() => console.log("Fastify example running on http://localhost:3002"));

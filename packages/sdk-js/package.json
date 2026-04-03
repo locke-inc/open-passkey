@@ -5,15 +5,22 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && esbuild src/index.ts --bundle --format=iife --global-name=OpenPasskey --outfile=dist/open-passkey.iife.js --target=es2022 --minify",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["passkey", "webauthn", "fido2", "browser", "sdk"],
+  "keywords": [
+    "passkey",
+    "webauthn",
+    "fido2",
+    "browser",
+    "sdk"
+  ],
   "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "type": "module",
   "devDependencies": {
+    "esbuild": "^0.27.7",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }

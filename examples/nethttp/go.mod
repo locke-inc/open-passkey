@@ -2,7 +2,7 @@ module github.com/locke-inc/open-passkey/examples/nethttp
 
 go 1.23.3
 
-require github.com/locke-inc/open-passkey/packages/server-nethttp v0.0.0
+require github.com/locke-inc/open-passkey/packages/server-go v0.0.0
 
 require (
 	github.com/cloudflare/circl v1.6.3 // indirect
@@ -14,5 +14,5 @@ require (
 
 replace (
 	github.com/locke-inc/open-passkey/packages/core-go => ../../packages/core-go
-	github.com/locke-inc/open-passkey/packages/server-nethttp => ../../packages/server-nethttp
+	github.com/locke-inc/open-passkey/packages/server-go => ../../packages/server-go
 )

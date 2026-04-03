@@ -5,6 +5,7 @@ import com.openpasskey.core.RegistrationInput;
 import com.openpasskey.core.RegistrationResult;
 import com.openpasskey.core.AuthenticationInput;
 import com.openpasskey.core.AuthenticationResult;
+import com.openpasskey.core.WebAuthnException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +91,7 @@ public class PasskeyService {
     // --- Finish Registration ---
 
     public Map<String, Object> finishRegistration(String userId, Map<String, Object> credential, Boolean prfSupported)
-            throws Stores.PasskeyException {
+            throws Stores.PasskeyException, WebAuthnException {
         String challengeDataStr = challengeStore.consume(userId);
         // Simple JSON parsing — production would use Jackson
         String storedChallenge = extractJsonValue(challengeDataStr, "challenge");
@@ -111,9 +112,9 @@ public class PasskeyService {
         byte[] prfSaltBytes = prfEnabled ? b64urlDecode(storedPrfSalt) : null;
 
         Stores.StoredCredential cred = new Stores.StoredCredential(
-            result.credentialId(),
-            result.publicKeyCose(),
-            result.signCount(),
+            result.getCredentialId(),
+            result.getPublicKeyCose(),
+            result.getSignCount(),
             userId,
             prfSaltBytes,
             prfEnabled
@@ -121,7 +122,7 @@ public class PasskeyService {
         credentialStore.store(cred);
 
         return Map.of(
-            "credentialId", b64url(result.credentialId()),
+            "credentialId", b64url(result.getCredentialId()),
             "registered", true,
             "prfSupported", prfEnabled
         );
@@ -166,7 +167,7 @@ public class PasskeyService {
     // --- Finish Authentication ---
 
     public Map<String, Object> finishAuthentication(String userId, Map<String, Object> credential)
-            throws Stores.PasskeyException {
+            throws Stores.PasskeyException, WebAuthnException {
         String challenge = challengeStore.consume(userId);
 
         String credId = (String) credential.get("id");
@@ -188,14 +189,14 @@ public class PasskeyService {
             props.getRpId(),
             challenge,
             props.getOrigin(),
-            stored.publicKeyCose(),
-            stored.signCount(),
+            b64url(stored.publicKeyCose()),
+            (int) stored.signCount(),
             response.get("clientDataJSON"),
             response.get("authenticatorData"),
             response.get("signature")
         ));
 
-        credentialStore.update(stored.withSignCount(result.signCount()));
+        credentialStore.update(stored.withSignCount(result.getSignCount()));
 
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("userId", stored.userId());

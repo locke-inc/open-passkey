@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/labstack/echo/v4 v4.13.3
-	github.com/locke-inc/open-passkey/packages/server-echo v0.0.0
+	github.com/locke-inc/open-passkey/packages/server-go v0.0.0
 )
 
 require (
@@ -25,5 +25,5 @@ require (
 
 replace (
 	github.com/locke-inc/open-passkey/packages/core-go => ../../packages/core-go
-	github.com/locke-inc/open-passkey/packages/server-echo => ../../packages/server-echo
+	github.com/locke-inc/open-passkey/packages/server-go => ../../packages/server-go
 )

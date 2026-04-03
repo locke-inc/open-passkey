@@ -101,11 +101,12 @@ pub async fn finish_registration(
     let stored_prf_salt = challenge_data["prfSalt"].as_str().unwrap();
 
     let result = match verify_registration(RegistrationInput {
-        rp_id: &state.config.rp_id,
-        expected_challenge: stored_challenge,
-        expected_origin: &state.config.origin,
-        client_data_json: &req.credential.response.client_data_json,
-        attestation_object: &req.credential.response.attestation_object,
+        rp_id: state.config.rp_id.clone(),
+        expected_challenge: stored_challenge.to_string(),
+        expected_origin: state.config.origin.clone(),
+        client_data_json: req.credential.response.client_data_json.clone(),
+        attestation_object: req.credential.response.attestation_object.clone(),
+        require_user_verification: false,
     }) {
         Ok(r) => r,
         Err(e) => {
@@ -226,14 +227,15 @@ pub async fn finish_authentication(
     }
 
     let result = match verify_authentication(AuthenticationInput {
-        rp_id: &state.config.rp_id,
-        expected_challenge: &challenge,
-        expected_origin: &state.config.origin,
-        stored_public_key_cose: &stored.public_key_cose,
+        rp_id: state.config.rp_id.clone(),
+        expected_challenge: challenge,
+        expected_origin: state.config.origin.clone(),
+        stored_public_key_cose: b64url_encode(&stored.public_key_cose),
         stored_sign_count: stored.sign_count,
-        client_data_json: &req.credential.response.client_data_json,
-        authenticator_data: &req.credential.response.authenticator_data,
-        signature: &req.credential.response.signature,
+        client_data_json: req.credential.response.client_data_json.clone(),
+        authenticator_data: req.credential.response.authenticator_data.clone(),
+        signature: req.credential.response.signature.clone(),
+        require_user_verification: false,
     }) {
         Ok(r) => r,
         Err(e) => {

@@ -1,6 +1,10 @@
 import { createPasskeyHandlers, MemoryChallengeStore, MemoryCredentialStore } from "@open-passkey/nextjs";
 
-export const handlers = createPasskeyHandlers({
+const globalForPasskey = globalThis as unknown as {
+  passkeyHandlers?: ReturnType<typeof createPasskeyHandlers>;
+};
+
+export const handlers = globalForPasskey.passkeyHandlers ??= createPasskeyHandlers({
   rpId: "localhost",
   rpDisplayName: "Open Passkey Next.js Example",
   origin: "http://localhost:3004",

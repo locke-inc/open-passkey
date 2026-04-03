@@ -1,6 +1,6 @@
 import { Component, inject, input, output, signal } from "@angular/core";
 import { PasskeyService } from "./passkey.service";
-import { PasskeyAuthenticationResult } from "./passkey.types";
+import type { AuthenticationResult } from "@open-passkey/sdk";
 
 /**
  * Headless passkey login component.
@@ -27,7 +27,7 @@ export class PasskeyLoginComponent {
 
   userId = input<string>();
 
-  authenticated = output<PasskeyAuthenticationResult>();
+  authenticated = output<AuthenticationResult>();
   error = output<Error>();
 
   loading = signal(false);

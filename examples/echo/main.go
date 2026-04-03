@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/labstack/echo/v4"
-	passkey "github.com/locke-inc/open-passkey/packages/server-echo"
+	passkey "github.com/locke-inc/open-passkey/packages/server-go"
 )
 
 func main() {
@@ -23,15 +24,24 @@ func main() {
 
 	e := echo.New()
 
+	// Adapter: wrap net/http handler for Echo
+	wrap := func(h http.HandlerFunc) echo.HandlerFunc {
+		return echo.WrapHandler(h)
+	}
+
 	// Passkey API routes
-	p.RegisterRoutes(e, "/passkey")
+	e.POST("/passkey/register/begin", wrap(p.BeginRegistration))
+	e.POST("/passkey/register/finish", wrap(p.FinishRegistration))
+	e.POST("/passkey/login/begin", wrap(p.BeginAuthentication))
+	e.POST("/passkey/login/finish", wrap(p.FinishAuthentication))
 
 	// Shared static files (passkey.js, style.css)
-	e.Static("/", "../shared")
+	e.File("/passkey.js", "../shared/passkey.js")
+	e.File("/style.css", "../shared/style.css")
 
 	// Local static files (index.html)
 	e.Static("/", "public")
 
-	fmt.Println("Echo (server-echo) example running on http://localhost:4003")
+	fmt.Println("Echo (server-go) example running on http://localhost:4003")
 	e.Logger.Fatal(e.Start(":4003"))
 }

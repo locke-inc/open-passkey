@@ -1,9 +1,10 @@
-from .passkey import create_passkey_blueprint, PasskeyConfig
-from .stores import (
+from .passkey import create_passkey_blueprint
+from open_passkey_server import (
     ChallengeStore,
     CredentialStore,
     MemoryChallengeStore,
     MemoryCredentialStore,
+    PasskeyConfig,
     StoredCredential,
 )
 

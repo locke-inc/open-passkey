@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
-	github.com/locke-inc/open-passkey/packages/server-fiber v0.0.0
+	github.com/locke-inc/open-passkey/packages/server-go v0.0.0
 )
 
 require (
@@ -27,5 +27,5 @@ require (
 
 replace (
 	github.com/locke-inc/open-passkey/packages/core-go => ../../packages/core-go
-	github.com/locke-inc/open-passkey/packages/server-fiber => ../../packages/server-fiber
+	github.com/locke-inc/open-passkey/packages/server-go => ../../packages/server-go
 )

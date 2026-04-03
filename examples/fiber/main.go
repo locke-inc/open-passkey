@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
-	passkey "github.com/locke-inc/open-passkey/packages/server-fiber"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
+	passkey "github.com/locke-inc/open-passkey/packages/server-go"
 )
 
 func main() {
@@ -23,8 +25,16 @@ func main() {
 
 	app := fiber.New()
 
+	// Adapter: wrap net/http handler for Fiber
+	wrap := func(h http.HandlerFunc) fiber.Handler {
+		return adaptor.HTTPHandlerFunc(h)
+	}
+
 	// Passkey API routes
-	p.RegisterRoutes(app, "/passkey")
+	app.Post("/passkey/register/begin", wrap(p.BeginRegistration))
+	app.Post("/passkey/register/finish", wrap(p.FinishRegistration))
+	app.Post("/passkey/login/begin", wrap(p.BeginAuthentication))
+	app.Post("/passkey/login/finish", wrap(p.FinishAuthentication))
 
 	// Shared static files (passkey.js, style.css)
 	app.Static("/", "../shared")
@@ -32,7 +42,7 @@ func main() {
 	// Local static files (index.html)
 	app.Static("/", "./public")
 
-	fmt.Println("Fiber (server-fiber) example running on http://localhost:4004")
+	fmt.Println("Fiber (server-go) example running on http://localhost:4004")
 	if err := app.Listen(":4004"); err != nil {
 		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
 		os.Exit(1)

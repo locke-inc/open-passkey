@@ -1,5 +1,6 @@
 package com.openpasskey.spring;
 
+import com.openpasskey.core.WebAuthnException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +44,8 @@ public class PasskeyController {
             return ResponseEntity.ok(result);
         } catch (Stores.PasskeyException e) {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getMessage()));
+        } catch (WebAuthnException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
@@ -68,6 +71,8 @@ public class PasskeyController {
             return ResponseEntity.ok(result);
         } catch (Stores.PasskeyException e) {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getMessage()));
+        } catch (WebAuthnException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }
