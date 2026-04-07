@@ -128,9 +128,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # Build authenticator-ts (E2E harness depends on it via file: link)
-      - name: Build authenticator-ts
-        run: cd packages/authenticator-ts && npm ci && npm run build
+      # Build TS packages (Express example and E2E harness depend on these via file: links)
+      - name: Build TS dependency chain
+        run: |
+          cd packages/core-ts && npm ci && npm run build
+          cd ../../packages/server-ts && npm ci && npm run build
+          cd ../../packages/server-express && npm ci && npm run build
+          cd ../../packages/authenticator-ts && npm ci && npm run build
       # Install Node.js dependencies for Express example and E2E harness
       - name: Install E2E deps
         run: cd tests/e2e && npm ci
@@ -141,7 +145,7 @@ jobs:
         run: cd examples/nethttp && go mod tidy && go build -o nethttp-e2e .
       # Install Python packages for FastAPI example
       - name: Install Python packages
-        run: pip install -e packages/core-py -e packages/server-py -e packages/server-fastapi
+        run: pip install -e packages/core-py -e packages/server-py -e packages/server-fastapi uvicorn
       # Run E2E tests
       - name: E2E tests
         run: cd tests/e2e && npx vitest run
