@@ -2,6 +2,13 @@
 node_modules/
 .venv/
 package-lock.json
+# Un-ignore lockfiles needed by CI (npm ci requires them)
+!tests/e2e/package-lock.json
+!examples/express/package-lock.json
+!packages/core-ts/package-lock.json
+!packages/authenticator-ts/package-lock.json
+!packages/sdk-js/package-lock.json
+!packages/angular/package-lock.json
 
 # Build output
 dist/
