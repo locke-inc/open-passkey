@@ -1,6 +1,6 @@
 module github.com/locke-inc/open-passkey/examples/fiber
 
-go 1.23.3
+go 1.25
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6

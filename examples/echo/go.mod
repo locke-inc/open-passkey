@@ -1,6 +1,6 @@
 module github.com/locke-inc/open-passkey/examples/echo
 
-go 1.23.3
+go 1.25
 
 require (
 	github.com/labstack/echo/v4 v4.13.3

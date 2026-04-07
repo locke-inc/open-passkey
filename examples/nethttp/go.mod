@@ -1,6 +1,6 @@
 module github.com/locke-inc/open-passkey/examples/nethttp
 
-go 1.23.3
+go 1.25
 
 require github.com/locke-inc/open-passkey/packages/server-go v0.0.0
 

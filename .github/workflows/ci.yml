@@ -135,7 +135,7 @@ jobs:
         run: cd examples/express && npm ci
       # Build Go example binary
       - name: Build Go example
-        run: cd examples/nethttp && go build -o nethttp-e2e .
+        run: cd examples/nethttp && go mod tidy && go build -o nethttp-e2e .
       # Install Python packages for FastAPI example
       - name: Install Python packages
         run: pip install -e packages/core-py -e packages/server-py -e packages/server-fastapi
