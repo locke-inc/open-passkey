@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 import {
   PasskeyClient,
+  type PasskeyClientConfig,
   type RegistrationResult,
   type AuthenticationResult,
 } from "@open-passkey/sdk";
@@ -19,8 +20,8 @@ interface LoginState {
   error: Error | null;
 }
 
-export function createPasskeyClient(config: { baseUrl: string }) {
-  const client = new PasskeyClient({ baseUrl: config.baseUrl });
+export function createPasskeyClient(config: PasskeyClientConfig) {
+  const client = new PasskeyClient(config);
 
   function createRegisterStore() {
     const { subscribe, set, update } = writable<RegisterState>({

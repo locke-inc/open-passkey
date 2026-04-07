@@ -1,6 +1,7 @@
 import { ref, inject, provide, type Ref, type InjectionKey, type Plugin } from "vue";
 import {
   PasskeyClient,
+  type PasskeyClientConfig,
   type RegistrationResult,
   type AuthenticationResult,
 } from "@open-passkey/sdk";
@@ -19,10 +20,10 @@ function useClient(): PasskeyClient {
   return client;
 }
 
-export function createPasskey(config: { baseUrl: string }): Plugin {
+export function createPasskey(config: PasskeyClientConfig): Plugin {
   return {
     install(app) {
-      const client = new PasskeyClient({ baseUrl: config.baseUrl });
+      const client = new PasskeyClient(config);
       app.provide(PasskeyClientKey, client);
     },
   };

@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from "react";
 import {
   PasskeyClient,
+  type PasskeyClientConfig,
   type RegistrationResult,
   type AuthenticationResult,
 } from "@open-passkey/sdk";
@@ -26,13 +27,12 @@ function useClient(): PasskeyClient {
   return client;
 }
 
-export interface PasskeyProviderProps {
-  baseUrl: string;
+export interface PasskeyProviderProps extends PasskeyClientConfig {
   children: ReactNode;
 }
 
-export function PasskeyProvider({ baseUrl, children }: PasskeyProviderProps) {
-  const client = useMemo(() => new PasskeyClient({ baseUrl }), [baseUrl]);
+export function PasskeyProvider({ children, ...config }: PasskeyProviderProps) {
+  const client = useMemo(() => new PasskeyClient(config), [config.baseUrl, config.provider, config.rpId]);
 
   return (
     <PasskeyContext.Provider value={client}>

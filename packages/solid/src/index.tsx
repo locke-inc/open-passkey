@@ -7,6 +7,7 @@ import {
 } from "solid-js";
 import {
   PasskeyClient,
+  type PasskeyClientConfig,
   type RegistrationResult,
   type AuthenticationResult,
 } from "@open-passkey/sdk";
@@ -15,13 +16,12 @@ type Status = "idle" | "pending" | "success" | "error";
 
 const PasskeyContext = createContext<PasskeyClient>();
 
-export interface PasskeyProviderProps {
-  baseUrl: string;
+export interface PasskeyProviderProps extends PasskeyClientConfig {
   children: JSX.Element;
 }
 
 export function PasskeyProvider(props: PasskeyProviderProps) {
-  const client = new PasskeyClient({ baseUrl: props.baseUrl });
+  const client = new PasskeyClient(props);
 
   return (
     <PasskeyContext.Provider value={client}>

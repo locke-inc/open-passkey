@@ -63,7 +63,7 @@ function PasskeyDemo() {
 
 export function App() {
   return (
-    <PasskeyProvider baseUrl="/passkey">
+    <PasskeyProvider provider="locke-gateway" rpId="localhost">
       <PasskeyDemo />
     </PasskeyProvider>
   );

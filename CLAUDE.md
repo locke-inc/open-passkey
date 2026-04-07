@@ -33,7 +33,7 @@ open-passkey/
 │   ├── solid/                 # SolidJS primitives wrapping PasskeyClient
 │   ├── angular/               # Angular components + service wrapping PasskeyClient
 │   └── authenticator-ts/      # Software WebAuthn authenticator for testing
-├── examples/                  # Working example for every framework (22 total)
+├── examples/                  # Working example for every framework (23 total)
 │   └── shared/                # IIFE bundle (passkey.js) + style.css for server-only examples
 └── tools/vecgen/              # Go tool to generate spec/vectors/ JSON files
 ```
@@ -87,6 +87,7 @@ Unlike ES256 (which hashes then signs), ML-DSA signs the message directly:
 - **Shared test vectors**: `spec/vectors/*.json` contains protocol-level test cases that every language implementation loads and runs against. This is the cross-language contract.
 - **Isolated framework tests**: Framework bindings (HTTP handlers, UI components) have their own idiomatic test suites.
 - **Single browser SDK**: `packages/sdk-js` (`PasskeyClient`) is the single source of truth for all browser-side WebAuthn logic (base64url encoding, credential creation/assertion, PRF extension handling, HTTP calls). All frontend framework packages (React, Vue, Svelte, Solid, Angular) wrap `PasskeyClient` — they add only framework-specific state management, never reimplementing ceremony logic.
+- **Provider shorthand**: `PasskeyClient` accepts `PasskeyClientConfig` with three modes: `{ baseUrl }` (self-hosted), `{ provider, rpId }` (hosted backend like Locke Gateway), or error if neither. The `PROVIDERS` const maps provider names to URLs (e.g., `"locke-gateway"` → `"https://gateway.locke.id/passkey"`). When `rpId` is set, the SDK includes it in every `begin` request body.
 - **IIFE bundle**: `sdk-js` builds an IIFE bundle (`dist/open-passkey.iife.js`) exposing `window.OpenPasskey.PasskeyClient`. Server-only examples (Go, Python, Rust, .NET, Java, Node.js) serve this via `examples/shared/passkey.js` for `<script>` tag usage.
 - **Python server architecture**: `server-py` (`open_passkey_server`) contains shared business logic (`PasskeyHandler`, stores, config, base64url helpers). Framework packages (`server-flask`, `server-fastapi`, `server-django`) are thin wrappers that delegate to `PasskeyHandler`. Each uses src-layout for editable installs.
 - **core-py CI / liboqs**: `liboqs-python` (the Python wrapper) requires a C `liboqs` shared library. The wrapper's auto-install is broken (tries to clone a non-existent tag), so CI builds liboqs from source pinned to a specific commit. When upgrading `liboqs-python` in `pyproject.toml`, update the commit SHA and cache key in `.github/workflows/ci.yml`.
@@ -180,7 +181,7 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] All frontend SDKs wrap `PasskeyClient`: React, Vue, Svelte, Solid, Angular
 - [x] `angular`: Headless components (content projection, signal-based), thin service wrapping PasskeyClient, 19 Jest tests
 - [x] `authenticator-ts`: Software authenticator for testing — 7 Vitest tests
-- [x] 22 working examples (Go examples use thin adapter wrappers over server-go) (all use `@open-passkey/sdk` for client-side logic)
+- [x] 23 working examples — 4 frontend-only (React, Vue, Angular, Solid → use Locke Gateway), rest are full-stack self-hosted
 - [x] Attestation: `none` and `packed` (self-attestation + full x5c)
 - [x] Backup flags (BE/BS), PRF extension, userHandle cross-check, sign count rollback detection
 

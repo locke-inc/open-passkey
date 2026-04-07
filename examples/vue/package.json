@@ -3,24 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "concurrently \"npx tsx server.ts\" \"npx vite --port 3013\"",
-    "server": "npx tsx server.ts",
-    "client": "npx vite --port 3013"
+    "start": "npx vite --port 3013"
   },
   "dependencies": {
     "@open-passkey/vue": "file:../../packages/vue",
     "@open-passkey/sdk": "file:../../packages/sdk-js",
-    "@open-passkey/express": "file:../../packages/server-express",
-    "@open-passkey/server": "file:../../packages/server-ts",
-    "@open-passkey/core": "file:../../packages/core-ts",
-    "express": "^5.0.0",
     "vue": "^3.5.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
     "@vitejs/plugin-vue": "^5.0.0",
-    "concurrently": "^9.0.0",
-    "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "vite": "^6.0.0"
   }

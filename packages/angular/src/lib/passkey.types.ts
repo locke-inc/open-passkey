@@ -1,8 +1,5 @@
-/** Configuration for the passkey service. */
-export interface PasskeyConfig {
-  /** Base URL for the passkey server endpoints (e.g., "/passkey" or "https://api.example.com/passkey"). */
-  baseUrl: string;
-}
+// Re-export PasskeyClientConfig as PasskeyConfig for Angular idiomatic naming
+export type { PasskeyClientConfig as PasskeyConfig } from "@open-passkey/sdk";
 
 // Re-export SDK result types for convenience
 export type {

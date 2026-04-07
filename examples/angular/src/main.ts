@@ -6,6 +6,6 @@ import { providePasskey } from "@open-passkey/angular";
 bootstrapApplication(AppComponent, {
   providers: [
     provideHttpClient(),
-    providePasskey({ baseUrl: "/passkey" }),
+    providePasskey({ provider: "locke-gateway", rpId: "localhost" }),
   ],
 });

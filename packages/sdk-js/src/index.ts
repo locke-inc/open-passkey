@@ -21,6 +21,21 @@ export function base64urlDecode(str: string): ArrayBuffer {
   return bytes.buffer;
 }
 
+export const PROVIDERS = {
+  "locke-gateway": "https://gateway.locke.id/passkey",
+} as const;
+
+export type ProviderName = keyof typeof PROVIDERS;
+
+export interface PasskeyClientConfig {
+  /** Direct URL to passkey API (e.g., "/passkey" for self-hosted). Mutually exclusive with provider. */
+  baseUrl?: string;
+  /** Named hosted provider. Resolves to a known URL. Requires rpId. */
+  provider?: ProviderName;
+  /** Relying Party ID sent to hosted providers (e.g., "app.example.com"). Required when using provider. */
+  rpId?: string;
+}
+
 interface BeginRegistrationResponse {
   challenge: string;
   rp: { id: string; name: string };
@@ -55,10 +70,32 @@ export interface AuthenticationResult {
 
 export class PasskeyClient {
   private readonly baseUrl: string;
+  private readonly rpId?: string;
 
-  constructor({ baseUrl }: { baseUrl: string }) {
-    // Strip trailing slash
-    this.baseUrl = baseUrl.replace(/\/+$/, "");
+  constructor(config: PasskeyClientConfig) {
+    if (config.baseUrl && config.provider) {
+      throw new Error("Specify either baseUrl or provider, not both");
+    }
+
+    if (config.baseUrl) {
+      this.baseUrl = config.baseUrl.replace(/\/+$/, "");
+    } else if (config.provider) {
+      const url = PROVIDERS[config.provider];
+      if (!url) {
+        throw new Error(`Unknown provider: "${config.provider}". Available: ${Object.keys(PROVIDERS).join(", ")}`);
+      }
+      if (!config.rpId) {
+        throw new Error(`rpId is required when using provider "${config.provider}"`);
+      }
+      this.baseUrl = url;
+      this.rpId = config.rpId;
+    } else {
+      throw new Error(
+        'PasskeyClient requires either baseUrl (self-hosted) or provider (hosted). Example:\n' +
+        '  new PasskeyClient({ provider: "locke-gateway", rpId: "example.com" })\n' +
+        '  new PasskeyClient({ baseUrl: "/passkey" })'
+      );
+    }
   }
 
   async register(
@@ -66,10 +103,14 @@ export class PasskeyClient {
     username: string,
   ): Promise<RegistrationResult> {
     // Step 1: Get registration options from server
+    const beginBody: Record<string, string> = { userId, username };
+    if (this.rpId) beginBody.rpId = this.rpId;
+
     const beginRes = await fetch(`${this.baseUrl}/register/begin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, username }),
+      body: JSON.stringify(beginBody),
+      credentials: "include",
     });
     if (!beginRes.ok) {
       const err = await beginRes.json();
@@ -141,6 +182,7 @@ export class PasskeyClient {
           },
         },
       }),
+      credentials: "include",
     });
     if (!finishRes.ok) {
       const err = await finishRes.json();
@@ -154,10 +196,15 @@ export class PasskeyClient {
     userId?: string,
   ): Promise<AuthenticationResult> {
     // Step 1: Get authentication options from server
+    const beginBody: Record<string, string> = {};
+    if (userId) beginBody.userId = userId;
+    if (this.rpId) beginBody.rpId = this.rpId;
+
     const beginRes = await fetch(`${this.baseUrl}/login/begin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify(beginBody),
+      credentials: "include",
     });
     if (!beginRes.ok) {
       const err = await beginRes.json();
@@ -228,6 +275,7 @@ export class PasskeyClient {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(finishPayload),
+      credentials: "include",
     });
     if (!finishRes.ok) {
       const err = await finishRes.json();

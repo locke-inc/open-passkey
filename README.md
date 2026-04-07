@@ -20,6 +20,26 @@ During registration, the server advertises preferred algorithms in `pubKeyCredPa
 
 Pick your framework and add passkey auth in minutes. Every example is in `examples/`.
 
+### Hosted — No Server Needed
+
+Use [Locke Gateway](https://gateway.locke.id) as a free, open passkey backend. No registration, no API keys. Just your domain.
+
+```typescript
+// Any framework — just your domain
+new PasskeyClient({ provider: "locke-gateway", rpId: "app.example.com" })
+
+// React
+<PasskeyProvider provider="locke-gateway" rpId="app.example.com">
+
+// Vue
+createPasskey({ provider: "locke-gateway", rpId: "app.example.com" })
+
+// Angular
+providePasskey({ provider: "locke-gateway", rpId: "app.example.com" })
+```
+
+Credentials stored in PostgreSQL. Fully open-source: [github.com/locke-inc/gateway](https://github.com/locke-inc/gateway). To self-host instead, see the server examples below.
+
 ### Express (TypeScript)
 
 ```typescript
@@ -287,6 +307,17 @@ cd examples/fiber   && go run main.go
 cd examples/fastapi && pip install -r requirements.txt && python app.py
 ```
 
+**Frontend examples** (use [Locke Gateway](https://gateway.locke.id) — no server to run):
+
+| Example | Framework | Port | Frontend SDK |
+|---------|-----------|------|--------------|
+| `examples/react` | React | 3015 | `@open-passkey/react` |
+| `examples/vue` | Vue 3 | 3013 | `@open-passkey/vue` |
+| `examples/angular` | Angular | 4200 | `@open-passkey/angular` |
+| `examples/solid` | SolidJS | 3011 | `@open-passkey/solid` |
+
+**Full-stack examples** (self-hosted, in-memory stores):
+
 | Example | Framework | Port | Frontend |
 |---------|-----------|------|----------|
 | `examples/express` | Express | 3001 | SDK (`<script>`) |
@@ -309,8 +340,6 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 | `examples/spring` | Spring Boot | 8080 | SDK (`<script>`) |
 | `examples/aspnet` | ASP.NET Core | 5000 | SDK (`<script>`) |
 | `examples/axum` | Axum (Rust) | 3000 | SDK (`<script>`) |
-| `examples/angular` | Angular | 4200+3010 | Angular SDK (`@open-passkey/angular`) |
-| `examples/solid` | SolidJS | 3011+3012 | Solid SDK (`@open-passkey/solid`) |
 
 ## Features
 

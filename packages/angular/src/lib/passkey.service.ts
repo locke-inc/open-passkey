@@ -13,7 +13,7 @@ export class PasskeyService {
 
   constructor() {
     const config = inject(PASSKEY_CONFIG);
-    this.client = new PasskeyClient({ baseUrl: config.baseUrl });
+    this.client = new PasskeyClient(config);
   }
 
   register(
