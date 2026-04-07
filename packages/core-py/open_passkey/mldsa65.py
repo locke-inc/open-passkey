@@ -16,8 +16,8 @@ def _get_oqs():
         return oqs
     except ImportError:
         raise ImportError(
-            "ML-DSA-65 verification requires the 'oqs' package (liboqs-python). "
-            "Install with: pip install oqs"
+            "ML-DSA-65 verification requires liboqs-python. "
+            "Install with: pip install liboqs-python"
         )
 
 

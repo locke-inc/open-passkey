@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pq = ["oqs>=0.9"]
+pq = ["liboqs-python>=0.14"]
 dev = ["pytest>=7.0"]
 
 [tool.pytest.ini_options]

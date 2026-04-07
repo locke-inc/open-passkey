@@ -1,6 +1,6 @@
 module github.com/locke-inc/open-passkey/tools/vecgen
 
-go 1.24
+go 1.25
 
 require (
 	github.com/cloudflare/circl v1.6.3

@@ -1,6 +1,6 @@
 module github.com/locke-inc/open-passkey/packages/server-go
 
-go 1.24
+go 1.25
 
 require github.com/locke-inc/open-passkey/packages/core-go v0.0.1
 
