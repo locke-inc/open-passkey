@@ -8,6 +8,8 @@ jest.mock("@open-passkey/sdk", () => {
     PasskeyClient: jest.fn().mockImplementation(() => ({
       register: jest.fn(),
       authenticate: jest.fn(),
+      getSession: jest.fn(),
+      logout: jest.fn(),
     })),
   };
 });
@@ -106,6 +108,48 @@ describe("PasskeyService", () => {
           expect(err.message).toBe("Aborted");
           done();
         },
+      });
+    });
+  });
+
+  describe("getSession", () => {
+    it("should delegate to PasskeyClient.getSession()", (done) => {
+      const expected = { userId: "user-1", authenticated: true };
+      mockClient.getSession.mockResolvedValue(expected);
+
+      service.getSession().subscribe({
+        next: (result) => {
+          expect(result).toEqual(expected);
+          expect(mockClient.getSession).toHaveBeenCalled();
+          done();
+        },
+        error: done.fail,
+      });
+    });
+
+    it("should return null when no session", (done) => {
+      mockClient.getSession.mockResolvedValue(null);
+
+      service.getSession().subscribe({
+        next: (result) => {
+          expect(result).toBeNull();
+          done();
+        },
+        error: done.fail,
+      });
+    });
+  });
+
+  describe("logout", () => {
+    it("should delegate to PasskeyClient.logout()", (done) => {
+      mockClient.logout.mockResolvedValue(undefined);
+
+      service.logout().subscribe({
+        next: () => {
+          expect(mockClient.logout).toHaveBeenCalled();
+          done();
+        },
+        error: done.fail,
       });
     });
   });

@@ -1,5 +1,5 @@
-import { createSignal, Show } from "solid-js";
-import { PasskeyProvider, createPasskeyRegister, createPasskeyLogin } from "@open-passkey/solid";
+import { createSignal, onMount, Show } from "solid-js";
+import { PasskeyProvider, createPasskeyRegister, createPasskeyLogin, createPasskeySession } from "@open-passkey/solid";
 
 function PasskeyDemo() {
   const [userId, setUserId] = createSignal("test-user");
@@ -8,7 +8,10 @@ function PasskeyDemo() {
   const [messageType, setMessageType] = createSignal<"success" | "error">("success");
 
   const { register, status: regStatus, error: regError } = createPasskeyRegister();
-  const { authenticate, status: authStatus, result: authResult, error: authError } = createPasskeyLogin();
+  const { authenticate, status: authStatus, error: authError } = createPasskeyLogin();
+  const { session, loading, checkSession, logout } = createPasskeySession();
+
+  onMount(() => checkSession());
 
   async function doRegister() {
     setMessage("");
@@ -17,7 +20,7 @@ function PasskeyDemo() {
       setMessage(regError()!.message);
       setMessageType("error");
     } else {
-      setMessage("Passkey registered successfully!");
+      setMessage("Registered! You can now sign in.");
       setMessageType("success");
     }
   }
@@ -28,34 +31,50 @@ function PasskeyDemo() {
     if (authError()) {
       setMessage(authError()!.message);
       setMessageType("error");
-    } else if (authResult()) {
-      setMessage(`Authenticated! User: ${authResult()!.userId}`);
-      setMessageType("success");
+    } else {
+      await checkSession();
     }
+  }
+
+  async function doLogout() {
+    await logout();
+    setMessage("");
   }
 
   return (
     <div class="container">
       <h1>open-passkey</h1>
       <p class="subtitle">SolidJS Example</p>
-      <div class="field">
-        <label>User ID</label>
-        <input value={userId()} onInput={(e) => setUserId(e.currentTarget.value)} />
-      </div>
-      <div class="field">
-        <label>Username</label>
-        <input value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
-      </div>
-      <div class="buttons">
-        <button class="primary" onClick={doRegister} disabled={regStatus() === "pending"}>
-          {regStatus() === "pending" ? "Registering..." : "Register Passkey"}
-        </button>
-        <button class="secondary" onClick={doLogin} disabled={authStatus() === "pending"}>
-          {authStatus() === "pending" ? "Signing in..." : "Sign In"}
-        </button>
-      </div>
-      <Show when={message()}>
-        <div class={`status ${messageType()}`}>{message()}</div>
+
+      <Show when={!loading()} fallback={<p>Loading...</p>}>
+        <Show when={session()} fallback={
+          <>
+            <div class="field">
+              <label>User ID</label>
+              <input value={userId()} onInput={(e) => setUserId(e.currentTarget.value)} />
+            </div>
+            <div class="field">
+              <label>Username</label>
+              <input value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
+            </div>
+            <div class="buttons">
+              <button class="primary" onClick={doRegister} disabled={regStatus() === "pending"}>
+                {regStatus() === "pending" ? "Registering..." : "Register Passkey"}
+              </button>
+              <button class="secondary" onClick={doLogin} disabled={authStatus() === "pending"}>
+                {authStatus() === "pending" ? "Signing in..." : "Sign In"}
+              </button>
+            </div>
+            <Show when={message()}>
+              <div class={`status ${messageType()}`}>{message()}</div>
+            </Show>
+          </>
+        }>
+          <div class="status success">Signed in as {session()!.userId}</div>
+          <div class="buttons" style={{ "margin-top": "16px" }}>
+            <button class="secondary" onClick={doLogout}>Sign Out</button>
+          </div>
+        </Show>
       </Show>
     </div>
   );

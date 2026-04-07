@@ -31,4 +31,12 @@ export class PasskeyService {
   async finishAuthentication(body: FinishAuthenticationRequest): Promise<unknown> {
     return this.passkey.finishAuthentication(body);
   }
+
+  getSessionTokenData(token: string) {
+    return this.passkey.getSessionTokenData(token);
+  }
+
+  getSessionConfig() {
+    return this.passkey.getSessionConfig();
+  }
 }

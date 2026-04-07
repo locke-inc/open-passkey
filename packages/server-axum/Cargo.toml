@@ -14,3 +14,5 @@ rand = "0.8"
 open-passkey-core = { path = "../core-rust" }
 tracing = "0.1"
 thiserror = "1"
+hmac = "0.12"
+sha2 = "0.10"

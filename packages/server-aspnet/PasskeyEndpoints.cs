@@ -109,6 +109,11 @@ public static class PasskeyEndpoints
                 var userId = body.GetProperty("userId").GetString()!;
                 var credential = body.GetProperty("credential");
                 var result = service.FinishAuthentication(userId, credential);
+                if (config.Session != null && result is Dictionary<string, object> dict && dict.TryGetValue("sessionToken", out var tokenObj))
+                {
+                    var token = (string)tokenObj;
+                    ctx.Response.Headers.Append("Set-Cookie", SessionHelper.BuildSetCookieHeader(token, config.Session));
+                }
                 ctx.Response.ContentType = "application/json";
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, result);
             }
@@ -125,6 +130,41 @@ public static class PasskeyEndpoints
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = ex.Message });
             }
         });
+
+        if (config.Session != null)
+        {
+            endpoints.MapGet($"{prefix}/session", async (HttpContext ctx) =>
+            {
+                try
+                {
+                    var cookieHeader = ctx.Request.Headers["Cookie"].ToString();
+                    var token = SessionHelper.ParseCookieToken(cookieHeader, config.Session);
+                    if (token == null)
+                    {
+                        ctx.Response.StatusCode = 401;
+                        ctx.Response.ContentType = "application/json";
+                        await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = "no session" });
+                        return;
+                    }
+                    var data = service.GetSessionTokenData(token);
+                    ctx.Response.ContentType = "application/json";
+                    await JsonSerializer.SerializeAsync(ctx.Response.Body, new { userId = data.UserId, authenticated = true });
+                }
+                catch (ArgumentException)
+                {
+                    ctx.Response.StatusCode = 401;
+                    ctx.Response.ContentType = "application/json";
+                    await JsonSerializer.SerializeAsync(ctx.Response.Body, new { error = "invalid or expired session" });
+                }
+            });
+
+            endpoints.MapPost($"{prefix}/logout", async (HttpContext ctx) =>
+            {
+                ctx.Response.Headers.Append("Set-Cookie", SessionHelper.BuildClearCookieHeader(config.Session));
+                ctx.Response.ContentType = "application/json";
+                await JsonSerializer.SerializeAsync(ctx.Response.Body, new { success = true });
+            });
+        }
 
         return endpoints;
     }

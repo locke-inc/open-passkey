@@ -8,6 +8,7 @@ from open_passkey import verify_authentication, verify_registration
 
 from .base64url import b64url_decode, b64url_encode
 from .config import PasskeyConfig
+from .session import create_session_token, validate_session_token, SessionTokenData
 from .stores import PasskeyError, StoredCredential
 
 logger = logging.getLogger(__name__)
@@ -155,4 +156,12 @@ class PasskeyHandler:
         resp: dict = {"userId": stored.user_id, "authenticated": True}
         if stored.prf_supported:
             resp["prfSupported"] = True
+        if self.config.session is not None:
+            resp["sessionToken"] = create_session_token(stored.user_id, self.config.session)
         return resp
+
+    def get_session_token_data(self, token: str) -> SessionTokenData:
+        """Validate a session token and return internal SessionTokenData."""
+        if self.config.session is None:
+            raise PasskeyError("session is not configured")
+        return validate_session_token(token, self.config.session)

@@ -85,3 +85,31 @@ export function createPasskeyLogin() {
 
   return { authenticate, status: status as Accessor<Status>, result: result as Accessor<AuthenticationResult | null>, error: error as Accessor<Error | null> };
 }
+
+export function createPasskeySession() {
+  const client = useClient();
+  const [session, setSession] = createSignal<AuthenticationResult | null>(null);
+  const [loading, setLoading] = createSignal(true);
+
+  async function checkSession(): Promise<void> {
+    setLoading(true);
+    try {
+      const result = await client.getSession();
+      setSession(result);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function logout(): Promise<void> {
+    await client.logout();
+    setSession(null);
+  }
+
+  return {
+    session: session as Accessor<AuthenticationResult | null>,
+    loading: loading as Accessor<boolean>,
+    checkSession,
+    logout,
+  };
+}

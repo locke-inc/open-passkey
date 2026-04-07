@@ -82,6 +82,40 @@ Unlike ES256 (which hashes then signs), ML-DSA signs the message directly:
 - Go: `cloudflare/circl/sign/mldsa/mldsa65.Verify(pubKey, message, nil, signature)`
 - TypeScript: `ml_dsa65.verify(signature, message, publicKey)` from `@noble/post-quantum/ml-dsa.js` (note: signature-first argument order)
 
+## Session Support
+
+Opt-in **HMAC-SHA256 stateless session cookies** — not JWTs, not server-side session stores. Disabled by default (no breaking changes).
+
+### How It Works
+- Token format: `userId:expiresAtUnixMs:base64urlHmacSha256Signature`
+- Cookie: `HttpOnly; Secure; SameSite=Lax; Path=/`
+- Two new endpoints: `GET /session` (validate), `POST /logout` (clear cookie)
+- 10-second clock skew grace period on all expiry checks
+- Secret minimum: 32 characters, enforced at startup
+- Timing-safe signature comparison in every language (`timingSafeEqual`, `hmac.Equal`, `hmac.compare_digest`, `MessageDigest.isEqual`, `CryptographicOperations.FixedTimeEquals`, HMAC `verify_slice`)
+
+### Configuration
+Add `session` to server config (all languages):
+```
+session: {
+  secret: "your-32+-char-hmac-secret",  // required
+  duration: 86400000,                    // ms (TS/JS) or seconds (others), default 24h
+  cookieName: "op_session",              // default
+  secure: true,                          // default (false for localhost)
+  sameSite: "Lax",                       // default
+}
+```
+
+### Architecture
+- **Core session logic**: `session.ts` / `session.go` / `session.py` / `Session.java` / `Session.cs` / `session.rs` — pure token create/validate + cookie helpers, no HTTP
+- **Server integration**: `finishAuthentication()` creates token when session configured; token set as cookie by framework bindings (never returned in JSON body)
+- **Type separation**: Internal `SessionTokenData { userId, expiresAt }` never leaks to HTTP; clients see `{ userId, authenticated: true }` (same `AuthenticationResult` shape)
+- **Client SDK**: `PasskeyClient.getSession()` returns `AuthenticationResult | null`, `logout()` returns void
+- **Frontend hooks**: React `usePasskeySession()`, Vue `usePasskeySession()`, Svelte `createSessionStore()`, Solid `createPasskeySession()`, Angular `PasskeyService.getSession()` / `.logout()`
+
+### Not Applicable to Locke Gateway
+The Locke Gateway (`gateway/`) has its own Redis-backed session system with instant revocation. The open-passkey session feature is for **self-hosted deployments** that don't have their own session infrastructure.
+
 ## Key Architectural Decisions
 
 - **Shared test vectors**: `spec/vectors/*.json` contains protocol-level test cases that every language implementation loads and runs against. This is the cross-language contract.
@@ -125,6 +159,18 @@ npm test
 ### Run authenticator-ts tests (round-trip tests)
 ```bash
 cd packages/authenticator-ts
+npm test
+```
+
+### Run server-ts tests (session + passkey integration tests)
+```bash
+cd packages/server-ts
+npm test
+```
+
+### Run sdk-js tests (client session tests)
+```bash
+cd packages/sdk-js
 npm test
 ```
 
@@ -179,11 +225,16 @@ All binary data in vectors is base64url-encoded (no padding).
 - [x] `sdk-js`: `PasskeyClient` class — single source of truth for browser-side WebAuthn logic
 - [x] `sdk-js`: IIFE bundle (`dist/open-passkey.iife.js`) for `<script>` tag usage
 - [x] All frontend SDKs wrap `PasskeyClient`: React, Vue, Svelte, Solid, Angular
-- [x] `angular`: Headless components (content projection, signal-based), thin service wrapping PasskeyClient, 19 Jest tests
+- [x] `angular`: Headless components (content projection, signal-based), thin service wrapping PasskeyClient, 22 Jest tests
 - [x] `authenticator-ts`: Software authenticator for testing — 7 Vitest tests
 - [x] 23 working examples — 4 frontend-only (React, Vue, Angular, Solid → use Locke Gateway), rest are full-stack self-hosted
 - [x] Attestation: `none` and `packed` (self-attestation + full x5c)
 - [x] Backup flags (BE/BS), PRF extension, userHandle cross-check, sign count rollback detection
+- [x] **Session support**: HMAC-SHA256 stateless cookies across all 6 server languages + all framework bindings + all client SDKs
+  - Core: `session.ts/go/py/java/cs/rs` — token create/validate, cookie helpers, config validation
+  - Server integration: session cookie on `/login/finish`, `GET /session`, `POST /logout` in all 18 server packages
+  - Client: `getSession()`, `logout()` in sdk-js + React/Vue/Svelte/Solid/Angular session hooks
+  - Tests: 30 Vitest (server-ts), 18 Go, 18 pytest, 14 JUnit, 14 xUnit, 14 Rust inline, 7 Vitest (sdk-js), 3 Jest (angular)
 
 ### Backlog
 - [ ] Ruby + PHP core libraries

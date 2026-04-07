@@ -1,9 +1,11 @@
 package com.openpasskey.spring;
 
 import com.openpasskey.core.WebAuthnException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -68,11 +70,60 @@ public class PasskeyController {
                 (String) body.get("userId"),
                 (Map<String, Object>) body.get("credential")
             );
+
+            if (passkeyService.isSessionEnabled() && result.containsKey("sessionToken")) {
+                String token = (String) result.get("sessionToken");
+                Session.SessionConfig config = passkeyService.getSessionConfig();
+                String setCookie = Session.buildSetCookieHeader(token, config);
+
+                // Remove sessionToken from response body — it's in the cookie
+                Map<String, Object> responseBody = new LinkedHashMap<>(result);
+                responseBody.remove("sessionToken");
+
+                return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, setCookie)
+                    .body(responseBody);
+            }
+
             return ResponseEntity.ok(result);
         } catch (Stores.PasskeyException e) {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getMessage()));
         } catch (WebAuthnException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @GetMapping("/session")
+    public ResponseEntity<?> session(@RequestHeader(value = "Cookie", required = false) String cookieHeader) {
+        if (!passkeyService.isSessionEnabled()) {
+            return ResponseEntity.status(404).body(Map.of("error", "session not configured"));
+        }
+
+        Session.SessionConfig config = passkeyService.getSessionConfig();
+        String token = Session.parseCookieToken(cookieHeader, config);
+        if (token == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "no session"));
+        }
+
+        try {
+            Session.SessionTokenData data = passkeyService.getSessionTokenData(token);
+            return ResponseEntity.ok(Map.of("userId", data.userId(), "authenticated", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        if (!passkeyService.isSessionEnabled()) {
+            return ResponseEntity.status(404).body(Map.of("error", "session not configured"));
+        }
+
+        Session.SessionConfig config = passkeyService.getSessionConfig();
+        String clearCookie = Session.buildClearCookieHeader(config);
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.SET_COOKIE, clearCookie)
+            .body(Map.of("success", true));
     }
 }

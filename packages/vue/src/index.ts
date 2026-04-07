@@ -74,3 +74,25 @@ export function usePasskeyLogin() {
 
   return { authenticate, status, result, error };
 }
+
+export function usePasskeySession() {
+  const client = useClient();
+  const session: Ref<AuthenticationResult | null> = ref(null);
+  const loading: Ref<boolean> = ref(true);
+
+  async function checkSession(): Promise<void> {
+    loading.value = true;
+    try {
+      session.value = await client.getSession();
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function logout(): Promise<void> {
+    await client.logout();
+    session.value = null;
+  }
+
+  return { session, loading, checkSession, logout };
+}

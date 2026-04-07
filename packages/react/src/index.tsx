@@ -92,3 +92,26 @@ export function usePasskeyLogin() {
 
   return { authenticate, status, result, error };
 }
+
+export function usePasskeySession() {
+  const client = useClient();
+  const [session, setSession] = useState<AuthenticationResult | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const checkSession = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await client.getSession();
+      setSession(result);
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  const logout = useCallback(async () => {
+    await client.logout();
+    setSession(null);
+  }, [client]);
+
+  return { session, loading, checkSession, logout };
+}

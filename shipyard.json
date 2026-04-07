@@ -10,6 +10,9 @@
     "test:ts": "cd packages/core-ts && npm test",
     "test:server": "cd packages/server-go && go test ./... -v",
     "test:angular": "cd packages/angular && npm test",
+    "test:session:ts": "cd packages/server-ts && npm test",
+    "test:session:go": "cd packages/server-go && go test ./... -run Session -v",
+    "test:sdk": "cd packages/sdk-js && npm test",
     "vecgen": "cd tools/vecgen && go run main.go -out ../../spec/vectors"
   },
   "deploy": {
@@ -17,7 +20,8 @@
     "notes": "Open-source library, published as packages"
   },
   "features": [
-    { "id": "lookout-passkeys", "files": ["packages/authenticator-ts/"], "status": "done" }
+    { "id": "lookout-passkeys", "files": ["packages/authenticator-ts/"], "status": "done" },
+    { "id": "session-support", "files": ["packages/server-ts/src/session.ts", "packages/server-go/session.go", "packages/server-py/open_passkey_server/session.py", "packages/sdk-js/src/index.ts"], "status": "done" }
   ],
   "health": {
     "hasTests": true,

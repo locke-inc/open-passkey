@@ -25,6 +25,8 @@ from .views import (
     BeginRegistrationView,
     FinishAuthenticationView,
     FinishRegistrationView,
+    GetSessionView,
+    LogoutView,
 )
 
 urlpatterns = [
@@ -32,4 +34,6 @@ urlpatterns = [
     path("register/finish", FinishRegistrationView.as_view(), name="passkey-register-finish"),
     path("login/begin", BeginAuthenticationView.as_view(), name="passkey-login-begin"),
     path("login/finish", FinishAuthenticationView.as_view(), name="passkey-login-finish"),
+    path("session", GetSessionView.as_view(), name="passkey-session"),
+    path("logout", LogoutView.as_view(), name="passkey-logout"),
 ]

@@ -174,6 +174,15 @@ public class PasskeyService
             ["authenticated"] = true,
         };
         if (stored.PrfSupported) resp["prfSupported"] = true;
+        if (_config.Session != null)
+            resp["sessionToken"] = SessionHelper.CreateToken(stored.UserId, _config.Session);
         return resp;
+    }
+
+    public SessionTokenData GetSessionTokenData(string token)
+    {
+        if (_config.Session == null)
+            throw new PasskeyException("session support is not configured");
+        return SessionHelper.ValidateToken(token, _config.Session);
     }
 }

@@ -71,8 +71,33 @@ export function createPasskeyClient(config: PasskeyClientConfig) {
     return { subscribe, authenticate };
   }
 
+  function createSessionStore() {
+    const { subscribe, set } = writable<{
+      session: AuthenticationResult | null;
+      loading: boolean;
+    }>({ session: null, loading: true });
+
+    async function checkSession(): Promise<void> {
+      set({ session: null, loading: true });
+      try {
+        const result = await client.getSession();
+        set({ session: result, loading: false });
+      } catch {
+        set({ session: null, loading: false });
+      }
+    }
+
+    async function logout(): Promise<void> {
+      await client.logout();
+      set({ session: null, loading: false });
+    }
+
+    return { subscribe, checkSession, logout };
+  }
+
   return {
     registerStore: createRegisterStore(),
     loginStore: createLoginStore(),
+    sessionStore: createSessionStore(),
   };
 }

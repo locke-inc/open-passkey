@@ -284,4 +284,21 @@ export class PasskeyClient {
 
     return finishRes.json();
   }
+
+  async getSession(): Promise<AuthenticationResult | null> {
+    const res = await fetch(`${this.baseUrl}/session`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (res.status === 401) return null;
+    if (!res.ok) throw new Error("Failed to get session");
+    return res.json();
+  }
+
+  async logout(): Promise<void> {
+    await fetch(`${this.baseUrl}/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  }
 }

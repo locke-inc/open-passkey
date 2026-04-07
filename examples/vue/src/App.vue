@@ -2,29 +2,43 @@
   <div class="container">
     <h1>open-passkey</h1>
     <p class="subtitle">Vue Example</p>
-    <div class="field">
-      <label>User ID</label>
-      <input v-model="userId" />
+
+    <div v-if="sessionLoading">
+      <p>Loading...</p>
     </div>
-    <div class="field">
-      <label>Username</label>
-      <input v-model="username" />
-    </div>
-    <div class="buttons">
-      <button class="primary" :disabled="regStatus === 'pending'" @click="doRegister">
-        {{ regStatus === "pending" ? "Registering..." : "Register Passkey" }}
-      </button>
-      <button class="secondary" :disabled="authStatus === 'pending'" @click="doLogin">
-        {{ authStatus === "pending" ? "Signing in..." : "Sign In" }}
-      </button>
-    </div>
-    <div v-if="message" :class="['status', messageType]">{{ message }}</div>
+
+    <template v-else-if="session">
+      <div class="status success">Signed in as {{ session.userId }}</div>
+      <div class="buttons" style="margin-top: 16px">
+        <button class="secondary" @click="doLogout">Sign Out</button>
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="field">
+        <label>User ID</label>
+        <input v-model="userId" />
+      </div>
+      <div class="field">
+        <label>Username</label>
+        <input v-model="username" />
+      </div>
+      <div class="buttons">
+        <button class="primary" :disabled="regStatus === 'pending'" @click="doRegister">
+          {{ regStatus === "pending" ? "Registering..." : "Register Passkey" }}
+        </button>
+        <button class="secondary" :disabled="authStatus === 'pending'" @click="doLogin">
+          {{ authStatus === "pending" ? "Signing in..." : "Sign In" }}
+        </button>
+      </div>
+      <div v-if="message" :class="['status', messageType]">{{ message }}</div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { usePasskeyRegister, usePasskeyLogin } from "@open-passkey/vue";
+import { ref, watch, onMounted } from "vue";
+import { usePasskeyRegister, usePasskeyLogin, usePasskeySession } from "@open-passkey/vue";
 
 const userId = ref("test-user");
 const username = ref("Test User");
@@ -32,7 +46,10 @@ const message = ref("");
 const messageType = ref<"success" | "error">("success");
 
 const { register, status: regStatus, result: regResult, error: regError } = usePasskeyRegister();
-const { authenticate, status: authStatus, result: authResult, error: authError } = usePasskeyLogin();
+const { authenticate, status: authStatus, error: authError } = usePasskeyLogin();
+const { session, loading: sessionLoading, checkSession, logout } = usePasskeySession();
+
+onMounted(() => checkSession());
 
 async function doRegister() {
   message.value = "";
@@ -42,11 +59,17 @@ async function doRegister() {
 async function doLogin() {
   message.value = "";
   await authenticate(userId.value);
+  await checkSession();
+}
+
+async function doLogout() {
+  await logout();
+  message.value = "";
 }
 
 watch(regStatus, (s) => {
   if (s === "success" && regResult.value) {
-    message.value = `Registered! Credential ID: ${regResult.value.credentialId}`;
+    message.value = "Registered! You can now sign in.";
     messageType.value = "success";
   } else if (s === "error" && regError.value) {
     message.value = regError.value.message;
@@ -55,10 +78,7 @@ watch(regStatus, (s) => {
 });
 
 watch(authStatus, (s) => {
-  if (s === "success" && authResult.value) {
-    message.value = `Authenticated! User: ${authResult.value.userId}`;
-    messageType.value = "success";
-  } else if (s === "error" && authError.value) {
+  if (s === "error" && authError.value) {
     message.value = authError.value.message;
     messageType.value = "error";
   }

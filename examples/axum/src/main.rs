@@ -10,6 +10,7 @@ async fn main() {
         origin: "http://localhost:3000".into(),
         challenge_length: 32,
         challenge_timeout_seconds: 300,
+        session: None,
     };
 
     let challenge_store = Arc::new(MemoryChallengeStore::new());

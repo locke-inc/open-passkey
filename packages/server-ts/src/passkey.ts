@@ -6,6 +6,12 @@ import {
   COSE_ALG_COMPOSITE_MLDSA65_ES256,
 } from "@open-passkey/core";
 import { base64urlEncode, base64urlDecode } from "./base64url.js";
+import type { SessionConfig, SessionTokenData } from "./session.js";
+import {
+  validateSessionConfig,
+  createSessionToken,
+  validateSessionToken,
+} from "./session.js";
 import type {
   PasskeyConfig,
   StoredCredential,
@@ -37,6 +43,7 @@ export class Passkey {
   private readonly challengeTimeout: number;
   private readonly challengeStore: PasskeyConfig["challengeStore"];
   private readonly credentialStore: PasskeyConfig["credentialStore"];
+  private readonly sessionConfig?: SessionConfig;
 
   constructor(config: PasskeyConfig) {
     if (!config.rpId) throw new PasskeyError(500, "rpId is required");
@@ -48,6 +55,11 @@ export class Passkey {
     }
     if (!config.origin.startsWith("https://") && !config.origin.startsWith("http://")) {
       throw new PasskeyError(500, `origin must start with https:// or http:// (got "${config.origin}")`);
+    }
+
+    if (config.session) {
+      validateSessionConfig(config.session);
+      this.sessionConfig = config.session;
     }
 
     this.rpId = config.rpId;
@@ -228,6 +240,20 @@ export class Passkey {
     if (stored.prfSupported) {
       resp.prfSupported = true;
     }
+    if (this.sessionConfig) {
+      resp.sessionToken = createSessionToken(stored.userId, this.sessionConfig);
+    }
     return resp;
+  }
+
+  getSessionTokenData(token: string): SessionTokenData {
+    if (!this.sessionConfig) {
+      throw new PasskeyError(500, "session is not configured");
+    }
+    return validateSessionToken(token, this.sessionConfig);
+  }
+
+  getSessionConfig(): SessionConfig | undefined {
+    return this.sessionConfig;
   }
 }

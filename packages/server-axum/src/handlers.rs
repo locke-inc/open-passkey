@@ -1,6 +1,6 @@
 use axum::{
     extract::State,
-    http::StatusCode,
+    http::{header, HeaderMap, StatusCode},
     response::IntoResponse,
     Json,
 };
@@ -14,6 +14,7 @@ use open_passkey_core::{
     AuthenticationInput, RegistrationInput, verify_authentication, verify_registration,
 };
 
+use crate::session;
 use crate::stores::{PasskeyError, StoredCredential};
 use crate::types::*;
 use crate::PasskeyState;
@@ -258,5 +259,54 @@ pub async fn finish_authentication(
         resp["prfSupported"] = json!(true);
     }
 
-    Json(resp).into_response()
+    if let Some(ref session_config) = state.session {
+        let token = session::create_token(&stored.user_id, session_config);
+        let cookie_header = session::build_set_cookie_header(&token, session_config);
+        let mut headers = HeaderMap::new();
+        headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
+        (headers, Json(resp)).into_response()
+    } else {
+        Json(resp).into_response()
+    }
+}
+
+pub async fn get_session(
+    State(state): State<Arc<PasskeyState>>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    let session_config = match &state.session {
+        Some(c) => c,
+        None => return error_response(StatusCode::INTERNAL_SERVER_ERROR, "sessions not configured").into_response(),
+    };
+
+    let cookie_header = headers
+        .get(header::COOKIE)
+        .and_then(|v| v.to_str().ok());
+
+    let token = match session::parse_cookie_token(cookie_header, session_config) {
+        Some(t) => t,
+        None => return error_response(StatusCode::UNAUTHORIZED, "no session token").into_response(),
+    };
+
+    match session::validate_token(&token, session_config) {
+        Ok(data) => Json(json!({
+            "userId": data.user_id,
+            "authenticated": true,
+        })).into_response(),
+        Err(_) => error_response(StatusCode::UNAUTHORIZED, "invalid or expired session").into_response(),
+    }
+}
+
+pub async fn logout(
+    State(state): State<Arc<PasskeyState>>,
+) -> impl IntoResponse {
+    let session_config = match &state.session {
+        Some(c) => c,
+        None => return error_response(StatusCode::INTERNAL_SERVER_ERROR, "sessions not configured").into_response(),
+    };
+
+    let cookie_header = session::build_clear_cookie_header(session_config);
+    let mut headers = HeaderMap::new();
+    headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
+    (headers, Json(json!({"success": true}))).into_response()
 }

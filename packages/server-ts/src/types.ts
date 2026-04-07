@@ -24,6 +24,8 @@ export interface StoredCredential {
 
 // --- Config ---
 
+import type { SessionConfig } from "./session.js";
+
 export interface PasskeyConfig {
   rpId: string;
   rpDisplayName: string;
@@ -32,6 +34,7 @@ export interface PasskeyConfig {
   credentialStore: CredentialStore;
   challengeLength?: number; // bytes, default 32
   challengeTimeout?: number; // milliseconds, default 300000 (5 min)
+  session?: SessionConfig;
 }
 
 // --- Request types ---
@@ -106,4 +109,5 @@ export interface FinishAuthenticationResponse {
   userId: string;
   authenticated: true;
   prfSupported?: boolean;
+  sessionToken?: string;
 }

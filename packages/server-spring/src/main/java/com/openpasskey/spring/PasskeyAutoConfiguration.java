@@ -32,6 +32,9 @@ public class PasskeyAutoConfiguration {
     public PasskeyService passkeyService(PasskeyProperties props,
                                           Stores.ChallengeStore challengeStore,
                                           Stores.CredentialStore credentialStore) {
+        if (props.isSessionEnabled()) {
+            Session.validate(props.buildSessionConfig());
+        }
         return new PasskeyService(props, challengeStore, credentialStore);
     }
 

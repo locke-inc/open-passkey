@@ -1,7 +1,8 @@
-import { Component, signal } from "@angular/core";
+import { Component, inject, OnInit, signal } from "@angular/core";
 import {
   PasskeyRegisterComponent,
   PasskeyLoginComponent,
+  PasskeyService,
   type PasskeyRegistrationResult,
   type PasskeyAuthenticationResult,
 } from "@open-passkey/angular";
@@ -14,32 +15,42 @@ import {
     <div class="container">
       <h1>open-passkey</h1>
       <p class="subtitle">Angular Example</p>
-      <div class="field">
-        <label>User ID</label>
-        <input [value]="userId()" (input)="userId.set($any($event.target).value)" />
-      </div>
-      <div class="field">
-        <label>Username</label>
-        <input [value]="username()" (input)="username.set($any($event.target).value)" />
-      </div>
-      <div class="buttons">
-        <passkey-register [userId]="userId()" [username]="username()"
-                          (registered)="onRegistered($event)"
-                          (error)="onError($event)" #reg>
-          <button class="primary" (click)="reg.register()" [disabled]="reg.loading()">
-            {{ reg.loading() ? "Registering..." : "Register Passkey" }}
-          </button>
-        </passkey-register>
-        <passkey-login [userId]="userId()"
-                       (authenticated)="onAuthenticated($event)"
-                       (error)="onError($event)" #login>
-          <button class="secondary" (click)="login.login()" [disabled]="login.loading()">
-            {{ login.loading() ? "Signing in..." : "Sign In" }}
-          </button>
-        </passkey-login>
-      </div>
-      @if (message()) {
-        <div [class]="'status ' + messageType()">{{ message() }}</div>
+
+      @if (loading()) {
+        <p>Loading...</p>
+      } @else if (sessionUserId()) {
+        <div class="status success">Signed in as {{ sessionUserId() }}</div>
+        <div class="buttons" style="margin-top: 16px">
+          <button class="secondary" (click)="doLogout()">Sign Out</button>
+        </div>
+      } @else {
+        <div class="field">
+          <label>User ID</label>
+          <input [value]="userId()" (input)="userId.set($any($event.target).value)" />
+        </div>
+        <div class="field">
+          <label>Username</label>
+          <input [value]="username()" (input)="username.set($any($event.target).value)" />
+        </div>
+        <div class="buttons">
+          <passkey-register [userId]="userId()" [username]="username()"
+                            (registered)="onRegistered($event)"
+                            (error)="onError($event)" #reg>
+            <button class="primary" (click)="reg.register()" [disabled]="reg.loading()">
+              {{ reg.loading() ? "Registering..." : "Register Passkey" }}
+            </button>
+          </passkey-register>
+          <passkey-login [userId]="userId()"
+                         (authenticated)="onAuthenticated($event)"
+                         (error)="onError($event)" #login>
+            <button class="secondary" (click)="login.login()" [disabled]="login.loading()">
+              {{ login.loading() ? "Signing in..." : "Sign In" }}
+            </button>
+          </passkey-login>
+        </div>
+        @if (message()) {
+          <div [class]="'status ' + messageType()">{{ message() }}</div>
+        }
       }
     </div>
   `,
@@ -62,24 +73,46 @@ import {
     .error { background: #fee2e2; color: #991b1b; }
   `],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  private passkey = inject(PasskeyService);
+
   userId = signal("test-user");
   username = signal("Test User");
   message = signal("");
   messageType = signal<"success" | "error">("success");
+  sessionUserId = signal<string | null>(null);
+  loading = signal(true);
+
+  ngOnInit() {
+    this.passkey.getSession().subscribe({
+      next: (session) => {
+        this.sessionUserId.set(session?.userId ?? null);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
+    });
+  }
 
   onRegistered(result: PasskeyRegistrationResult) {
-    this.message.set(`Registered! Credential ID: ${result.credentialId}`);
+    this.message.set("Registered! You can now sign in.");
     this.messageType.set("success");
   }
 
   onAuthenticated(result: PasskeyAuthenticationResult) {
-    this.message.set(`Authenticated! User: ${result.userId}`);
-    this.messageType.set("success");
+    this.passkey.getSession().subscribe((session) => {
+      this.sessionUserId.set(session?.userId ?? null);
+    });
   }
 
   onError(err: Error) {
     this.message.set(err.message || "Something went wrong");
     this.messageType.set("error");
+  }
+
+  doLogout() {
+    this.passkey.logout().subscribe(() => {
+      this.sessionUserId.set(null);
+      this.message.set("");
+    });
   }
 }

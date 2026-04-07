@@ -12,6 +12,7 @@ public class PasskeyConfig
     public ICredentialStore CredentialStore { get; set; } = new MemoryCredentialStore();
     public int ChallengeLength { get; set; } = 32;
     public int ChallengeTimeoutSeconds { get; set; } = 300;
+    public SessionConfig? Session { get; set; }
 
     public void Validate()
     {
@@ -23,5 +24,7 @@ public class PasskeyConfig
             throw new ArgumentException($"RpId must be a bare domain (got '{RpId}')");
         if (!Origin.StartsWith("https://") && !Origin.StartsWith("http://"))
             throw new ArgumentException($"Origin must start with https:// or http:// (got '{Origin}')");
+        if (Session != null)
+            SessionHelper.Validate(Session);
     }
 }
