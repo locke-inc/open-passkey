@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/authenticator",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Software WebAuthn authenticator for credential creation and assertion",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

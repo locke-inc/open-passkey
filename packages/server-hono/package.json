@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/hono",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Hono passkey/WebAuthn server middleware",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,6 +1,6 @@
 module github.com/locke-inc/open-passkey/packages/core-go
 
-go 1.23.3
+go 1.24
 
 require (
 	github.com/cloudflare/circl v1.6.3

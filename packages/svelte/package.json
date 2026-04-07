@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/svelte",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Svelte stores for passkey (WebAuthn/FIDO2) authentication",
   "type": "module",
   "main": "dist/index.js",

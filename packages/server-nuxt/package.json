@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/nuxt",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Nuxt 3 Nitro passkey/WebAuthn server event handlers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Core WebAuthn/FIDO2 protocol verification library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

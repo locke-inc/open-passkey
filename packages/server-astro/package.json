@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/astro",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Astro API route handlers for passkey/WebAuthn authentication",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/angular",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Angular components for passkey (WebAuthn/FIDO2) authentication",
   "license": "MIT",
   "scripts": {

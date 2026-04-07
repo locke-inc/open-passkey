@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/server",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Framework-agnostic WebAuthn server handler logic",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

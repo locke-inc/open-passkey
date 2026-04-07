@@ -1,0 +1,17 @@
+{
+  "name": "open-passkey-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:express": "vitest run -t 'express'",
+    "test:go": "vitest run -t 'go-nethttp'",
+    "test:fastapi": "vitest run -t 'fastapi'"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18",
+    "typescript": "^5.9.3",
+    "@open-passkey/authenticator": "file:../../packages/authenticator-ts"
+  }
+}
