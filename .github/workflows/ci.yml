@@ -59,10 +59,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache liboqs
+        id: cache-liboqs
+        uses: actions/cache@v4
+        with:
+          path: ~/_oqs
+          key: liboqs-67b35f20
       - name: Build and install liboqs
+        # liboqs-python 0.14.1 expects symbols not present in any tagged liboqs release,
+        # so we pin to a known-good commit on main. When upgrading liboqs-python, update:
+        #   1. The commit SHA below
+        #   2. The cache key above (liboqs-<short-sha>)
+        if: steps.cache-liboqs.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
-          git clone --branch 0.9.2 --depth 1 https://github.com/open-quantum-safe/liboqs.git /tmp/liboqs
+          git clone https://github.com/open-quantum-safe/liboqs.git /tmp/liboqs
+          cd /tmp/liboqs && git checkout 67b35f20815b5d735359ca67050c6f59cc2eb26a
           cmake -S /tmp/liboqs -B /tmp/liboqs/build -G Ninja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$HOME/_oqs
           ninja -C /tmp/liboqs/build
           ninja -C /tmp/liboqs/build install
