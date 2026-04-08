@@ -49,8 +49,23 @@ export function createPasskeyActions(config: PasskeyConfig): {
     registerBegin: ({ request }: ActionFunctionArgs) =>
       handle(request, (body) => passkey.beginRegistration(body as Parameters<typeof passkey.beginRegistration>[0])),
 
-    registerFinish: ({ request }: ActionFunctionArgs) =>
-      handle(request, (body) => passkey.finishRegistration(body as Parameters<typeof passkey.finishRegistration>[0])),
+    registerFinish: async ({ request }: ActionFunctionArgs) => {
+      try {
+        const body = await request.json();
+        const result = await passkey.finishRegistration(body as Parameters<typeof passkey.finishRegistration>[0]);
+        const sessionConfig = passkey.getSessionConfig();
+        if (sessionConfig && result.sessionToken) {
+          const { sessionToken: _, ...responseBody } = result;
+          return jsonResponse(responseBody, 200, { "Set-Cookie": buildSetCookieHeader(result.sessionToken, sessionConfig) });
+        }
+        return jsonResponse(result, 200);
+      } catch (err) {
+        if (err instanceof PasskeyError) {
+          return jsonResponse({ error: err.message }, err.statusCode);
+        }
+        return jsonResponse({ error: "internal server error" }, 500);
+      }
+    },
 
     loginBegin: ({ request }: ActionFunctionArgs) =>
       handle(request, (body) => passkey.beginAuthentication(body as Parameters<typeof passkey.beginAuthentication>[0])),

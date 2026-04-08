@@ -9,7 +9,12 @@ var config = new PasskeyConfig
 {
     RpId = "localhost",
     RpDisplayName = "Open Passkey ASP.NET Example",
-    Origin = "http://localhost:5000"
+    Origin = "http://localhost:5000",
+    Session = new SessionConfig
+    {
+        Secret = "aspnet-example-secret-must-be-32-chars",
+        Secure = false,
+    },
 };
 
 app.MapPasskeyEndpoints(config);

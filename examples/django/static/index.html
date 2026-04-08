@@ -4,45 +4,83 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>open-passkey — Django Example</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>open-passkey</h1>
-  <p class="subtitle">Django Example</p>
-  <div class="field">
-    <label for="userId">User ID</label>
-    <input type="text" id="userId" value="test-user">
+  <div class="page">
+    <div class="card">
+      <h1>open-passkey</h1>
+      <p class="subtitle">Django Example</p>
+
+      <div id="auth-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@example.com">
+        </div>
+        <div class="actions">
+          <button class="btn-primary" onclick="doRegister()">Create Passkey</button>
+          <div class="divider"><span>or</span></div>
+          <button class="btn-secondary" onclick="doLogin()">Sign in with Passkey</button>
+        </div>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div id="signed-in" style="display: none">
+        <div class="signed-in">
+          <div class="signed-in-badge">Authenticated</div>
+          <div class="signed-in-email" id="signed-in-email"></div>
+          <button class="btn-secondary" onclick="doLogout()">Sign Out</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="field">
-    <label for="username">Username</label>
-    <input type="text" id="username" value="Test User">
-  </div>
-  <div class="buttons">
-    <button class="primary" onclick="doRegister()">Register Passkey</button>
-    <button class="secondary" onclick="doLogin()">Sign In</button>
-  </div>
-  <div id="status"></div>
+
   <script src="/passkey.js"></script>
   <script>
-    const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/passkey" });
+    const passkey = new OpenPasskey.PasskeyClient({ baseUrl: '/passkey' });
+
+    passkey.getSession()
+      .then(session => { if (session) showSignedIn(session.userId); })
+      .catch(() => {});
+
     function showStatus(msg, type) {
-      const el = document.getElementById("status");
+      const el = document.getElementById('status');
       el.textContent = msg;
-      el.className = type;
+      el.className = 'status visible ' + type;
     }
-    async function doRegister() {
-      try {
-        showStatus("Starting registration...", "info");
-        const result = await passkey.register(document.getElementById("userId").value, document.getElementById("username").value);
-        showStatus("Registered! Credential ID: " + result.credentialId, "success");
-      } catch (e) { showStatus("Registration failed: " + e.message, "error"); }
+
+    function showSignedIn(userId) {
+      document.getElementById('auth-form').style.display = 'none';
+      document.getElementById('signed-in').style.display = 'block';
+      document.getElementById('signed-in-email').textContent = userId;
     }
-    async function doLogin() {
-      try {
-        showStatus("Starting authentication...", "info");
-        const result = await passkey.authenticate(document.getElementById("userId").value);
-        showStatus("Authenticated! User: " + result.userId, "success");
-      } catch (e) { showStatus("Authentication failed: " + e.message, "error"); }
+
+    function doRegister() {
+      const email = document.getElementById('email').value;
+      if (!email) { showStatus('Please enter an email', 'error'); return; }
+      passkey.register(email, email)
+        .then(() => passkey.getSession())
+        .then(session => { if (session) showSignedIn(session.userId); })
+        .catch(err => showStatus(err.message, 'error'));
+    }
+
+    function doLogin() {
+      const email = document.getElementById('email').value;
+      passkey.authenticate(email || undefined)
+        .then(() => passkey.getSession())
+        .then(session => { if (session) showSignedIn(session.userId); })
+        .catch(err => showStatus(err.message, 'error'));
+    }
+
+    function doLogout() {
+      passkey.logout().then(() => {
+        document.getElementById('auth-form').style.display = 'block';
+        document.getElementById('signed-in').style.display = 'none';
+        document.getElementById('status').className = 'status';
+      });
     }
   </script>
 </body>

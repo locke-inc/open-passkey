@@ -43,6 +43,7 @@ export class Passkey {
   private readonly challengeTimeout: number;
   private readonly challengeStore: PasskeyConfig["challengeStore"];
   private readonly credentialStore: PasskeyConfig["credentialStore"];
+  private readonly allowMultipleCredentials: boolean;
   private readonly sessionConfig?: SessionConfig;
 
   constructor(config: PasskeyConfig) {
@@ -69,6 +70,7 @@ export class Passkey {
     this.credentialStore = config.credentialStore;
     this.challengeLength = config.challengeLength ?? 32;
     this.challengeTimeout = config.challengeTimeout ?? 300_000;
+    this.allowMultipleCredentials = config.allowMultipleCredentials ?? false;
   }
 
   private generateChallenge(): string {
@@ -82,6 +84,12 @@ export class Passkey {
       throw new PasskeyError(400, "userId and username are required");
     }
 
+    const existing = await this.credentialStore.getByUser(req.userId);
+
+    if (!this.allowMultipleCredentials && existing.length > 0) {
+      throw new PasskeyError(409, "user already registered");
+    }
+
     const challenge = this.generateChallenge();
 
     const prfSalt = new Uint8Array(32);
@@ -93,7 +101,7 @@ export class Passkey {
     });
     await this.challengeStore.store(req.userId, challengeData, this.challengeTimeout);
 
-    return {
+    const options: BeginRegistrationResponse = {
       challenge,
       rp: { id: this.rpId, name: this.rpDisplayName },
       user: {
@@ -118,6 +126,15 @@ export class Passkey {
         },
       },
     };
+
+    if (existing.length > 0) {
+      options.excludeCredentials = existing.map((c) => ({
+        type: "public-key" as const,
+        id: base64urlEncode(c.credentialId),
+      }));
+    }
+
+    return options;
   }
 
   async finishRegistration(req: FinishRegistrationRequest): Promise<FinishRegistrationResponse> {
@@ -152,11 +169,15 @@ export class Passkey {
 
     await this.credentialStore.store(cred);
 
-    return {
+    const resp: FinishRegistrationResponse = {
       credentialId: base64urlEncode(result.credentialId),
       registered: true,
       prfSupported: prfEnabled,
     };
+    if (this.sessionConfig) {
+      resp.sessionToken = createSessionToken(req.userId, this.sessionConfig);
+    }
+    return resp;
   }
 
   async beginAuthentication(req: BeginAuthenticationRequest): Promise<BeginAuthenticationResponse> {

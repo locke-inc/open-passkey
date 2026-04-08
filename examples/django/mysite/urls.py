@@ -4,6 +4,7 @@ import os
 
 from open_passkey_django.views import configure
 from open_passkey_server import MemoryChallengeStore, MemoryCredentialStore
+from open_passkey_server.session import SessionConfig
 
 configure(
     rp_id="localhost",
@@ -11,6 +12,10 @@ configure(
     origin="http://localhost:5003",
     challenge_store=MemoryChallengeStore(),
     credential_store=MemoryCredentialStore(),
+    session=SessionConfig(
+        secret="django-example-secret-must-be-32-chars",
+        secure=False,
+    ),
 )
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")

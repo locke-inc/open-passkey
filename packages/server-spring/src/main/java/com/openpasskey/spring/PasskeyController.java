@@ -43,6 +43,20 @@ public class PasskeyController {
                 (Map<String, Object>) body.get("credential"),
                 (Boolean) body.get("prfSupported")
             );
+
+            if (passkeyService.isSessionEnabled() && result.containsKey("sessionToken")) {
+                String token = (String) result.get("sessionToken");
+                Session.SessionConfig config = passkeyService.getSessionConfig();
+                String setCookie = Session.buildSetCookieHeader(token, config);
+
+                Map<String, Object> responseBody = new LinkedHashMap<>(result);
+                responseBody.remove("sessionToken");
+
+                return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE, setCookie)
+                    .body(responseBody);
+            }
+
             return ResponseEntity.ok(result);
         } catch (Stores.PasskeyException e) {
             return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", e.getMessage()));

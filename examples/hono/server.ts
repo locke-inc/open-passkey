@@ -11,6 +11,10 @@ app.route("/passkey", createPasskeyApp({
   origin: "http://localhost:3003",
   challengeStore: new MemoryChallengeStore(),
   credentialStore: new MemoryCredentialStore(),
+  session: {
+    secret: "hono-example-secret-must-be-32-charss!",
+    secure: false,
+  },
 }));
 
 app.use("/*", serveStatic({ root: "./public" }));

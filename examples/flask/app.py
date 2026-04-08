@@ -1,5 +1,6 @@
 from flask import Flask, send_from_directory
 from open_passkey_flask import create_passkey_blueprint, PasskeyConfig, MemoryChallengeStore, MemoryCredentialStore
+from open_passkey_server.session import SessionConfig
 import os
 
 app = Flask(__name__)
@@ -10,6 +11,10 @@ bp = create_passkey_blueprint(PasskeyConfig(
     origin="http://localhost:5001",
     challenge_store=MemoryChallengeStore(),
     credential_store=MemoryCredentialStore(),
+    session=SessionConfig(
+        secret="flask-example-secret-must-be-32-chars!",
+        secure=False,
+    ),
 ))
 app.register_blueprint(bp, url_prefix="/passkey")
 

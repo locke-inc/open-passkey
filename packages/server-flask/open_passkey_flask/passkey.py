@@ -23,13 +23,21 @@ def create_passkey_blueprint(config: PasskeyConfig) -> Blueprint:
     def finish_registration():
         body = request.get_json(force=True)
         try:
-            return jsonify(handler.finish_registration(
+            result = handler.finish_registration(
                 body.get("userId", ""),
                 body.get("credential", {}),
                 body.get("prfSupported", False),
-            ))
+            )
         except PasskeyError as e:
             return jsonify({"error": str(e)}), e.status_code
+
+        if config.session is not None and "sessionToken" in result:
+            token = result.pop("sessionToken")
+            resp = make_response(jsonify(result))
+            resp.headers["Set-Cookie"] = build_set_cookie_header(token, config.session)
+            return resp
+
+        return jsonify(result)
 
     @bp.route("/login/begin", methods=["POST"])
     def begin_authentication():

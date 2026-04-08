@@ -6,4 +6,5 @@ export const endpoints = createPasskeyEndpoints({
   origin: "http://localhost:3008",
   challengeStore: new MemoryChallengeStore(),
   credentialStore: new MemoryCredentialStore(),
+  session: { secret: "astro-example-secret-must-be-32-chars!", secure: false },
 });

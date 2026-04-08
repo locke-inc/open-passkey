@@ -39,6 +39,12 @@ export const passkeyPlugin: FastifyPluginCallback<PasskeyConfig> = (
   fastify.post("/register/finish", async (request, reply) => {
     try {
       const result = await passkey.finishRegistration(request.body as FinishRegistrationRequest);
+      const sessionConfig = passkey.getSessionConfig();
+      if (sessionConfig && result.sessionToken) {
+        reply.header("Set-Cookie", buildSetCookieHeader(result.sessionToken, sessionConfig));
+        const { sessionToken, ...body } = result;
+        return reply.send(body);
+      }
       return reply.send(result);
     } catch (err) {
       if (err instanceof PasskeyError) {

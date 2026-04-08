@@ -55,6 +55,11 @@ public static class PasskeyEndpoints
                 var credential = body.GetProperty("credential");
                 bool? prfSupported = body.TryGetProperty("prfSupported", out var prf) ? prf.GetBoolean() : null;
                 var result = service.FinishRegistration(userId, credential, prfSupported);
+                if (config.Session != null && result is Dictionary<string, object> dict && dict.TryGetValue("sessionToken", out var tokenObj))
+                {
+                    var token = (string)tokenObj;
+                    ctx.Response.Headers.Append("Set-Cookie", SessionHelper.BuildSetCookieHeader(token, config.Session));
+                }
                 ctx.Response.ContentType = "application/json";
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, result);
             }

@@ -12,6 +12,7 @@
 //!     origin: "https://example.com".into(),
 //!     challenge_length: 32,
 //!     challenge_timeout_seconds: 300,
+//!     allow_multiple_credentials: false,
 //!     session: None,
 //! };
 //!
@@ -42,6 +43,7 @@ pub struct PasskeyConfig {
     pub origin: String,
     pub challenge_length: usize,
     pub challenge_timeout_seconds: u64,
+    pub allow_multiple_credentials: bool,
     pub session: Option<SessionConfig>,
 }
 

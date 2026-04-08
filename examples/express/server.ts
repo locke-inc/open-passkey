@@ -15,6 +15,10 @@ app.use("/passkey", createPasskeyRouter({
   origin: "http://localhost:3001",
   challengeStore: new MemoryChallengeStore(),
   credentialStore: new MemoryCredentialStore(),
+  session: {
+    secret: "express-example-secret-must-be-32-chars!",
+    secure: false,
+  },
 }));
 
 app.listen(3001, () => console.log("Express example running on http://localhost:3001"));

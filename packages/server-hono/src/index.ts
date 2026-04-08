@@ -34,6 +34,12 @@ export function createPasskeyApp(config: PasskeyConfig): Hono {
     try {
       const body = await c.req.json();
       const result = await passkey.finishRegistration(body);
+      const sessionConfig = passkey.getSessionConfig();
+      if (sessionConfig && result.sessionToken) {
+        c.header("Set-Cookie", buildSetCookieHeader(result.sessionToken, sessionConfig));
+        const { sessionToken, ...rest } = result;
+        return c.json(rest);
+      }
       return c.json(result);
     } catch (err) {
       if (err instanceof PasskeyError) {

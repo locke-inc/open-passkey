@@ -60,11 +60,22 @@ class BeginRegistrationView(View):
 class FinishRegistrationView(View):
     def post(self, request):
         body = json.loads(request.body)
-        return _handle(lambda: _handler.finish_registration(
-            body.get("userId", ""),
-            body.get("credential", {}),
-            body.get("prfSupported", False),
-        ))
+        try:
+            result = _handler.finish_registration(
+                body.get("userId", ""),
+                body.get("credential", {}),
+                body.get("prfSupported", False),
+            )
+        except PasskeyError as e:
+            return JsonResponse({"error": str(e)}, status=e.status_code)
+
+        if _config.session is not None and "sessionToken" in result:
+            token = result.pop("sessionToken")
+            resp = JsonResponse(result)
+            resp["Set-Cookie"] = build_set_cookie_header(token, _config.session)
+            return resp
+
+        return JsonResponse(result)
 
 
 @method_decorator(csrf_exempt, name="dispatch")

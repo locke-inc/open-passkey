@@ -29,13 +29,21 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
     @router.post("/register/finish")
     async def finish_registration(req: FinishRegistrationRequest):
         try:
-            return handler.finish_registration(
+            result = handler.finish_registration(
                 req.userId,
                 req.credential.model_dump(),
                 req.prfSupported is True,
             )
         except PasskeyError as e:
             raise HTTPException(e.status_code, str(e))
+
+        if config.session is not None and "sessionToken" in result:
+            token = result.pop("sessionToken")
+            response = JSONResponse(content=result)
+            response.headers["Set-Cookie"] = build_set_cookie_header(token, config.session)
+            return response
+
+        return result
 
     @router.post("/login/begin")
     async def begin_authentication(req: BeginAuthenticationRequest = BeginAuthenticationRequest()):

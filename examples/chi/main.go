@@ -16,6 +16,10 @@ func main() {
 		Origin:          "http://localhost:4005",
 		ChallengeStore:  passkey.NewMemoryChallengeStore(),
 		CredentialStore: passkey.NewMemoryCredentialStore(),
+		Session: &passkey.SessionConfig{
+			Secret: "chi-example-secret-must-be-32-charss!!",
+			Secure: func() *bool { b := false; return &b }(),
+		},
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create passkey: %v\n", err)
@@ -29,6 +33,8 @@ func main() {
 	r.Post("/passkey/register/finish", p.FinishRegistration)
 	r.Post("/passkey/login/begin", p.BeginAuthentication)
 	r.Post("/passkey/login/finish", p.FinishAuthentication)
+	r.Get("/passkey/session", p.GetSession)
+	r.Post("/passkey/logout", p.Logout)
 
 	// Shared static files (passkey.js, style.css)
 	sharedFS := http.FileServer(http.Dir("../shared"))

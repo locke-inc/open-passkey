@@ -15,6 +15,10 @@ func main() {
 		Origin:          "http://localhost:4002",
 		ChallengeStore:  passkey.NewMemoryChallengeStore(),
 		CredentialStore: passkey.NewMemoryCredentialStore(),
+		Session: &passkey.SessionConfig{
+			Secret: "nethttp-example-secret-must-be-32-chars",
+			Secure: func() *bool { b := false; return &b }(),
+		},
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create passkey: %v\n", err)

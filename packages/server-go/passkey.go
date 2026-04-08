@@ -50,6 +50,14 @@ type Config struct {
 	ChallengeLength  int            // bytes of randomness; default 32
 	ChallengeTimeout time.Duration  // how long a challenge is valid; default 5 minutes
 	Session          *SessionConfig // optional; enables stateless session cookies
+
+	// AllowMultipleCredentials controls whether a user can register more than one
+	// passkey. When false (default), BeginRegistration returns 409 Conflict if the
+	// user already has a credential — suitable for first-time-only registration.
+	// When true, existing credentials are returned as excludeCredentials in the
+	// registration options (preventing same-authenticator duplicates) but the
+	// ceremony is allowed to proceed — suitable for add-device flows.
+	AllowMultipleCredentials bool
 }
 
 func (c *Config) applyDefaults() {
@@ -115,11 +123,22 @@ func (p *Passkey) generateChallenge() (string, error) {
 // --- HTTP Handlers ---
 
 // BeginRegistration generates a challenge and returns PublicKeyCredentialCreationOptions.
+//
 // Expects JSON body: {"userId": "...", "username": "..."}
+//
+// NOTE: In backendless mode where emails are passed as UserID, the value is base64url-encoded
+// and exposed in the unencrypted userHandle field during every authentication ceremony.
+// Applications handling sensitive PII should map an opaque UUID to the UserID instead.
 func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID   string `json:"userId"`
 		Username string `json:"username"`
+
+		// RegistrationToken is reserved for future backend-authorized registration mode.
+		// When implemented, the relying party's backend will issue a signed, short-lived
+		// token authorizing registration for a specific userId, and the gateway will
+		// validate it here instead of relying on session-bound or open registration.
+		RegistrationToken string `json:"registrationToken,omitempty"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -128,6 +147,18 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.UserID == "" || req.Username == "" {
 		writeError(w, http.StatusBadRequest, "userId and username are required")
+		return
+	}
+
+	// Look up existing credentials for excludeCredentials and duplicate check.
+	existing, _ := p.config.CredentialStore.GetByUser(req.UserID)
+
+	// When AllowMultipleCredentials is false (default), reject if the user already
+	// has a credential — first-come-first-served prevents account squatting in
+	// backendless mode. When true (e.g., session-bound add-device flow), skip the
+	// check and let excludeCredentials handle same-authenticator deduplication.
+	if !p.config.AllowMultipleCredentials && len(existing) > 0 {
+		writeError(w, http.StatusConflict, "user already registered")
 		return
 	}
 
@@ -184,6 +215,20 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 				},
 			},
 		},
+	}
+
+	// excludeCredentials tells the authenticator to refuse if it already holds a
+	// credential for this user+rpId — prevents wasting hardware key slots and avoids
+	// confusing duplicate entries in the OS credential picker.
+	if len(existing) > 0 {
+		excludeList := make([]map[string]any, 0, len(existing))
+		for _, c := range existing {
+			excludeList = append(excludeList, map[string]any{
+				"type": "public-key",
+				"id":   base64.RawURLEncoding.EncodeToString(c.CredentialID),
+			})
+		}
+		options["excludeCredentials"] = excludeList
 	}
 
 	writeJSON(w, http.StatusOK, options)
@@ -259,6 +304,12 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	if err := p.config.CredentialStore.Store(cred); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to store credential")
 		return
+	}
+
+	// Set session cookie if session is configured (auto-login after registration)
+	if p.config.Session != nil {
+		token := createSessionToken(req.UserID, p.config.Session)
+		w.Header().Set("Set-Cookie", buildSetCookieHeader(token, p.config.Session))
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{

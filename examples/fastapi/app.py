@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from open_passkey_fastapi import create_passkey_router, PasskeyConfig, MemoryChallengeStore, MemoryCredentialStore
+from open_passkey_server.session import SessionConfig
 import os
 
 app = FastAPI()
@@ -15,6 +16,10 @@ router = create_passkey_router(PasskeyConfig(
     origin="http://localhost:5002",
     challenge_store=MemoryChallengeStore(),
     credential_store=MemoryCredentialStore(),
+    session=SessionConfig(
+        secret="fastapi-example-secret-must-be-32-chars",
+        secure=False,
+    ),
 ))
 app.include_router(router, prefix="/passkey")
 

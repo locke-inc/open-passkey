@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { PasskeyProvider, usePasskeyRegister, usePasskeyLogin, usePasskeySession } from "@open-passkey/react";
 
 function PasskeyDemo() {
-  const [userId, setUserId] = useState("test-user");
-  const [username, setUsername] = useState("Test User");
+  const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">("success");
   const { register, status: regStatus, error: regError } = usePasskeyRegister();
@@ -14,12 +13,14 @@ function PasskeyDemo() {
 
   async function doRegister() {
     setMessage("");
-    await register(userId, username);
+    if (!email) { setMessage("Please enter an email"); setMessageType("error"); return; }
+    await register(email, email);
+    await checkSession();
   }
 
   async function doLogin() {
     setMessage("");
-    await authenticate(userId);
+    await authenticate(email || undefined);
     await checkSession();
   }
 
@@ -28,44 +29,53 @@ function PasskeyDemo() {
     setMessage("");
   }
 
-  if (loading) return <div className="container"><p>Loading...</p></div>;
+  useEffect(() => {
+    if (regStatus === "success") { setMessage(""); }
+    if (regError) { setMessage(regError.message); setMessageType("error"); }
+  }, [regStatus, regError]);
+
+  useEffect(() => {
+    if (authError) { setMessage(authError.message); setMessageType("error"); }
+  }, [authError]);
+
+  if (loading) return <div className="page"><div className="card"><div className="loading">Loading...</div></div></div>;
 
   if (session) {
     return (
-      <div className="container">
-        <h1>open-passkey</h1>
-        <p className="subtitle">React Example</p>
-        <div className="status success">Signed in as {session.userId}</div>
-        <div className="buttons" style={{ marginTop: 16 }}>
-          <button className="secondary" onClick={doLogout}>Sign Out</button>
+      <div className="page">
+        <div className="card">
+          <h1>open-passkey</h1>
+          <p className="subtitle">React Example</p>
+          <div className="signed-in">
+            <div className="signed-in-badge">Authenticated</div>
+            <div className="signed-in-email">{session.userId}</div>
+            <button className="btn-secondary" onClick={doLogout}>Sign Out</button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container">
-      <h1>open-passkey</h1>
-      <p className="subtitle">React Example</p>
-      <div className="field">
-        <label>User ID</label>
-        <input value={userId} onChange={(e) => setUserId(e.target.value)} />
+    <div className="page">
+      <div className="card">
+        <h1>open-passkey</h1>
+        <p className="subtitle">React Example</p>
+        <div className="field">
+          <label>Email</label>
+          <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="actions">
+          <button className="btn-primary" onClick={doRegister} disabled={regStatus === "pending"}>
+            {regStatus === "pending" ? "Creating..." : "Create Passkey"}
+          </button>
+          <div className="divider"><span>or</span></div>
+          <button className="btn-secondary" onClick={doLogin} disabled={authStatus === "pending"}>
+            {authStatus === "pending" ? "Signing in..." : "Sign in with Passkey"}
+          </button>
+        </div>
+        {message && <div className={`status ${messageType}`}>{message}</div>}
       </div>
-      <div className="field">
-        <label>Username</label>
-        <input value={username} onChange={(e) => setUsername(e.target.value)} />
-      </div>
-      <div className="buttons">
-        <button className="primary" onClick={doRegister} disabled={regStatus === "pending"}>
-          {regStatus === "pending" ? "Registering..." : "Register Passkey"}
-        </button>
-        <button className="secondary" onClick={doLogin} disabled={authStatus === "pending"}>
-          {authStatus === "pending" ? "Signing in..." : "Sign In"}
-        </button>
-      </div>
-      {regStatus === "success" && <div className="status success">Registered! You can now sign in.</div>}
-      {(regError || authError) && <div className="status error">{(regError || authError)?.message}</div>}
-      {message && <div className={`status ${messageType}`}>{message}</div>}
     </div>
   );
 }

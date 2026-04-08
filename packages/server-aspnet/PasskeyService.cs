@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -41,28 +42,44 @@ public class PasskeyService
         if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(username))
             throw new PasskeyException("userId and username are required");
 
+        var existing = _config.CredentialStore.GetByUser(userId);
+
+        if (!_config.AllowMultipleCredentials && existing.Count > 0)
+            throw new PasskeyException("user already registered", 409);
+
         var challenge = GenerateChallenge();
         var prfSalt = RandomNumberGenerator.GetBytes(32);
 
         var challengeData = JsonSerializer.Serialize(new { challenge, prfSalt = Base64UrlEncode(prfSalt) });
         _config.ChallengeStore.Store(userId, challengeData, _config.ChallengeTimeoutSeconds);
 
-        return new
+        var options = new Dictionary<string, object>
         {
-            challenge,
-            rp = new { id = _config.RpId, name = _config.RpDisplayName },
-            user = new { id = Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(userId)), name = username, displayName = username },
-            pubKeyCredParams = new object[]
+            ["challenge"] = challenge,
+            ["rp"] = new { id = _config.RpId, name = _config.RpDisplayName },
+            ["user"] = new { id = Base64UrlEncode(System.Text.Encoding.UTF8.GetBytes(userId)), name = username, displayName = username },
+            ["pubKeyCredParams"] = new object[]
             {
                 new { type = "public-key", alg = -52 },
                 new { type = "public-key", alg = -49 },
                 new { type = "public-key", alg = -7 },
             },
-            authenticatorSelection = new { residentKey = "preferred", userVerification = "preferred" },
-            timeout = _config.ChallengeTimeoutSeconds * 1000,
-            attestation = "none",
-            extensions = new { prf = new { eval = new { first = Base64UrlEncode(prfSalt) } } },
+            ["authenticatorSelection"] = new { residentKey = "preferred", userVerification = "preferred" },
+            ["timeout"] = _config.ChallengeTimeoutSeconds * 1000,
+            ["attestation"] = "none",
+            ["extensions"] = new { prf = new { eval = new { first = Base64UrlEncode(prfSalt) } } },
         };
+
+        if (existing.Count > 0)
+        {
+            options["excludeCredentials"] = existing.Select(c => new
+            {
+                type = "public-key",
+                id = Base64UrlEncode(c.CredentialId),
+            }).ToArray();
+        }
+
+        return options;
     }
 
     public object FinishRegistration(string userId, JsonElement credential, bool? prfSupported)
@@ -95,7 +112,15 @@ public class PasskeyService
         };
         _config.CredentialStore.Store(cred);
 
-        return new { credentialId = Base64UrlEncode(result.CredentialId), registered = true, prfSupported = prfEnabled };
+        var resp = new Dictionary<string, object>
+        {
+            ["credentialId"] = Base64UrlEncode(result.CredentialId),
+            ["registered"] = true,
+            ["prfSupported"] = prfEnabled,
+        };
+        if (_config.Session != null)
+            resp["sessionToken"] = SessionHelper.CreateToken(userId, _config.Session);
+        return resp;
     }
 
     public object BeginAuthentication(string? userId)

@@ -10,7 +10,12 @@ async fn main() {
         origin: "http://localhost:3000".into(),
         challenge_length: 32,
         challenge_timeout_seconds: 300,
-        session: None,
+        allow_multiple_credentials: false,
+        session: Some(open_passkey_axum::SessionConfig {
+            secret: "axum-example-secret-must-be-32-charss!".into(),
+            secure: false,
+            ..Default::default()
+        }),
     };
 
     let challenge_store = Arc::new(MemoryChallengeStore::new());

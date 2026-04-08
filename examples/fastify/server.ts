@@ -18,6 +18,10 @@ fastify.register(async (instance) => {
     origin: "http://localhost:3002",
     challengeStore: new MemoryChallengeStore(),
     credentialStore: new MemoryCredentialStore(),
+    session: {
+      secret: "fastify-example-secret-must-be-32-chars!",
+      secure: false,
+    },
   });
 }, { prefix: "/passkey" });
 

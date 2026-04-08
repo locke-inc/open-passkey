@@ -42,6 +42,10 @@ jobs:
         run: cd packages/authenticator-ts && npm ci && npm test
       - name: Build sdk-js
         run: cd packages/sdk-js && npm ci && npm run build
+      - name: Test sdk-js
+        run: cd packages/sdk-js && npm test
+      - name: Test server-ts
+        run: cd packages/server-ts && npm ci && npm test
       - name: Test angular
         run: cd packages/angular && npm ci && npm test
       - name: Audit core-ts
@@ -80,6 +84,8 @@ jobs:
           ninja -C /tmp/liboqs/build install
       - name: Install and test core-py
         run: cd packages/core-py && pip install -e ".[dev,pq]" && pytest tests/ -v
+      - name: Test server-py
+        run: pip install -e packages/server-py && cd packages/server-py && pytest tests/ -v
       - name: Audit dependencies
         run: pip install pip-audit && pip-audit
 
@@ -93,6 +99,8 @@ jobs:
           java-version: "17"
       - name: Test core-java
         run: cd packages/core-java && mvn test -B
+      - name: Test server-spring
+        run: cd packages/server-spring && mvn test -B
 
   core-dotnet:
     runs-on: ubuntu-latest
@@ -103,6 +111,8 @@ jobs:
           dotnet-version: "10.0.x"
       - name: Test core-dotnet
         run: cd packages/core-dotnet && dotnet test Tests/ -v normal
+      - name: Test server-aspnet
+        run: cd packages/server-aspnet/tests && dotnet test -v normal
 
   core-rust:
     runs-on: ubuntu-latest
@@ -111,6 +121,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Test core-rust
         run: cd packages/core-rust && cargo test -- --nocapture
+      - name: Test server-axum
+        run: cd packages/server-axum && cargo test -- --nocapture
       - name: Install and run cargo-audit
         run: cargo install cargo-audit && cd packages/core-rust && cargo audit
 

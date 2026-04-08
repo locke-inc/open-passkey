@@ -35,8 +35,24 @@ export function createPasskeyRouter(config: PasskeyConfig): Router {
     handle(res, () => passkey.beginRegistration(req.body));
   });
 
-  router.post("/register/finish", (req: Request, res: Response) => {
-    handle(res, () => passkey.finishRegistration(req.body));
+  router.post("/register/finish", async (req: Request, res: Response) => {
+    try {
+      const result = await passkey.finishRegistration(req.body);
+      const sessionConfig = passkey.getSessionConfig();
+      if (sessionConfig && result.sessionToken) {
+        res.setHeader("Set-Cookie", buildSetCookieHeader(result.sessionToken, sessionConfig));
+        const { sessionToken: _, ...body } = result;
+        res.json(body);
+      } else {
+        res.json(result);
+      }
+    } catch (err) {
+      if (err instanceof PasskeyError) {
+        res.status(err.statusCode).json({ error: err.message });
+      } else {
+        res.status(500).json({ error: "internal server error" });
+      }
+    }
   });
 
   router.post("/login/begin", (req: Request, res: Response) => {

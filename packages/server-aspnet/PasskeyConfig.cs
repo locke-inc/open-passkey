@@ -12,6 +12,7 @@ public class PasskeyConfig
     public ICredentialStore CredentialStore { get; set; } = new MemoryCredentialStore();
     public int ChallengeLength { get; set; } = 32;
     public int ChallengeTimeoutSeconds { get; set; } = 300;
+    public bool AllowMultipleCredentials { get; set; } = false;
     public SessionConfig? Session { get; set; }
 
     public void Validate()

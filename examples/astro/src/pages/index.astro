@@ -4,58 +4,84 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>open-passkey Astro Example</title>
+    <title>open-passkey — Astro Example</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <div class="container">
-      <h1>open-passkey</h1>
-      <p class="subtitle">Astro + Vanilla JS Example</p>
-      <div class="field">
-        <label for="userId">User ID</label>
-        <input id="userId" value="test-user" />
+    <div class="page">
+      <div class="card">
+        <h1>open-passkey</h1>
+        <p class="subtitle">Astro Example</p>
+
+        <div id="auth-form">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="actions">
+            <button id="registerBtn" class="btn-primary">Create Passkey</button>
+            <div class="divider"><span>or</span></div>
+            <button id="loginBtn" class="btn-secondary">Sign in with Passkey</button>
+          </div>
+          <div id="status" class="status"></div>
+        </div>
+
+        <div id="signed-in" style="display: none">
+          <div class="signed-in">
+            <div class="signed-in-badge">Authenticated</div>
+            <div class="signed-in-email" id="signed-in-email"></div>
+            <button id="logoutBtn" class="btn-secondary">Sign Out</button>
+          </div>
+        </div>
       </div>
-      <div class="field">
-        <label for="username">Username</label>
-        <input id="username" value="Test User" />
-      </div>
-      <div class="buttons">
-        <button id="registerBtn" class="primary">Register Passkey</button>
-        <button id="loginBtn" class="secondary">Sign In</button>
-      </div>
-      <div id="status"></div>
     </div>
+
     <script is:inline src="/passkey.js"></script>
     <script is:inline>
       const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/api/passkey" });
-      const statusEl = document.getElementById("status");
 
-      function showStatus(text, type) {
-        statusEl.textContent = text;
-        statusEl.className = type;
+      passkey.getSession()
+        .then(session => { if (session) showSignedIn(session.userId); })
+        .catch(() => {});
+
+      function showStatus(msg, type) {
+        const el = document.getElementById("status");
+        el.textContent = msg;
+        el.className = "status visible " + type;
       }
 
-      document.getElementById("registerBtn").addEventListener("click", async () => {
-        const userId = document.getElementById("userId").value;
-        const username = document.getElementById("username").value;
-        try {
-          showStatus("Registering...", "info");
-          await passkey.register(userId, username);
-          showStatus("Passkey registered successfully!", "success");
-        } catch (err) {
-          showStatus(err.message || "Registration failed", "error");
-        }
+      function showSignedIn(userId) {
+        document.getElementById("auth-form").style.display = "none";
+        document.getElementById("signed-in").style.display = "block";
+        document.getElementById("signed-in-email").textContent = userId;
+      }
+
+      document.getElementById("registerBtn").addEventListener("click", () => {
+        const email = document.getElementById("email").value;
+        if (!email) { showStatus("Please enter an email", "error"); return; }
+        passkey.register(email, email)
+          .then(() => passkey.getSession())
+          .then(session => { if (session) showSignedIn(session.userId); })
+          .catch(err => showStatus(err.message, "error"));
       });
 
-      document.getElementById("loginBtn").addEventListener("click", async () => {
-        const userId = document.getElementById("userId").value;
-        try {
-          showStatus("Signing in...", "info");
-          const result = await passkey.authenticate(userId);
-          showStatus("Authenticated! User: " + result.userId, "success");
-        } catch (err) {
-          showStatus(err.message || "Authentication failed", "error");
-        }
+      document.getElementById("loginBtn").addEventListener("click", () => {
+        const email = document.getElementById("email").value;
+        passkey.authenticate(email || undefined)
+          .then(() => passkey.getSession())
+          .then(session => { if (session) showSignedIn(session.userId); })
+          .catch(err => showStatus(err.message, "error"));
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        passkey.logout().then(() => {
+          document.getElementById("auth-form").style.display = "block";
+          document.getElementById("signed-in").style.display = "none";
+          document.getElementById("status").className = "status";
+        });
       });
     </script>
   </body>

@@ -75,7 +75,7 @@ def test_reject_expired_token():
 
 def test_reject_wrong_secret():
     token = create_session_token("user123", make_config())
-    other = make_config(secret="z" * 32 + "ab")
+    other = SessionConfig(secret="z" * 32 + "ab")
     with pytest.raises(ValueError):
         validate_session_token(token, other)
 

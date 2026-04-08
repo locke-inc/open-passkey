@@ -6,4 +6,5 @@ export const handlers = createPasskeyHandlers({
   origin: "http://localhost:3005",
   challengeStore: new MemoryChallengeStore(),
   credentialStore: new MemoryCredentialStore(),
+  session: { secret: "nuxt-example-secret-must-be-32-charss!", secure: false },
 });

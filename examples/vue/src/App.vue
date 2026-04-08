@@ -1,38 +1,36 @@
 <template>
-  <div class="container">
-    <h1>open-passkey</h1>
-    <p class="subtitle">Vue Example</p>
+  <div class="page">
+    <div class="card">
+      <h1>open-passkey</h1>
+      <p class="subtitle">Vue Example</p>
 
-    <div v-if="sessionLoading">
-      <p>Loading...</p>
+      <div v-if="sessionLoading" class="loading">Loading...</div>
+
+      <template v-else-if="session">
+        <div class="signed-in">
+          <div class="signed-in-badge">Authenticated</div>
+          <div class="signed-in-email">{{ session.userId }}</div>
+          <button class="btn-secondary" @click="doLogout">Sign Out</button>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" placeholder="you@example.com" v-model="email" />
+        </div>
+        <div class="actions">
+          <button class="btn-primary" :disabled="regStatus === 'pending'" @click="doRegister">
+            {{ regStatus === "pending" ? "Creating..." : "Create Passkey" }}
+          </button>
+          <div class="divider"><span>or</span></div>
+          <button class="btn-secondary" :disabled="authStatus === 'pending'" @click="doLogin">
+            {{ authStatus === "pending" ? "Signing in..." : "Sign in with Passkey" }}
+          </button>
+        </div>
+        <div v-if="message" :class="['status', messageType]">{{ message }}</div>
+      </template>
     </div>
-
-    <template v-else-if="session">
-      <div class="status success">Signed in as {{ session.userId }}</div>
-      <div class="buttons" style="margin-top: 16px">
-        <button class="secondary" @click="doLogout">Sign Out</button>
-      </div>
-    </template>
-
-    <template v-else>
-      <div class="field">
-        <label>User ID</label>
-        <input v-model="userId" />
-      </div>
-      <div class="field">
-        <label>Username</label>
-        <input v-model="username" />
-      </div>
-      <div class="buttons">
-        <button class="primary" :disabled="regStatus === 'pending'" @click="doRegister">
-          {{ regStatus === "pending" ? "Registering..." : "Register Passkey" }}
-        </button>
-        <button class="secondary" :disabled="authStatus === 'pending'" @click="doLogin">
-          {{ authStatus === "pending" ? "Signing in..." : "Sign In" }}
-        </button>
-      </div>
-      <div v-if="message" :class="['status', messageType]">{{ message }}</div>
-    </template>
   </div>
 </template>
 
@@ -40,8 +38,7 @@
 import { ref, watch, onMounted } from "vue";
 import { usePasskeyRegister, usePasskeyLogin, usePasskeySession } from "@open-passkey/vue";
 
-const userId = ref("test-user");
-const username = ref("Test User");
+const email = ref("");
 const message = ref("");
 const messageType = ref<"success" | "error">("success");
 
@@ -53,12 +50,14 @@ onMounted(() => checkSession());
 
 async function doRegister() {
   message.value = "";
-  await register(userId.value, username.value);
+  if (!email.value) { message.value = "Please enter an email"; messageType.value = "error"; return; }
+  await register(email.value, email.value);
+  await checkSession();
 }
 
 async function doLogin() {
   message.value = "";
-  await authenticate(userId.value);
+  await authenticate(email.value || undefined);
   await checkSession();
 }
 
@@ -69,8 +68,7 @@ async function doLogout() {
 
 watch(regStatus, (s) => {
   if (s === "success" && regResult.value) {
-    message.value = "Registered! You can now sign in.";
-    messageType.value = "success";
+    message.value = "";
   } else if (s === "error" && regError.value) {
     message.value = regError.value.message;
     messageType.value = "error";
@@ -86,22 +84,82 @@ watch(authStatus, (s) => {
 </script>
 
 <style>
+/* === Global === */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-.container { max-width: 480px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
-h1 { font-size: 1.5rem; margin-bottom: 8px; }
-.subtitle { color: #666; margin-bottom: 24px; font-size: 0.9rem; }
-.field { margin-bottom: 12px; }
-.field label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
-.field input { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; }
-.buttons { display: flex; gap: 8px; margin-top: 16px; }
-button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-.primary { background: #2563eb; color: #fff; }
-.primary:hover:not(:disabled) { background: #1d4ed8; }
-.secondary { background: #e5e7eb; color: #1a1a1a; }
-.secondary:hover:not(:disabled) { background: #d1d5db; }
-button:disabled { opacity: 0.6; cursor: not-allowed; }
-.status { margin-top: 20px; padding: 12px; border-radius: 6px; font-size: 0.9rem; }
-.success { background: #d1fae5; color: #065f46; }
-.error { background: #fee2e2; color: #991b1b; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1f2937;
+  min-height: 100vh;
+  background-image: linear-gradient(90deg, #E0EFFF 0%, #FEF8E0 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-rotate {
+  0% { --border-angle: 0deg; }
+  100% { --border-angle: 360deg; }
+}
+
+.page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+
+.card {
+  width: 100%; max-width: 440px;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px; padding: 40px 36px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+
+h1 { font-family: 'Merriweather', Georgia, serif; font-size: 1.75rem; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.subtitle { font-size: 0.875rem; color: #6b7280; margin-bottom: 32px; }
+
+.field { margin-bottom: 24px; }
+.field label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.field input { width: 100%; padding: 12px 16px; border: 1.5px solid rgba(0, 0, 0, 0.1); border-radius: 10px; font-size: 0.95rem; font-family: 'Inter', system-ui, sans-serif; color: #1f2937; background: rgba(255, 255, 255, 0.7); transition: border-color 0.2s ease, box-shadow 0.2s ease; box-sizing: border-box; }
+.field input:focus { outline: none; border-color: #0891b2; box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1); }
+.field input::placeholder { color: #9ca3af; }
+
+.actions { display: flex; flex-direction: column; }
+
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 14px 28px; font-weight: 500; font-size: 15px; font-family: 'Inter', system-ui, sans-serif; color: white; background: #0891b2; border-radius: 10px; border: none; cursor: pointer; position: relative; z-index: 1; transition: color 0.3s ease, background 0.3s ease; }
+.btn-primary::before { content: ''; position: absolute; inset: 0; border-radius: 10px; padding: 2px; background: conic-gradient(from var(--border-angle), #0e7490 0deg, #0e7490 140deg, #a5f3fc 180deg, #0e7490 220deg, #0e7490 360deg); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity 0.3s ease; animation: border-rotate 4s linear infinite; }
+.btn-primary:hover:not(:disabled) { background: transparent; color: #0e7490; }
+.btn-primary:hover:not(:disabled)::before { opacity: 1; }
+.btn-primary:active:not(:disabled) { transform: scale(0.98); }
+
+.btn-secondary { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 14px 28px; font-weight: 500; font-size: 15px; font-family: 'Inter', system-ui, sans-serif; color: white; background: #1f2937; border-radius: 10px; border: none; cursor: pointer; position: relative; z-index: 1; transition: color 0.3s ease, background 0.3s ease; }
+.btn-secondary::before { content: ''; position: absolute; inset: 0; border-radius: 10px; padding: 2px; background: conic-gradient(from var(--border-angle), #374151 0deg, #374151 140deg, #d1d5db 180deg, #374151 220deg, #374151 360deg); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; transition: opacity 0.3s ease; animation: border-rotate 6s linear infinite; }
+.btn-secondary:hover:not(:disabled) { background: transparent; color: #1f2937; }
+.btn-secondary:hover:not(:disabled)::before { opacity: 1; }
+.btn-secondary:active:not(:disabled) { transform: scale(0.98); }
+
+.btn-primary:disabled, .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent); }
+.divider span { font-size: 0.8rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.1em; }
+
+.status { margin-top: 20px; padding: 12px 16px; border-radius: 10px; font-size: 0.875rem; line-height: 1.4; }
+.success { background: rgba(16, 185, 129, 0.1); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.2); }
+.error { background: rgba(239, 68, 68, 0.1); color: #991b1b; border: 1px solid rgba(239, 68, 68, 0.2); }
+
+.signed-in { text-align: center; }
+.signed-in-badge { display: inline-block; padding: 6px 16px; background: rgba(8, 145, 178, 0.1); color: #0891b2; font-size: 0.8rem; font-weight: 600; border-radius: 9999px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+.signed-in-email { font-size: 1.1rem; font-weight: 600; color: #111827; margin-bottom: 24px; word-break: break-all; }
+.loading { text-align: center; color: #6b7280; padding: 20px 0; }
 </style>

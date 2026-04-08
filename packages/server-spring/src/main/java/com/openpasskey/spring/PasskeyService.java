@@ -65,6 +65,12 @@ public class PasskeyService {
             throw new Stores.PasskeyException("userId and username are required");
         }
 
+        List<Stores.StoredCredential> existing = credentialStore.getByUser(userId);
+
+        if (!props.isAllowMultipleCredentials() && !existing.isEmpty()) {
+            throw new Stores.PasskeyException("user already registered", 409);
+        }
+
         String challenge = generateChallenge();
         byte[] prfSalt = new byte[32];
         random.nextBytes(prfSalt);
@@ -94,6 +100,14 @@ public class PasskeyService {
         options.put("extensions", Map.of(
             "prf", Map.of("eval", Map.of("first", b64url(prfSalt)))
         ));
+
+        if (!existing.isEmpty()) {
+            List<Map<String, Object>> excludeList = new ArrayList<>();
+            for (Stores.StoredCredential c : existing) {
+                excludeList.add(Map.of("type", "public-key", "id", b64url(c.credentialId())));
+            }
+            options.put("excludeCredentials", excludeList);
+        }
 
         return options;
     }
@@ -131,11 +145,15 @@ public class PasskeyService {
         );
         credentialStore.store(cred);
 
-        return Map.of(
-            "credentialId", b64url(result.getCredentialId()),
-            "registered", true,
-            "prfSupported", prfEnabled
-        );
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("credentialId", b64url(result.getCredentialId()));
+        resp.put("registered", true);
+        resp.put("prfSupported", prfEnabled);
+        if (sessionConfig != null) {
+            String token = Session.createToken(userId, sessionConfig);
+            resp.put("sessionToken", token);
+        }
+        return resp;
     }
 
     // --- Begin Authentication ---

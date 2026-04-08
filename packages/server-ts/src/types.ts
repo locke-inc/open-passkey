@@ -34,6 +34,7 @@ export interface PasskeyConfig {
   credentialStore: CredentialStore;
   challengeLength?: number; // bytes, default 32
   challengeTimeout?: number; // milliseconds, default 300000 (5 min)
+  allowMultipleCredentials?: boolean; // default false
   session?: SessionConfig;
 }
 
@@ -87,6 +88,7 @@ export interface BeginRegistrationResponse {
   authenticatorSelection: { residentKey: string; userVerification: string };
   timeout: number;
   attestation: string;
+  excludeCredentials?: Array<{ type: string; id: string }>;
   extensions?: Record<string, unknown>;
 }
 
@@ -94,6 +96,7 @@ export interface FinishRegistrationResponse {
   credentialId: string;
   registered: true;
   prfSupported: boolean;
+  sessionToken?: string;
 }
 
 export interface BeginAuthenticationResponse {

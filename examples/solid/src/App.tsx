@@ -2,8 +2,7 @@ import { createSignal, onMount, Show } from "solid-js";
 import { PasskeyProvider, createPasskeyRegister, createPasskeyLogin, createPasskeySession } from "@open-passkey/solid";
 
 function PasskeyDemo() {
-  const [userId, setUserId] = createSignal("test-user");
-  const [username, setUsername] = createSignal("Test User");
+  const [email, setEmail] = createSignal("");
   const [message, setMessage] = createSignal("");
   const [messageType, setMessageType] = createSignal<"success" | "error">("success");
 
@@ -15,19 +14,19 @@ function PasskeyDemo() {
 
   async function doRegister() {
     setMessage("");
-    await register(userId(), username());
+    if (!email()) { setMessage("Please enter an email"); setMessageType("error"); return; }
+    await register(email(), email());
     if (regError()) {
       setMessage(regError()!.message);
       setMessageType("error");
     } else {
-      setMessage("Registered! You can now sign in.");
-      setMessageType("success");
+      await checkSession();
     }
   }
 
   async function doLogin() {
     setMessage("");
-    await authenticate(userId());
+    await authenticate(email() || undefined);
     if (authError()) {
       setMessage(authError()!.message);
       setMessageType("error");
@@ -42,40 +41,40 @@ function PasskeyDemo() {
   }
 
   return (
-    <div class="container">
-      <h1>open-passkey</h1>
-      <p class="subtitle">SolidJS Example</p>
+    <div class="page">
+      <div class="card">
+        <h1>open-passkey</h1>
+        <p class="subtitle">SolidJS Example</p>
 
-      <Show when={!loading()} fallback={<p>Loading...</p>}>
-        <Show when={session()} fallback={
-          <>
-            <div class="field">
-              <label>User ID</label>
-              <input value={userId()} onInput={(e) => setUserId(e.currentTarget.value)} />
+        <Show when={!loading()} fallback={<div class="loading">Loading...</div>}>
+          <Show when={session()} fallback={
+            <>
+              <div class="field">
+                <label>Email</label>
+                <input type="email" placeholder="you@example.com" value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
+              </div>
+              <div class="actions">
+                <button class="btn-primary" onClick={doRegister} disabled={regStatus() === "pending"}>
+                  {regStatus() === "pending" ? "Creating..." : "Create Passkey"}
+                </button>
+                <div class="divider"><span>or</span></div>
+                <button class="btn-secondary" onClick={doLogin} disabled={authStatus() === "pending"}>
+                  {authStatus() === "pending" ? "Signing in..." : "Sign in with Passkey"}
+                </button>
+              </div>
+              <Show when={message()}>
+                <div class={`status ${messageType()}`}>{message()}</div>
+              </Show>
+            </>
+          }>
+            <div class="signed-in">
+              <div class="signed-in-badge">Authenticated</div>
+              <div class="signed-in-email">{session()!.userId}</div>
+              <button class="btn-secondary" onClick={doLogout}>Sign Out</button>
             </div>
-            <div class="field">
-              <label>Username</label>
-              <input value={username()} onInput={(e) => setUsername(e.currentTarget.value)} />
-            </div>
-            <div class="buttons">
-              <button class="primary" onClick={doRegister} disabled={regStatus() === "pending"}>
-                {regStatus() === "pending" ? "Registering..." : "Register Passkey"}
-              </button>
-              <button class="secondary" onClick={doLogin} disabled={authStatus() === "pending"}>
-                {authStatus() === "pending" ? "Signing in..." : "Sign In"}
-              </button>
-            </div>
-            <Show when={message()}>
-              <div class={`status ${messageType()}`}>{message()}</div>
-            </Show>
-          </>
-        }>
-          <div class="status success">Signed in as {session()!.userId}</div>
-          <div class="buttons" style={{ "margin-top": "16px" }}>
-            <button class="secondary" onClick={doLogout}>Sign Out</button>
-          </div>
+          </Show>
         </Show>
-      </Show>
+      </div>
     </div>
   );
 }

@@ -17,4 +17,8 @@
     <ProjectReference Include="..\core-dotnet\OpenPasskey.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="tests/**" />
+  </ItemGroup>
+
 </Project>

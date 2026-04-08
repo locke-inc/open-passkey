@@ -17,6 +17,10 @@ func main() {
 		Origin:          "http://localhost:4004",
 		ChallengeStore:  passkey.NewMemoryChallengeStore(),
 		CredentialStore: passkey.NewMemoryCredentialStore(),
+		Session: &passkey.SessionConfig{
+			Secret: "fiber-example-secret-must-be-32-chars!",
+			Secure: func() *bool { b := false; return &b }(),
+		},
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create passkey: %v\n", err)
@@ -35,6 +39,8 @@ func main() {
 	app.Post("/passkey/register/finish", wrap(p.FinishRegistration))
 	app.Post("/passkey/login/begin", wrap(p.BeginAuthentication))
 	app.Post("/passkey/login/finish", wrap(p.FinishAuthentication))
+	app.Get("/passkey/session", wrap(p.GetSession))
+	app.Post("/passkey/logout", wrap(p.Logout))
 
 	// Shared static files (passkey.js, style.css)
 	app.Static("/", "../shared")

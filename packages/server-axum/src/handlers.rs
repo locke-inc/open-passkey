@@ -47,6 +47,12 @@ pub async fn begin_registration(
         return error_response(StatusCode::BAD_REQUEST, "userId and username are required").into_response();
     }
 
+    let existing = state.credential_store.get_by_user(&req.user_id).unwrap_or_default();
+
+    if !state.config.allow_multiple_credentials && !existing.is_empty() {
+        return error_response(StatusCode::CONFLICT, "user already registered").into_response();
+    }
+
     let challenge = generate_challenge(state.config.challenge_length);
     let mut prf_salt = vec![0u8; 32];
     rand::thread_rng().fill_bytes(&mut prf_salt);
@@ -62,7 +68,7 @@ pub async fn begin_registration(
         return error_response(StatusCode::INTERNAL_SERVER_ERROR, "failed to store challenge").into_response();
     }
 
-    Json(json!({
+    let mut options = json!({
         "challenge": challenge,
         "rp": { "id": state.config.rp_id, "name": state.config.rp_display_name },
         "user": {
@@ -84,8 +90,22 @@ pub async fn begin_registration(
         "extensions": {
             "prf": { "eval": { "first": b64url_encode(&prf_salt) } },
         },
-    }))
-    .into_response()
+    });
+
+    if !existing.is_empty() {
+        let exclude_list: Vec<Value> = existing
+            .iter()
+            .map(|c| {
+                json!({
+                    "type": "public-key",
+                    "id": b64url_encode(&c.credential_id),
+                })
+            })
+            .collect();
+        options["excludeCredentials"] = json!(exclude_list);
+    }
+
+    Json(options).into_response()
 }
 
 pub async fn finish_registration(
@@ -136,12 +156,21 @@ pub async fn finish_registration(
         return error_response(StatusCode::INTERNAL_SERVER_ERROR, "failed to store credential").into_response();
     }
 
-    Json(json!({
+    let resp = json!({
         "credentialId": b64url_encode(&result.credential_id),
         "registered": true,
         "prfSupported": prf_enabled,
-    }))
-    .into_response()
+    });
+
+    if let Some(ref session_config) = state.session {
+        let token = session::create_token(&req.user_id, session_config);
+        let cookie_header = session::build_set_cookie_header(&token, session_config);
+        let mut headers = HeaderMap::new();
+        headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
+        (headers, Json(resp)).into_response()
+    } else {
+        Json(resp).into_response()
+    }
 }
 
 pub async fn begin_authentication(
@@ -309,4 +338,113 @@ pub async fn logout(
     let mut headers = HeaderMap::new();
     headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
     (headers, Json(json!({"success": true}))).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ChallengeStore, CredentialStore, MemoryChallengeStore, MemoryCredentialStore, PasskeyConfig, PasskeyState};
+
+    fn test_config(allow_multiple: bool) -> PasskeyConfig {
+        PasskeyConfig {
+            rp_id: "example.com".into(),
+            rp_display_name: "Example".into(),
+            origin: "https://example.com".into(),
+            challenge_length: 32,
+            challenge_timeout_seconds: 300,
+            allow_multiple_credentials: allow_multiple,
+            session: None,
+        }
+    }
+
+    fn fake_cred(user_id: &str, cred_id: u8) -> StoredCredential {
+        StoredCredential {
+            credential_id: vec![cred_id],
+            public_key_cose: vec![0],
+            sign_count: 0,
+            user_id: user_id.to_string(),
+            prf_salt: None,
+            prf_supported: false,
+        }
+    }
+
+    fn make_state(
+        config: PasskeyConfig,
+        cred_store: Arc<MemoryCredentialStore>,
+    ) -> Arc<PasskeyState> {
+        let challenge_store = Arc::new(MemoryChallengeStore::new());
+        Arc::new(PasskeyState {
+            config,
+            challenge_store: challenge_store as Arc<dyn crate::ChallengeStore>,
+            credential_store: cred_store as Arc<dyn crate::CredentialStore>,
+            session: None,
+        })
+    }
+
+    #[tokio::test]
+    async fn begin_registration_rejects_409_when_user_has_credentials() {
+        let cred_store = Arc::new(MemoryCredentialStore::new());
+        cred_store.store(fake_cred("user-1", 1)).unwrap();
+        let state = make_state(test_config(false), cred_store);
+
+        let req = BeginRegistrationRequest {
+            user_id: "user-1".into(),
+            username: "alice".into(),
+        };
+        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        assert_eq!(resp.status(), StatusCode::CONFLICT);
+    }
+
+    #[tokio::test]
+    async fn begin_registration_succeeds_with_allow_multiple() {
+        let cred_store = Arc::new(MemoryCredentialStore::new());
+        cred_store.store(fake_cred("user-1", 1)).unwrap();
+        let state = make_state(test_config(true), cred_store);
+
+        let req = BeginRegistrationRequest {
+            user_id: "user-1".into(),
+            username: "alice".into(),
+        };
+        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn begin_registration_includes_exclude_credentials() {
+        let cred_store = Arc::new(MemoryCredentialStore::new());
+        cred_store.store(fake_cred("user-1", 1)).unwrap();
+        cred_store.store(fake_cred("user-1", 2)).unwrap();
+        let state = make_state(test_config(true), cred_store);
+
+        let req = BeginRegistrationRequest {
+            user_id: "user-1".into(),
+            username: "alice".into(),
+        };
+        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        let exclude = json["excludeCredentials"].as_array().unwrap();
+        assert_eq!(exclude.len(), 2);
+        assert_eq!(exclude[0]["type"], "public-key");
+        assert_eq!(exclude[1]["type"], "public-key");
+    }
+
+    #[tokio::test]
+    async fn begin_registration_no_exclude_credentials_for_new_user() {
+        let cred_store = Arc::new(MemoryCredentialStore::new());
+        let state = make_state(test_config(false), cred_store);
+
+        let req = BeginRegistrationRequest {
+            user_id: "new-user".into(),
+            username: "bob".into(),
+        };
+        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        let json: Value = serde_json::from_slice(&body).unwrap();
+        assert!(json.get("excludeCredentials").is_none());
+    }
 }

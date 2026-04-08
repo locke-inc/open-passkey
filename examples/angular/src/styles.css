@@ -1,2 +1,22 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #1f2937;
+  min-height: 100vh;
+  background-image: linear-gradient(90deg, #E0EFFF 0%, #FEF8E0 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* CSS Houdini custom property for animated border rotation.
+   Must be global — Angular's emulated encapsulation cannot scope @property. */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-rotate {
+  0% { --border-angle: 0deg; }
+  100% { --border-angle: 360deg; }
+}

@@ -1,35 +1,81 @@
-import { PasskeyProvider, usePasskeyRegister, usePasskeyLogin } from "@open-passkey/react";
-import { useState } from "react";
+import { PasskeyProvider, usePasskeyRegister, usePasskeyLogin, usePasskeySession } from "@open-passkey/react";
+import { useEffect, useState } from "react";
 
 function PasskeyDemo() {
-  const [userId, setUserId] = useState("test-user");
-  const [username, setUsername] = useState("Test User");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error">("success");
   const { register, status: regStatus, error: regError } = usePasskeyRegister();
-  const { authenticate, status: authStatus, result: authResult, error: authError } = usePasskeyLogin();
+  const { authenticate, status: authStatus, error: authError } = usePasskeyLogin();
+  const { session, loading, checkSession, logout } = usePasskeySession();
+
+  useEffect(() => { checkSession(); }, [checkSession]);
+
+  async function doRegister() {
+    setMessage("");
+    if (!email) { setMessage("Please enter an email"); setMessageType("error"); return; }
+    await register(email, email);
+    await checkSession();
+  }
+
+  async function doLogin() {
+    setMessage("");
+    await authenticate(email || undefined);
+    await checkSession();
+  }
+
+  async function doLogout() {
+    await logout();
+    setMessage("");
+  }
+
+  useEffect(() => {
+    if (regStatus === "success") { setMessage(""); }
+    if (regError) { setMessage(regError.message); setMessageType("error"); }
+  }, [regStatus, regError]);
+
+  useEffect(() => {
+    if (authError) { setMessage(authError.message); setMessageType("error"); }
+  }, [authError]);
+
+  if (loading) return <div className="page"><div className="card"><div className="loading">Loading...</div></div></div>;
+
+  if (session) {
+    return (
+      <div className="page">
+        <div className="card">
+          <h1>open-passkey</h1>
+          <p className="subtitle">Remix Example</p>
+          <div className="signed-in">
+            <div className="signed-in-badge">Authenticated</div>
+            <div className="signed-in-email">{session.userId}</div>
+            <button className="btn-secondary" onClick={doLogout}>Sign Out</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 480, margin: "40px auto", padding: "0 20px", fontFamily: "system-ui" }}>
-      <h1>open-passkey</h1>
-      <p style={{ color: "#666", marginBottom: 24 }}>Remix + React Example</p>
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>User ID</label>
-        <input value={userId} onChange={(e) => setUserId(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 6 }} />
+    <div className="page">
+      <div className="card">
+        <h1>open-passkey</h1>
+        <p className="subtitle">Remix Example</p>
+        <div className="field">
+          <label>Email</label>
+          <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="actions">
+          <button className="btn-primary" onClick={doRegister} disabled={regStatus === "pending"}>
+            {regStatus === "pending" ? "Creating..." : "Create Passkey"}
+          </button>
+          <div className="divider"><span>or</span></div>
+          <button className="btn-secondary" onClick={doLogin} disabled={authStatus === "pending"}>
+            {authStatus === "pending" ? "Signing in..." : "Sign in with Passkey"}
+          </button>
+        </div>
+        {message && <div className={`status ${messageType}`}>{message}</div>}
       </div>
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>Username</label>
-        <input value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: 6 }} />
-      </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-        <button onClick={() => register(userId, username)} disabled={regStatus === "pending"} style={{ flex: 1, padding: 10, background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer" }}>
-          {regStatus === "pending" ? "Registering..." : "Register Passkey"}
-        </button>
-        <button onClick={() => authenticate(userId)} disabled={authStatus === "pending"} style={{ flex: 1, padding: 10, background: "#e5e7eb", border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer" }}>
-          {authStatus === "pending" ? "Signing in..." : "Sign In"}
-        </button>
-      </div>
-      {regStatus === "success" && <div style={{ marginTop: 20, padding: 12, background: "#d1fae5", color: "#065f46", borderRadius: 6 }}>Registered!</div>}
-      {authStatus === "success" && <div style={{ marginTop: 20, padding: 12, background: "#d1fae5", color: "#065f46", borderRadius: 6 }}>Authenticated! User: {authResult?.userId}</div>}
-      {(regError || authError) && <div style={{ marginTop: 20, padding: 12, background: "#fee2e2", color: "#991b1b", borderRadius: 6 }}>{(regError || authError)?.message}</div>}
     </div>
   );
 }

@@ -6,4 +6,5 @@ export const handlers = createPasskeyHandlers({
   origin: "http://localhost:3006",
   challengeStore: new MemoryChallengeStore(),
   credentialStore: new MemoryCredentialStore(),
+  session: { secret: "sveltekit-example-secret-32-charss!", secure: false },
 });

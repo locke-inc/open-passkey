@@ -18,6 +18,7 @@ public class PasskeyProperties {
     private String origin;
     private int challengeLength = 32;
     private long challengeTimeoutSeconds = 300;
+    private boolean allowMultipleCredentials = false;
 
     // Session properties
     private String sessionSecret;
@@ -42,6 +43,9 @@ public class PasskeyProperties {
 
     public long getChallengeTimeoutSeconds() { return challengeTimeoutSeconds; }
     public void setChallengeTimeoutSeconds(long challengeTimeoutSeconds) { this.challengeTimeoutSeconds = challengeTimeoutSeconds; }
+
+    public boolean isAllowMultipleCredentials() { return allowMultipleCredentials; }
+    public void setAllowMultipleCredentials(boolean allowMultipleCredentials) { this.allowMultipleCredentials = allowMultipleCredentials; }
 
     public String getSessionSecret() { return sessionSecret; }
     public void setSessionSecret(String sessionSecret) { this.sessionSecret = sessionSecret; }

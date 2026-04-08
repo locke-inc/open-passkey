@@ -24,6 +24,11 @@ class PasskeyHandler:
         if not user_id or not username:
             raise PasskeyError("userId and username are required")
 
+        existing = self.config.credential_store.get_by_user(user_id)
+
+        if not self.config.allow_multiple_credentials and existing:
+            raise PasskeyError("user already registered", status_code=409)
+
         challenge_bytes = secrets.token_bytes(self.config.challenge_length)
         challenge = b64url_encode(challenge_bytes)
 
@@ -31,7 +36,7 @@ class PasskeyHandler:
         challenge_data = json.dumps({"challenge": challenge, "prfSalt": b64url_encode(prf_salt)})
         self.config.challenge_store.store(user_id, challenge_data, self.config.challenge_timeout_seconds)
 
-        return {
+        response = {
             "challenge": challenge,
             "rp": {"id": self.config.rp_id, "name": self.config.rp_display_name},
             "user": {
@@ -54,6 +59,14 @@ class PasskeyHandler:
                 "prf": {"eval": {"first": b64url_encode(prf_salt)}},
             },
         }
+
+        if existing:
+            response["excludeCredentials"] = [
+                {"type": "public-key", "id": b64url_encode(c.credential_id)}
+                for c in existing
+            ]
+
+        return response
 
     def finish_registration(self, user_id: str, credential: dict, prf_supported: bool = False) -> dict:
         challenge_data = json.loads(self.config.challenge_store.consume(user_id))
@@ -82,11 +95,14 @@ class PasskeyHandler:
 
         self.config.credential_store.store(cred)
 
-        return {
+        resp = {
             "credentialId": result.credential_id,
             "registered": True,
             "prfSupported": bool(prf_supported),
         }
+        if self.config.session is not None:
+            resp["sessionToken"] = create_session_token(user_id, self.config.session)
+        return resp
 
     def begin_authentication(self, user_id: str = "") -> dict:
         challenge_bytes = secrets.token_bytes(self.config.challenge_length)

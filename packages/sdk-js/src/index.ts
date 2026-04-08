@@ -255,8 +255,10 @@ export class PasskeyClient {
     const response = credential.response as AuthenticatorAssertionResponse;
 
     // Build finish payload
+    // In discoverable flow (no userId), use the challenge as the lookup key —
+    // the server stores the challenge under the challenge value itself when no userId is provided.
     const finishPayload: Record<string, unknown> = {
-      userId: userId || credential.id,
+      userId: userId || options.challenge,
       credential: {
         id: credential.id,
         rawId: base64urlEncode(credential.rawId),

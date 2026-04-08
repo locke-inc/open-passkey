@@ -33,8 +33,25 @@ export class PasskeyController {
   }
 
   @Post("/register/finish")
-  async registerFinish(@Body() body: FinishRegistrationRequest): Promise<unknown> {
-    return this.handle(() => this.passkeyService.finishRegistration(body));
+  async registerFinish(
+    @Body() body: FinishRegistrationRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    try {
+      const result = await this.passkeyService.finishRegistration(body);
+      const sessionConfig = this.passkeyService.getSessionConfig();
+      if (sessionConfig && (result as any).sessionToken) {
+        const { sessionToken: _, ...responseBody } = result as any;
+        res.setHeader("Set-Cookie", buildSetCookieHeader(_, sessionConfig));
+        return responseBody;
+      }
+      return result;
+    } catch (err) {
+      if (err instanceof PasskeyError) {
+        throw new HttpException({ error: err.message }, err.statusCode);
+      }
+      throw new HttpException({ error: "internal server error" }, 500);
+    }
   }
 
   @Post("/login/begin")

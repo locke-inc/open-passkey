@@ -10,4 +10,7 @@ export const handlers = globalForPasskey.passkeyHandlers ??= createPasskeyHandle
   origin: "http://localhost:3004",
   challengeStore: new MemoryChallengeStore(),
   credentialStore: new MemoryCredentialStore(),
+  session: {
+    secret: "nextjs-example-secret-must-be-32-chars!",
+  },
 });

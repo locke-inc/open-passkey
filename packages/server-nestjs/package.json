@@ -9,12 +9,18 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["passkey", "webauthn", "fido2", "nestjs"],
+  "keywords": [
+    "passkey",
+    "webauthn",
+    "fido2",
+    "nestjs"
+  ],
   "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "type": "module",
   "devDependencies": {
     "@nestjs/common": "^11.0.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
     "reflect-metadata": "^0.2.0",
     "typescript": "^5.9.3",

@@ -47,8 +47,25 @@ export function createPasskeyHandlers(config: PasskeyConfig): PasskeyHandlers {
     registerBegin: (request: NextRequest) =>
       handle(request, (body) => passkey.beginRegistration(body as Parameters<Passkey["beginRegistration"]>[0])),
 
-    registerFinish: (request: NextRequest) =>
-      handle(request, (body) => passkey.finishRegistration(body as Parameters<Passkey["finishRegistration"]>[0])),
+    registerFinish: async (request: NextRequest) => {
+      try {
+        const body = await request.json();
+        const result = await passkey.finishRegistration(body as Parameters<Passkey["finishRegistration"]>[0]);
+        const sessionConfig = passkey.getSessionConfig();
+        if (sessionConfig && result.sessionToken) {
+          const { sessionToken: _, ...responseBody } = result;
+          const response = NextResponse.json(responseBody);
+          response.headers.set("Set-Cookie", buildSetCookieHeader(result.sessionToken, sessionConfig));
+          return response;
+        }
+        return NextResponse.json(result);
+      } catch (err) {
+        if (err instanceof PasskeyError) {
+          return NextResponse.json({ error: err.message }, { status: err.statusCode });
+        }
+        return NextResponse.json({ error: "internal server error" }, { status: 500 });
+      }
+    },
 
     loginBegin: (request: NextRequest) =>
       handle(request, (body) => passkey.beginAuthentication(body as Parameters<Passkey["beginAuthentication"]>[0])),

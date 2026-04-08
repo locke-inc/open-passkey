@@ -154,6 +154,118 @@ func TestBeginRegistration_MissingFields(t *testing.T) {
 	}
 }
 
+// --- Duplicate registration / AllowMultipleCredentials tests ---
+
+func TestBeginRegistration_DuplicateRejected(t *testing.T) {
+	credStore := passkey.NewMemoryCredentialStore()
+	credStore.Store(passkey.StoredCredential{CredentialID: []byte{1, 2, 3}, UserID: "alice"})
+
+	p, _ := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  passkey.NewMemoryChallengeStore(),
+		CredentialStore: credStore,
+	})
+
+	w := postJSON(p.BeginRegistration, map[string]string{
+		"userId":   "alice",
+		"username": "Alice",
+	})
+	if w.Code != http.StatusConflict {
+		t.Fatalf("expected 409, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestBeginRegistration_AllowMultipleCredentials(t *testing.T) {
+	credStore := passkey.NewMemoryCredentialStore()
+	credStore.Store(passkey.StoredCredential{CredentialID: []byte{1, 2, 3}, UserID: "alice"})
+
+	p, _ := passkey.New(passkey.Config{
+		RPID:                     "example.com",
+		RPDisplayName:            "Example",
+		Origin:                   "https://example.com",
+		ChallengeStore:           passkey.NewMemoryChallengeStore(),
+		CredentialStore:          credStore,
+		AllowMultipleCredentials: true,
+	})
+
+	w := postJSON(p.BeginRegistration, map[string]string{
+		"userId":   "alice",
+		"username": "Alice",
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 with AllowMultipleCredentials, got %d: %s", w.Code, w.Body.String())
+	}
+
+	resp := decodeResponse(t, w)
+
+	// Should include excludeCredentials with the existing credential
+	exclude, ok := resp["excludeCredentials"].([]any)
+	if !ok {
+		t.Fatal("response missing excludeCredentials array")
+	}
+	if len(exclude) != 1 {
+		t.Fatalf("expected 1 excludeCredentials entry, got %d", len(exclude))
+	}
+	entry := exclude[0].(map[string]any)
+	if entry["type"] != "public-key" {
+		t.Errorf("excludeCredentials type: got %v, want public-key", entry["type"])
+	}
+	if entry["id"] == nil || entry["id"] == "" {
+		t.Error("excludeCredentials id is missing")
+	}
+}
+
+func TestBeginRegistration_ExcludeCredentialsMultiple(t *testing.T) {
+	credStore := passkey.NewMemoryCredentialStore()
+	credStore.Store(passkey.StoredCredential{CredentialID: []byte{1}, UserID: "bob"})
+	credStore.Store(passkey.StoredCredential{CredentialID: []byte{2}, UserID: "bob"})
+	credStore.Store(passkey.StoredCredential{CredentialID: []byte{3}, UserID: "bob"})
+
+	p, _ := passkey.New(passkey.Config{
+		RPID:                     "example.com",
+		RPDisplayName:            "Example",
+		Origin:                   "https://example.com",
+		ChallengeStore:           passkey.NewMemoryChallengeStore(),
+		CredentialStore:          credStore,
+		AllowMultipleCredentials: true,
+	})
+
+	w := postJSON(p.BeginRegistration, map[string]string{
+		"userId":   "bob",
+		"username": "Bob",
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	resp := decodeResponse(t, w)
+	exclude, ok := resp["excludeCredentials"].([]any)
+	if !ok {
+		t.Fatal("response missing excludeCredentials")
+	}
+	if len(exclude) != 3 {
+		t.Errorf("expected 3 excludeCredentials entries, got %d", len(exclude))
+	}
+}
+
+func TestBeginRegistration_NoExcludeForNewUser(t *testing.T) {
+	p := newTestPasskey(t)
+	w := postJSON(p.BeginRegistration, map[string]string{
+		"userId":   "new-user",
+		"username": "New",
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	resp := decodeResponse(t, w)
+	if resp["excludeCredentials"] != nil {
+		t.Error("new user should not have excludeCredentials")
+	}
+}
+
 // --- BeginAuthentication tests ---
 
 func TestBeginAuthentication_Success(t *testing.T) {
