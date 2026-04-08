@@ -36,8 +36,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Test core-ts
-        run: cd packages/core-ts && npm ci && npm test
+      - name: Test and build core-ts
+        run: cd packages/core-ts && npm ci && npm test && npm run build
       - name: Test authenticator-ts
         run: cd packages/authenticator-ts && npm ci && npm test
       - name: Build sdk-js
@@ -97,8 +97,8 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "17"
-      - name: Test core-java
-        run: cd packages/core-java && mvn test -B
+      - name: Test and install core-java
+        run: cd packages/core-java && mvn install -B
       - name: Test server-spring
         run: cd packages/server-spring && mvn test -B
 
