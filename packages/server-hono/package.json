@@ -1,15 +1,29 @@
 {
   "name": "@open-passkey/hono",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Hono passkey/WebAuthn server middleware",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["passkey", "webauthn", "fido2", "hono"],
+  "keywords": [
+    "passkey",
+    "webauthn",
+    "fido2",
+    "hono"
+  ],
   "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "type": "module",
@@ -20,7 +34,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@open-passkey/server": "file:../server-ts"
+    "@open-passkey/server": "^0.1.0"
   },
   "peerDependencies": {
     "hono": "^4.0.0"

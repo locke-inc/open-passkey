@@ -1,9 +1,18 @@
 {
   "name": "@open-passkey/server",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Framework-agnostic WebAuthn server handler logic",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -24,6 +33,6 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@open-passkey/core": "file:../core-ts"
+    "@open-passkey/core": "^0.1.0"
   }
 }

@@ -1,15 +1,30 @@
 {
   "name": "@open-passkey/sveltekit",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "SvelteKit passkey/WebAuthn server endpoint handlers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["passkey", "webauthn", "fido2", "sveltekit", "svelte"],
+  "keywords": [
+    "passkey",
+    "webauthn",
+    "fido2",
+    "sveltekit",
+    "svelte"
+  ],
   "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "type": "module",
@@ -20,7 +35,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@open-passkey/server": "file:../server-ts"
+    "@open-passkey/server": "^0.1.0"
   },
   "peerDependencies": {
     "@sveltejs/kit": "^2.0.0"

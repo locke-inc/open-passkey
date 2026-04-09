@@ -1,15 +1,29 @@
 {
   "name": "@open-passkey/nextjs",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Next.js App Router passkey/WebAuthn server handlers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["passkey", "webauthn", "fido2", "nextjs"],
+  "keywords": [
+    "passkey",
+    "webauthn",
+    "fido2",
+    "nextjs"
+  ],
   "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "type": "module",
@@ -20,7 +34,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@open-passkey/server": "file:../server-ts"
+    "@open-passkey/server": "^0.1.0"
   },
   "peerDependencies": {
     "next": "^14.0.0 || ^15.0.0"

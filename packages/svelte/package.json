@@ -1,10 +1,19 @@
 {
   "name": "@open-passkey/svelte",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Svelte stores for passkey (WebAuthn/FIDO2) authentication",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "author": "Locke Identity Networks Inc.",
   "license": "MIT",
   "scripts": {
@@ -12,7 +21,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@open-passkey/sdk": "file:../sdk-js"
+    "@open-passkey/sdk": "^0.1.0"
   },
   "peerDependencies": {
     "svelte": "^4.0.0 || ^5.0.0"

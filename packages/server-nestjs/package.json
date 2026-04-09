@@ -1,9 +1,18 @@
 {
   "name": "@open-passkey/nestjs",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "NestJS passkey/WebAuthn server module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -27,7 +36,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@open-passkey/server": "file:../server-ts"
+    "@open-passkey/server": "^0.1.0"
   },
   "peerDependencies": {
     "@nestjs/common": "^11.0.0",
