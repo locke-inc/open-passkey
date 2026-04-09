@@ -11,6 +11,26 @@
 
     <name>open-passkey-spring</name>
     <description>Spring Boot starter for open-passkey WebAuthn/FIDO2 authentication</description>
+    <url>https://github.com/locke-inc/open-passkey</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Locke Identity Networks Inc.</name>
+            <url>https://lockeidentity.com</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/locke-inc/open-passkey</url>
+        <connection>scm:git:git://github.com/locke-inc/open-passkey.git</connection>
+    </scm>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -31,7 +51,7 @@
         <dependency>
             <groupId>com.openpasskey</groupId>
             <artifactId>core-java</artifactId>
-            <version>0.1.0</version>
+            <version>0.1.3</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -2,59 +2,100 @@
 set -e
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+VERSION=$(cat "$ROOT/VERSION" | tr -d '[:space:]')
 
-# Dependency-ordered layers
-LAYER1=(core-ts sdk-js authenticator-ts)
-LAYER2=(server-ts)
-LAYER3=(server-express server-fastify server-hono server-nestjs server-nextjs server-nuxt server-sveltekit server-remix server-astro)
-LAYER4=(react vue svelte solid)
+echo "Publishing open-passkey v$VERSION to all registries"
+echo ""
 
-ALL=("${LAYER1[@]}" "${LAYER2[@]}" "${LAYER3[@]}" "${LAYER4[@]}" angular)
-
-# --- Patch versions ---
-echo "=== Patching versions ==="
-for pkg in "${ALL[@]}"; do
-  echo "  $pkg: $(cd "$ROOT/packages/$pkg" && npm version patch --no-git-tag-version | tail -1)"
-done
-
-# --- Build & publish ---
-publish_pkg() {
+# ─── npm (18 packages) ──────────────────────────────────────────────
+publish_npm() {
   local pkg=$1
-  echo "=== $pkg: build ==="
+  echo "=== npm: $pkg ==="
   cd "$ROOT/packages/$pkg"
   npm run build
-  echo "=== $pkg: publish ==="
   npm publish --access public
 }
 
 publish_angular() {
-  echo "=== angular: build ==="
+  echo "=== npm: angular ==="
   cd "$ROOT/packages/angular"
   npm run build
-  echo "=== angular: publish ==="
   cd dist
   npm publish --access public
 }
 
-echo ""
-echo "=== Layer 1: core-ts, sdk-js, authenticator-ts ==="
-for pkg in "${LAYER1[@]}"; do publish_pkg "$pkg"; done
-
-echo ""
-echo "=== Layer 2: server-ts ==="
-for pkg in "${LAYER2[@]}"; do publish_pkg "$pkg"; done
-
-echo ""
-echo "=== Layer 3: server bindings ==="
-for pkg in "${LAYER3[@]}"; do publish_pkg "$pkg"; done
-
-echo ""
-echo "=== Layer 4: frontend SDKs ==="
-for pkg in "${LAYER4[@]}"; do publish_pkg "$pkg"; done
-
-echo ""
-echo "=== Layer 5: angular ==="
+echo "── npm ──"
+for pkg in core-ts sdk-js authenticator-ts; do publish_npm "$pkg"; done
+publish_npm server-ts
+for pkg in server-express server-fastify server-hono server-nestjs \
+           server-nextjs server-nuxt server-sveltekit server-remix server-astro; do
+  publish_npm "$pkg"
+done
+for pkg in react vue svelte solid; do publish_npm "$pkg"; done
 publish_angular
 
+# ─── PyPI (5 packages) ──────────────────────────────────────────────
+publish_py() {
+  local pkg=$1
+  echo "=== pypi: $pkg ==="
+  cd "$ROOT/packages/$pkg"
+  rm -rf dist/
+  python3 -m build
+  twine upload dist/*
+}
+
 echo ""
-echo "Done! All packages published."
+echo "── PyPI ──"
+publish_py core-py
+publish_py server-py
+for pkg in server-flask server-fastapi server-django; do publish_py "$pkg"; done
+
+# ─── NuGet (2 packages) ─────────────────────────────────────────────
+echo ""
+echo "── NuGet ──"
+echo "=== nuget: core-dotnet ==="
+cd "$ROOT/packages/core-dotnet"
+dotnet pack -c Release
+dotnet nuget push bin/Release/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
+
+echo "=== nuget: server-aspnet ==="
+cd "$ROOT/packages/server-aspnet"
+dotnet pack -c Release
+dotnet nuget push bin/Release/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
+
+# ─── crates.io (2 packages) ─────────────────────────────────────────
+echo ""
+echo "── crates.io ──"
+echo "=== crates: core-rust ==="
+cd "$ROOT/packages/core-rust"
+cargo publish
+
+echo "Waiting for crates.io index..."
+sleep 30
+
+echo "=== crates: server-axum ==="
+cd "$ROOT/packages/server-axum"
+cargo publish
+
+# ─── Go module tags ──────────────────────────────────────────────────
+echo ""
+echo "── Go modules ──"
+echo "Creating Go module tags..."
+cd "$ROOT"
+git tag "packages/core-go/v$VERSION"
+git tag "packages/server-go/v$VERSION"
+git push origin "packages/core-go/v$VERSION" "packages/server-go/v$VERSION"
+
+# ─── Maven Central (2 packages) ─────────────────────────────────────
+echo ""
+echo "── Maven Central ──"
+echo "=== maven: core-java ==="
+cd "$ROOT/packages/core-java"
+mvn deploy -P release --batch-mode
+
+echo "=== maven: server-spring ==="
+cd "$ROOT/packages/server-spring"
+mvn deploy -P release --batch-mode
+
+echo ""
+echo "Done! All packages published as v$VERSION"

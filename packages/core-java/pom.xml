@@ -11,6 +11,26 @@
 
     <name>open-passkey core-java</name>
     <description>WebAuthn/FIDO2 core protocol verification library for Java</description>
+    <url>https://github.com/locke-inc/open-passkey</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Locke Identity Networks Inc.</name>
+            <url>https://lockeidentity.com</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/locke-inc/open-passkey</url>
+        <connection>scm:git:git://github.com/locke-inc/open-passkey.git</connection>
+    </scm>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

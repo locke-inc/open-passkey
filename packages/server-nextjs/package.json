@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/nextjs",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Next.js App Router passkey/WebAuthn server handlers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

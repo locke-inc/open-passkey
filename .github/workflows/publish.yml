@@ -1,0 +1,196 @@
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+
+env:
+  VERSION: ${{ github.ref_name }}  # e.g., v0.1.3
+
+jobs:
+  # ─── npm (18 packages) ────────────────────────────────────────────
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Publish npm packages (dependency order)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          publish() {
+            local dir=$1
+            echo "=== Publishing $dir ==="
+            cd packages/$dir
+            npm run build
+            npm publish --access public --provenance
+            cd ../..
+          }
+
+          # Layer 1: no internal deps
+          for pkg in core-ts sdk-js authenticator-ts; do publish $pkg; done
+
+          # Layer 2: depends on core
+          publish server-ts
+
+          # Layer 3: depends on server
+          for pkg in server-express server-fastify server-hono server-nestjs \
+                     server-nextjs server-nuxt server-sveltekit server-remix server-astro; do
+            publish $pkg
+          done
+
+          # Layer 4: depends on sdk
+          for pkg in react vue svelte solid; do publish $pkg; done
+
+          # Angular (ng-packagr outputs to dist/)
+          echo "=== Publishing angular ==="
+          cd packages/angular
+          npm run build
+          cd dist
+          npm publish --access public --provenance
+          cd ../../..
+
+  # ─── PyPI (5 packages) ────────────────────────────────────────────
+  pypi:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build tools
+        run: pip install build twine
+
+      # Build liboqs for core-py (PQ dependency)
+      - name: Build liboqs
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build
+          git clone https://github.com/open-quantum-safe/liboqs.git /tmp/liboqs
+          cd /tmp/liboqs
+          mkdir build && cd build
+          cmake -GNinja -DBUILD_SHARED_LIBS=ON ..
+          ninja
+          sudo ninja install
+          sudo ldconfig
+
+      - name: Publish Python packages (dependency order)
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          set -e
+          publish_py() {
+            local dir=$1
+            echo "=== Publishing $dir ==="
+            cd packages/$dir
+            python -m build
+            twine upload dist/*
+            cd ../..
+          }
+
+          # Layer 1: core
+          publish_py core-py
+
+          # Layer 2: server (depends on core)
+          publish_py server-py
+
+          # Layer 3: framework bindings (depend on server)
+          for pkg in server-flask server-fastapi server-django; do
+            publish_py $pkg
+          done
+
+  # ─── Maven Central (2 packages) ───────────────────────────────────
+  maven:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Publish core-java
+        working-directory: packages/core-java
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: mvn deploy -P release --batch-mode
+      - name: Publish server-spring
+        working-directory: packages/server-spring
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: mvn deploy -P release --batch-mode
+
+  # ─── NuGet (2 packages) ───────────────────────────────────────────
+  nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Pack and publish core-dotnet
+        working-directory: packages/core-dotnet
+        run: |
+          dotnet pack -c Release
+          dotnet nuget push bin/Release/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json
+      - name: Pack and publish server-aspnet
+        working-directory: packages/server-aspnet
+        run: |
+          dotnet pack -c Release
+          dotnet nuget push bin/Release/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json
+
+  # ─── crates.io (2 packages) ───────────────────────────────────────
+  crates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish core-rust
+        working-directory: packages/core-rust
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish
+      - name: Wait for crates.io index
+        run: sleep 30
+      - name: Publish server-axum
+        working-directory: packages/server-axum
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish
+
+  # ─── Go module tags ───────────────────────────────────────────────
+  go-tags:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Go module tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"  # strip leading 'v'
+          git tag "packages/core-go/v${VERSION}"
+          git tag "packages/server-go/v${VERSION}"
+          git push origin "packages/core-go/v${VERSION}" "packages/server-go/v${VERSION}"

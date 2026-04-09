@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/vue",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Vue 3 composables for passkey (WebAuthn/FIDO2) authentication",
   "type": "module",
   "main": "dist/index.js",
