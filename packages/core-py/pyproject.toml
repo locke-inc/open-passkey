@@ -27,7 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 pq = ["liboqs-python>=0.14"]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=9.0.3"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
