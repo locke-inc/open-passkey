@@ -22,7 +22,7 @@ Pick your framework and add passkey auth in minutes. Every example is in `exampl
 
 ### Hosted — No Server Needed
 
-Use [Locke Gateway](https://gateway.locke.id) as a free, open passkey backend. No registration, no API keys. Just your domain.
+Use [Locke Gateway](https://gateway.locke.id) as a free hosted passkey backend with no registration and no API keys.
 
 ```typescript
 // Any framework — just your domain
@@ -37,8 +37,6 @@ createPasskey({ provider: "locke-gateway", rpId: "app.example.com" })
 // Angular
 providePasskey({ provider: "locke-gateway", rpId: "app.example.com" })
 ```
-
-Credentials stored in PostgreSQL. Fully open-source: [github.com/locke-inc/gateway](https://github.com/locke-inc/gateway). To self-host instead, see the server examples below.
 
 ### Express (TypeScript)
 
@@ -346,6 +344,7 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 - **Attestation:** `none` and `packed` (self-attestation + full x5c certificate chain)
 - **Backup flags:** BE/BS exposed in results, spec conformance enforced (SS6.3.3)
 - **PRF extension:** Salt generation, per-credential evaluation, output passthrough
+- **E2E Encrypted Vault:** `localStorage`-style API (`setItem`/`getItem`) with client-side AES-256-GCM encryption derived from WebAuthn PRF output via HKDF — server only stores ciphertext
 - **userHandle:** Cross-checked against credential owner in discoverable flow
 - **Sign count:** Rollback detection per SS7.2
 - **Token binding:** `"present"` rejected, `"supported"` allowed

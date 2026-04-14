@@ -71,6 +71,7 @@ export interface AuthenticationResult {
 export class PasskeyClient {
   private readonly baseUrl: string;
   private readonly rpId?: string;
+  private prfKey: ArrayBuffer | null = null;
 
   constructor(config: PasskeyClientConfig) {
     if (config.baseUrl && config.provider) {
@@ -254,6 +255,11 @@ export class PasskeyClient {
 
     const response = credential.response as AuthenticatorAssertionResponse;
 
+    // Extract PRF output if available (for vault encryption key derivation)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prfResults = (credential.getClientExtensionResults() as any)?.prf?.results;
+    const prfOutput: ArrayBuffer | null = prfResults?.first ?? null;
+
     // Build finish payload
     // In discoverable flow (no userId), use the challenge as the lookup key —
     // the server stores the challenge under the challenge value itself when no userId is provided.
@@ -284,7 +290,11 @@ export class PasskeyClient {
       throw new Error(err.error || "Failed to finish authentication");
     }
 
-    return finishRes.json();
+    const result: AuthenticationResult = await finishRes.json();
+    if (prfOutput) {
+      this.prfKey = prfOutput;
+    }
+    return result;
   }
 
   async getSession(): Promise<AuthenticationResult | null> {
@@ -302,5 +312,104 @@ export class PasskeyClient {
       method: "POST",
       credentials: "include",
     });
+  }
+
+  vault(): Vault {
+    if (!this.prfKey) {
+      throw new Error(
+        "Vault requires PRF support. Call authenticate() first with a PRF-capable authenticator."
+      );
+    }
+    return new Vault(this.prfKey, this.baseUrl);
+  }
+}
+
+export class Vault {
+  private encryptionKey: Promise<CryptoKey>;
+  private baseUrl: string;
+
+  constructor(prfOutput: ArrayBuffer, baseUrl: string) {
+    this.baseUrl = baseUrl;
+    this.encryptionKey = this.deriveKey(prfOutput);
+  }
+
+  private async deriveKey(prfOutput: ArrayBuffer): Promise<CryptoKey> {
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw", prfOutput, "HKDF", false, ["deriveKey"]
+    );
+    return crypto.subtle.deriveKey(
+      {
+        name: "HKDF",
+        hash: "SHA-256",
+        salt: new TextEncoder().encode("open-passkey-vault"),
+        info: new TextEncoder().encode("aes-256-gcm"),
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"],
+    );
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    const k = await this.encryptionKey;
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      k,
+      new TextEncoder().encode(value),
+    );
+    const packed = new Uint8Array(12 + ciphertext.byteLength);
+    packed.set(iv, 0);
+    packed.set(new Uint8Array(ciphertext), 12);
+
+    const res = await fetch(`${this.baseUrl}/vault/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: base64urlEncode(packed.buffer) }),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Failed to set vault item" }));
+      throw new Error(err.error || "Failed to set vault item");
+    }
+  }
+
+  async getItem(key: string): Promise<string | null> {
+    const res = await fetch(
+      `${this.baseUrl}/vault/${encodeURIComponent(key)}`,
+      { credentials: "include" },
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error("Failed to get vault item");
+
+    const { value } = await res.json();
+    const packed = new Uint8Array(base64urlDecode(value));
+    const iv = packed.slice(0, 12);
+    const ciphertext = packed.slice(12);
+
+    const k = await this.encryptionKey;
+    const plaintext = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      k,
+      ciphertext,
+    );
+    return new TextDecoder().decode(plaintext);
+  }
+
+  async removeItem(key: string): Promise<void> {
+    await fetch(`${this.baseUrl}/vault/${encodeURIComponent(key)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  }
+
+  async keys(): Promise<string[]> {
+    const res = await fetch(`${this.baseUrl}/vault`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to list vault keys");
+    const { keys } = await res.json();
+    return keys;
   }
 }

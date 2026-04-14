@@ -33,7 +33,6 @@ If you're running your own passkey server:
   <MyApp />
 </PasskeyProvider>
 ```
-```
 
 ### Register
 

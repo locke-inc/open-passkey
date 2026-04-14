@@ -81,6 +81,28 @@ For server-rendered apps without a JS bundler:
 | `authenticate(userId?)` | `Promise<AuthenticationResult>` | Sign in with a passkey |
 | `getSession()` | `Promise<AuthenticationResult \| null>` | Validate current session |
 | `logout()` | `Promise<void>` | Clear session cookie |
+| `vault()` | `Vault` | Get E2E encrypted vault (requires PRF-capable authenticator) |
+
+### Vault (E2E Encrypted Key-Value Store)
+
+After authenticating with a PRF-capable authenticator, you can use the vault for client-side encrypted storage. The encryption key is derived from the WebAuthn PRF output — the server only ever sees ciphertext.
+
+```typescript
+const result = await passkey.authenticate("user-id-123");
+const vault = passkey.vault();
+
+await vault.setItem("api-key", "sk_live_abc123");
+const val = await vault.getItem("api-key");       // "sk_live_abc123"
+await vault.removeItem("api-key");
+const allKeys = await vault.keys();                // string[]
+```
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `setItem(key, value)` | `Promise<void>` | Encrypt and store a value |
+| `getItem(key)` | `Promise<string \| null>` | Retrieve and decrypt a value (null if not found) |
+| `removeItem(key)` | `Promise<void>` | Delete a stored item |
+| `keys()` | `Promise<string[]>` | List all stored keys |
 
 ## Related Packages
 
