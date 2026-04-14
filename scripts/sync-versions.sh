@@ -42,8 +42,21 @@ done
 for pkg in core-java server-spring; do
   FILE="$ROOT/packages/$pkg/pom.xml"
   if [ -f "$FILE" ]; then
-    # Update top-level <version> only (first occurrence after <artifactId>)
-    sed -i '' "0,/<version>[0-9].*<\/version>/s/<version>[0-9].*<\/version>/<version>$VERSION<\/version>/" "$FILE"
+    # Update the first <version>X.Y.Z</version> occurrence (the project's own version).
+    # Uses Python instead of sed because BSD sed (macOS) doesn't support 0,/RE/ addresses.
+    python3 -c "
+import re
+with open('$FILE', 'r') as f:
+    content = f.read()
+content = re.sub(
+    r'(<version>)\d+\.\d+\.\d+(</version>)',
+    r'\g<1>$VERSION\2',
+    content,
+    count=1
+)
+with open('$FILE', 'w') as f:
+    f.write(content)
+"
     echo "  maven: $pkg -> $VERSION"
   fi
 done

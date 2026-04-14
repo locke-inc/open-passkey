@@ -6,7 +6,7 @@
 
     <groupId>com.openpasskey</groupId>
     <artifactId>core-java</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.3</version>
     <packaging>jar</packaging>
 
     <name>open-passkey core-java</name>

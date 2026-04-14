@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenPasskey.Core" Version="0.1.0" />
+    <ProjectReference Include="../core-dotnet/OpenPasskey.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
