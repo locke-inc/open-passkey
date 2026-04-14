@@ -25,7 +25,7 @@ Pick your framework and add passkey auth in minutes. Every example is in `exampl
 Use [Locke Gateway](https://gateway.locke.id) as a free hosted passkey backend with no registration and no API keys.
 
 ```typescript
-// Any framework — just your domain
+// Any framework, just add your domain
 new PasskeyClient({ provider: "locke-gateway", rpId: "app.example.com" })
 
 // React

@@ -28,7 +28,6 @@ describe("PasskeyClient session methods", () => {
       expect(mockFetch).toHaveBeenCalledWith(
         "https://example.com/passkey/session",
         {
-          method: "GET",
           credentials: "include",
         },
       );
