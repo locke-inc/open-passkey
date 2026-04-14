@@ -17,14 +17,14 @@ classifiers = [
     "Topic :: Security",
 ]
 requires-python = ">=3.10"
-
-[project.urls]
-Homepage = "https://github.com/locke-inc/open-passkey"
-Repository = "https://github.com/locke-inc/open-passkey"
 dependencies = [
     "flask>=3.0",
     "open-passkey-server",
 ]
+
+[project.urls]
+Homepage = "https://github.com/locke-inc/open-passkey"
+Repository = "https://github.com/locke-inc/open-passkey"
 
 [tool.setuptools]
 packages = ["open_passkey_flask"]

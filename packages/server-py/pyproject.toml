@@ -16,13 +16,13 @@ classifiers = [
     "Topic :: Security",
 ]
 requires-python = ">=3.10"
+dependencies = [
+    "open-passkey",
+]
 
 [project.urls]
 Homepage = "https://github.com/locke-inc/open-passkey"
 Repository = "https://github.com/locke-inc/open-passkey"
-dependencies = [
-    "open-passkey",
-]
 
 [tool.setuptools]
 packages = ["open_passkey_server"]
