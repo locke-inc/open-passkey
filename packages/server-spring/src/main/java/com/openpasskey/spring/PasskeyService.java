@@ -62,7 +62,7 @@ public class PasskeyService {
 
     public Map<String, Object> beginRegistration(String userId, String username) throws Stores.PasskeyException {
         if (userId == null || userId.isBlank() || username == null || username.isBlank()) {
-            throw new Stores.PasskeyException("userId and username are required");
+            throw new Stores.PasskeyException("userId is required");
         }
 
         List<Stores.StoredCredential> existing = credentialStore.getByUser(userId);

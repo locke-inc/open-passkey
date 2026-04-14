@@ -22,7 +22,7 @@ class PasskeyHandler:
 
     def begin_registration(self, user_id: str, username: str) -> dict:
         if not user_id or not username:
-            raise PasskeyError("userId and username are required")
+            raise PasskeyError("userId is required")
 
         existing = self.config.credential_store.get_by_user(user_id)
 

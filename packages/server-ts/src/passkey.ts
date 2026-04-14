@@ -81,7 +81,7 @@ export class Passkey {
 
   async beginRegistration(req: BeginRegistrationRequest): Promise<BeginRegistrationResponse> {
     if (!req.userId || !req.username) {
-      throw new PasskeyError(400, "userId and username are required");
+      throw new PasskeyError(400, "userId is required");
     }
 
     const existing = await this.credentialStore.getByUser(req.userId);

@@ -44,7 +44,7 @@ pub async fn begin_registration(
     Json(req): Json<BeginRegistrationRequest>,
 ) -> impl IntoResponse {
     if req.user_id.is_empty() || req.username.is_empty() {
-        return error_response(StatusCode::BAD_REQUEST, "userId and username are required").into_response();
+        return error_response(StatusCode::BAD_REQUEST, "userId is required").into_response();
     }
 
     let existing = state.credential_store.get_by_user(&req.user_id).unwrap_or_default();

@@ -40,7 +40,7 @@ public class PasskeyService
     public object BeginRegistration(string userId, string username)
     {
         if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(username))
-            throw new PasskeyException("userId and username are required");
+            throw new PasskeyException("userId is required");
 
         var existing = _config.CredentialStore.GetByUser(userId);
 

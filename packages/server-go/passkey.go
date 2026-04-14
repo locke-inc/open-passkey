@@ -34,9 +34,9 @@ import (
 )
 
 var (
-	ErrInvalidConfig   = errors.New("invalid passkey configuration")
-	ErrChallengeNotFound = errors.New("challenge not found or expired")
-	ErrUserNotFound    = errors.New("user not found")
+	ErrInvalidConfig      = errors.New("invalid passkey configuration")
+	ErrChallengeNotFound  = errors.New("challenge not found or expired")
+	ErrUserNotFound       = errors.New("user not found")
 	ErrCredentialNotFound = errors.New("credential not found")
 )
 
@@ -146,7 +146,7 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.UserID == "" || req.Username == "" {
-		writeError(w, http.StatusBadRequest, "userId and username are required")
+		writeError(w, http.StatusBadRequest, "userId is required")
 		return
 	}
 
