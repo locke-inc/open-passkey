@@ -128,16 +128,20 @@ PRF salts must be in the WebAuthn request options **before** `navigator.credenti
 
 **There is no workaround.** This is a fundamental WebAuthn constraint: PRF evaluation parameters are inputs to the ceremony, not outputs.
 
-### Vault Encryption
-- PRF output (32 bytes) → HKDF-SHA256 (salt: `"open-passkey-vault"`, info: `"aes-256-gcm"`) → AES-256-GCM key (non-extractable)
+### Vault Encryption (Zero-Knowledge Keys + Values)
+- PRF output (32 bytes) → two HKDF-SHA256 derived keys:
+  - `info: "aes-256-gcm"` → AES-256-GCM encryption key (encrypts values)
+  - `info: "vault-key-hmac"` → HMAC-SHA256 key (blinds storage key names)
+- **Key blinding**: every storage key is HMAC'd before hitting the wire — `HMAC-SHA256(hmacKey, keyName)` → base64url. The server sees only opaque 43-character tokens, never plaintext key names. Same key name always produces the same hash (deterministic lookup), but different users produce different hashes (keyed MAC)
 - Each `setItem`: random 12-byte IV + AES-GCM encrypt. Server stores `IV || ciphertext` as opaque bytes
-- Key derivation happens once per `Vault` instance; the `CryptoKey` is reused for all operations
+- Key derivation happens once per `Vault` instance; both `CryptoKey` objects are reused for all operations
+- No `keys()` enumeration — incompatible with zero-knowledge key blinding. Clients track their own key names
 
 ### Vault Persistence (IndexedDB)
-- `vault.persistKey()` stores the derived `CryptoKey` in IndexedDB. The key is non-extractable — JS can use it for encrypt/decrypt but cannot read the raw bytes
-- `Vault.restore(baseUrl)` loads the key from IndexedDB without re-authentication
-- `Vault.clear()` removes the key (call on logout)
-- `Vault.fromCryptoKey(key, baseUrl)` constructs a Vault from a `CryptoKey` directly (used internally by `restore`)
+- `vault.persistKey()` stores both derived `CryptoKey` objects (encryption + HMAC) in IndexedDB. Keys are non-extractable — JS can use them but cannot read the raw bytes
+- `Vault.restore(baseUrl)` loads both keys from IndexedDB without re-authentication. Returns `null` if either key is missing
+- `Vault.clear()` removes all keys (call on logout)
+- `Vault.fromCryptoKeys(encryptionKey, hmacKey, baseUrl)` constructs a Vault from persisted `CryptoKey` objects (used internally by `restore`)
 
 ### Key constraint for implementors
 PRF output is bound to a specific credential's hardware secret. Two different credentials for the same user produce different PRF outputs (and thus different vault keys), even with the same salt. Vault items are per-credential, not per-user.

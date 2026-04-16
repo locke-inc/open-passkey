@@ -367,34 +367,46 @@ export class PasskeyClient {
 export class Vault {
   private static readonly DB_NAME = "open-passkey";
   private static readonly STORE_NAME = "vault-keys";
-  private static readonly KEY_ID = "encryption-key";
+  private static readonly ENC_KEY_ID = "encryption-key";
+  private static readonly HMAC_KEY_ID = "hmac-key";
 
   private encryptionKey: Promise<CryptoKey>;
+  private hmacKey: Promise<CryptoKey>;
   private baseUrl: string;
   private sessionToken: string | null;
 
   constructor(prfOutput: ArrayBuffer, baseUrl: string, sessionToken?: string | null) {
     this.baseUrl = baseUrl;
     this.sessionToken = sessionToken ?? null;
-    this.encryptionKey = this.deriveKey(prfOutput);
+    const keys = this.deriveKeys(prfOutput);
+    this.encryptionKey = keys.then((k) => k.encryption);
+    this.hmacKey = keys.then((k) => k.hmac);
   }
 
-  /** Create a Vault from a previously persisted CryptoKey (e.g., restored from IndexedDB). */
-  static fromCryptoKey(key: CryptoKey, baseUrl: string, sessionToken?: string | null): Vault {
+  /** Create a Vault from previously persisted CryptoKeys (e.g., restored from IndexedDB). */
+  static fromCryptoKeys(
+    encryptionKey: CryptoKey,
+    hmacKey: CryptoKey,
+    baseUrl: string,
+    sessionToken?: string | null,
+  ): Vault {
     const v = Object.create(Vault.prototype) as Vault;
     v.baseUrl = baseUrl;
     v.sessionToken = sessionToken ?? null;
-    v.encryptionKey = Promise.resolve(key);
+    v.encryptionKey = Promise.resolve(encryptionKey);
+    v.hmacKey = Promise.resolve(hmacKey);
     return v;
   }
 
-  /** Persist the derived AES-GCM CryptoKey to IndexedDB. The key remains non-extractable. */
+  /** Persist the derived CryptoKeys to IndexedDB. The keys remain non-extractable. */
   async persistKey(): Promise<void> {
-    const key = await this.encryptionKey;
+    const [encKey, hmKey] = await Promise.all([this.encryptionKey, this.hmacKey]);
     const db = await Vault.openDB();
     try {
       const tx = db.transaction(Vault.STORE_NAME, "readwrite");
-      tx.objectStore(Vault.STORE_NAME).put(key, Vault.KEY_ID);
+      const store = tx.objectStore(Vault.STORE_NAME);
+      store.put(encKey, Vault.ENC_KEY_ID);
+      store.put(hmKey, Vault.HMAC_KEY_ID);
       await new Promise<void>((resolve, reject) => {
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
@@ -404,19 +416,25 @@ export class Vault {
     }
   }
 
-  /** Restore a Vault from a previously persisted CryptoKey in IndexedDB. Returns null if not found. */
+  /** Restore a Vault from previously persisted CryptoKeys in IndexedDB. Returns null if not found. */
   static async restore(baseUrl: string, sessionToken?: string | null): Promise<Vault | null> {
     try {
       const db = await Vault.openDB();
       try {
         const tx = db.transaction(Vault.STORE_NAME, "readonly");
-        const key = await new Promise<CryptoKey | undefined>((resolve, reject) => {
-          const req = tx.objectStore(Vault.STORE_NAME).get(Vault.KEY_ID);
+        const store = tx.objectStore(Vault.STORE_NAME);
+        const encKey = await new Promise<CryptoKey | undefined>((resolve, reject) => {
+          const req = store.get(Vault.ENC_KEY_ID);
           req.onsuccess = () => resolve(req.result as CryptoKey | undefined);
           req.onerror = () => reject(req.error);
         });
-        if (!key) return null;
-        return Vault.fromCryptoKey(key, baseUrl, sessionToken);
+        const hmKey = await new Promise<CryptoKey | undefined>((resolve, reject) => {
+          const req = store.get(Vault.HMAC_KEY_ID);
+          req.onsuccess = () => resolve(req.result as CryptoKey | undefined);
+          req.onerror = () => reject(req.error);
+        });
+        if (!encKey || !hmKey) return null;
+        return Vault.fromCryptoKeys(encKey, hmKey, baseUrl, sessionToken);
       } finally {
         db.close();
       }
@@ -425,7 +443,7 @@ export class Vault {
     }
   }
 
-  /** Clear the persisted CryptoKey from IndexedDB. */
+  /** Clear the persisted CryptoKeys from IndexedDB. */
   static async clear(): Promise<void> {
     try {
       const db = await Vault.openDB();
@@ -455,26 +473,50 @@ export class Vault {
     });
   }
 
-  private async deriveKey(prfOutput: ArrayBuffer): Promise<CryptoKey> {
+  private async deriveKeys(
+    prfOutput: ArrayBuffer,
+  ): Promise<{ encryption: CryptoKey; hmac: CryptoKey }> {
     const keyMaterial = await crypto.subtle.importKey(
-      "raw", prfOutput, "HKDF", false, ["deriveKey"]
+      "raw", prfOutput, "HKDF", false, ["deriveKey"],
     );
-    return crypto.subtle.deriveKey(
-      {
-        name: "HKDF",
-        hash: "SHA-256",
-        salt: new TextEncoder().encode("open-passkey-vault"),
-        info: new TextEncoder().encode("aes-256-gcm"),
-      },
-      keyMaterial,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt", "decrypt"],
-    );
+    const [encryption, hmac] = await Promise.all([
+      crypto.subtle.deriveKey(
+        {
+          name: "HKDF",
+          hash: "SHA-256",
+          salt: new TextEncoder().encode("open-passkey-vault"),
+          info: new TextEncoder().encode("aes-256-gcm"),
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"],
+      ),
+      crypto.subtle.deriveKey(
+        {
+          name: "HKDF",
+          hash: "SHA-256",
+          salt: new TextEncoder().encode("open-passkey-vault"),
+          info: new TextEncoder().encode("vault-key-hmac"),
+        },
+        keyMaterial,
+        { name: "HMAC", hash: "SHA-256", length: 256 },
+        false,
+        ["sign"],
+      ),
+    ]);
+    return { encryption, hmac };
+  }
+
+  /** HMAC the key name so the server only sees an opaque token. */
+  private async hashKey(key: string): Promise<string> {
+    const hk = await this.hmacKey;
+    const sig = await crypto.subtle.sign("HMAC", hk, new TextEncoder().encode(key));
+    return base64urlEncode(sig);
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    const k = await this.encryptionKey;
+    const [k, hashedKey] = await Promise.all([this.encryptionKey, this.hashKey(key)]);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
@@ -486,7 +528,7 @@ export class Vault {
     packed.set(new Uint8Array(ciphertext), 12);
 
     const res = await authFetch(
-      `${this.baseUrl}/vault/${encodeURIComponent(key)}`,
+      `${this.baseUrl}/vault/${hashedKey}`,
       this.sessionToken,
       {
         method: "PUT",
@@ -501,8 +543,9 @@ export class Vault {
   }
 
   async getItem(key: string): Promise<string | null> {
+    const hashedKey = await this.hashKey(key);
     const res = await authFetch(
-      `${this.baseUrl}/vault/${encodeURIComponent(key)}`,
+      `${this.baseUrl}/vault/${hashedKey}`,
       this.sessionToken,
     );
     if (res.status === 404) return null;
@@ -523,17 +566,11 @@ export class Vault {
   }
 
   async removeItem(key: string): Promise<void> {
+    const hashedKey = await this.hashKey(key);
     await authFetch(
-      `${this.baseUrl}/vault/${encodeURIComponent(key)}`,
+      `${this.baseUrl}/vault/${hashedKey}`,
       this.sessionToken,
       { method: "DELETE" },
     );
-  }
-
-  async keys(): Promise<string[]> {
-    const res = await authFetch(`${this.baseUrl}/vault`, this.sessionToken);
-    if (!res.ok) throw new Error("Failed to list vault keys");
-    const { keys } = await res.json();
-    return keys;
   }
 }

@@ -9,9 +9,11 @@ const mockImportKey = vi.fn();
 const mockDeriveKey = vi.fn();
 const mockEncrypt = vi.fn();
 const mockDecrypt = vi.fn();
+const mockSign = vi.fn();
 const mockGetRandomValues = vi.fn();
 
-const fakeCryptoKey = { type: "secret", algorithm: { name: "AES-GCM" } };
+const fakeEncKey = { type: "secret", algorithm: { name: "AES-GCM" } };
+const fakeHmacKey = { type: "secret", algorithm: { name: "HMAC" } };
 
 vi.stubGlobal("crypto", {
   subtle: {
@@ -19,12 +21,17 @@ vi.stubGlobal("crypto", {
     deriveKey: mockDeriveKey,
     encrypt: mockEncrypt,
     decrypt: mockDecrypt,
+    sign: mockSign,
   },
   getRandomValues: mockGetRandomValues,
 });
 
 // Import after mocking
 const { PasskeyClient, Vault, base64urlEncode, base64urlDecode } = await import("../index.js");
+
+// Predictable HMAC output for tests
+const fakeHmacOutput = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]).buffer;
+const expectedHashedKey = base64urlEncode(fakeHmacOutput);
 
 describe("PasskeyClient.vault()", () => {
   let client: InstanceType<typeof PasskeyClient>;
@@ -52,8 +59,13 @@ describe("Vault", () => {
     vi.clearAllMocks();
 
     // Setup crypto mocks
-    mockImportKey.mockResolvedValue(fakeCryptoKey);
-    mockDeriveKey.mockResolvedValue(fakeCryptoKey);
+    mockImportKey.mockResolvedValue(fakeEncKey);
+    mockDeriveKey.mockImplementation((_algo: unknown, _km: unknown, keyType: unknown) => {
+      // Return the right fake key based on what's being derived
+      if ((keyType as { name: string }).name === "HMAC") return Promise.resolve(fakeHmacKey);
+      return Promise.resolve(fakeEncKey);
+    });
+    mockSign.mockResolvedValue(fakeHmacOutput);
     mockGetRandomValues.mockImplementation((arr: Uint8Array) => {
       // Fill with predictable bytes for testing
       for (let i = 0; i < arr.length; i++) arr[i] = i;
@@ -75,7 +87,7 @@ describe("Vault", () => {
       );
     });
 
-    it("derives AES-256-GCM key via HKDF-SHA256", async () => {
+    it("derives AES-256-GCM encryption key via HKDF-SHA256", async () => {
       mockEncrypt.mockResolvedValue(new ArrayBuffer(16));
       mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
@@ -85,25 +97,51 @@ describe("Vault", () => {
         expect.objectContaining({
           name: "HKDF",
           hash: "SHA-256",
+          info: new TextEncoder().encode("aes-256-gcm"),
         }),
-        fakeCryptoKey,
+        fakeEncKey,
         { name: "AES-GCM", length: 256 },
         false,
         ["encrypt", "decrypt"],
       );
     });
+
+    it("derives HMAC-SHA256 key for key blinding via HKDF", async () => {
+      mockEncrypt.mockResolvedValue(new ArrayBuffer(16));
+      mockFetch.mockResolvedValue({ ok: true, status: 204 });
+
+      await vault.setItem("k", "v");
+
+      expect(mockDeriveKey).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "HKDF",
+          hash: "SHA-256",
+          info: new TextEncoder().encode("vault-key-hmac"),
+        }),
+        fakeEncKey,
+        { name: "HMAC", hash: "SHA-256", length: 256 },
+        false,
+        ["sign"],
+      );
+    });
   });
 
   describe("setItem", () => {
-    it("calls PUT /vault/{key} with base64url-encoded encrypted blob", async () => {
+    it("HMACs the key and calls PUT /vault/{hashedKey}", async () => {
       const ciphertextBuf = new Uint8Array([10, 20, 30, 40]).buffer;
       mockEncrypt.mockResolvedValue(ciphertextBuf);
       mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
       await vault.setItem("my-key", "my-value");
 
+      // Key should be HMAC'd, not plaintext
+      expect(mockSign).toHaveBeenCalledWith(
+        "HMAC",
+        fakeHmacKey,
+        new TextEncoder().encode("my-key"),
+      );
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://example.com/passkey/vault/my-key",
+        `https://example.com/passkey/vault/${expectedHashedKey}`,
         expect.objectContaining({
           method: "PUT",
           credentials: "include",
@@ -115,21 +153,19 @@ describe("Vault", () => {
       const call = mockFetch.mock.calls[0];
       const body = JSON.parse(call[1].body);
       expect(body).toHaveProperty("value");
-      // Decode and verify: 12-byte IV + ciphertext
       const decoded = new Uint8Array(base64urlDecode(body.value));
       expect(decoded.length).toBe(12 + 4); // 12 IV + 4 ciphertext
     });
 
-    it("encodes key in URI component", async () => {
+    it("never sends plaintext key names to the server", async () => {
       mockEncrypt.mockResolvedValue(new ArrayBuffer(4));
       mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
-      await vault.setItem("key with spaces", "val");
+      await vault.setItem("secret-api-key", "val");
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://example.com/passkey/vault/key%20with%20spaces",
-        expect.anything(),
-      );
+      const url = mockFetch.mock.calls[0][0] as string;
+      expect(url).not.toContain("secret-api-key");
+      expect(url).toContain(expectedHashedKey);
     });
 
     it("throws on non-ok response", async () => {
@@ -145,7 +181,7 @@ describe("Vault", () => {
   });
 
   describe("getItem", () => {
-    it("calls GET /vault/{key} and decrypts the response", async () => {
+    it("HMACs the key and calls GET /vault/{hashedKey}", async () => {
       // Build a fake packed blob: 12-byte IV + ciphertext
       const iv = new Uint8Array(12);
       const ct = new Uint8Array([99, 100, 101]);
@@ -164,8 +200,13 @@ describe("Vault", () => {
 
       const result = await vault.getItem("my-key");
 
+      expect(mockSign).toHaveBeenCalledWith(
+        "HMAC",
+        fakeHmacKey,
+        new TextEncoder().encode("my-key"),
+      );
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://example.com/passkey/vault/my-key",
+        `https://example.com/passkey/vault/${expectedHashedKey}`,
         { credentials: "include" },
       );
       expect(mockDecrypt).toHaveBeenCalled();
@@ -195,13 +236,18 @@ describe("Vault", () => {
   });
 
   describe("removeItem", () => {
-    it("calls DELETE /vault/{key}", async () => {
+    it("HMACs the key and calls DELETE /vault/{hashedKey}", async () => {
       mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
       await vault.removeItem("my-key");
 
+      expect(mockSign).toHaveBeenCalledWith(
+        "HMAC",
+        fakeHmacKey,
+        new TextEncoder().encode("my-key"),
+      );
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://example.com/passkey/vault/my-key",
+        `https://example.com/passkey/vault/${expectedHashedKey}`,
         {
           method: "DELETE",
           credentials: "include",
@@ -210,31 +256,17 @@ describe("Vault", () => {
     });
   });
 
-  describe("keys", () => {
-    it("calls GET /vault and returns key array", async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({ keys: ["alpha", "bravo", "charlie"] }),
-      });
+  describe("deterministic key hashing", () => {
+    it("same key always produces the same hashed key", async () => {
+      mockEncrypt.mockResolvedValue(new ArrayBuffer(4));
+      mockFetch.mockResolvedValue({ ok: true, status: 204 });
 
-      const result = await vault.keys();
+      await vault.setItem("same-key", "val1");
+      await vault.setItem("same-key", "val2");
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        "https://example.com/passkey/vault",
-        { credentials: "include" },
-      );
-      expect(result).toEqual(["alpha", "bravo", "charlie"]);
-    });
-
-    it("throws on non-ok response", async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ error: "server error" }),
-      });
-
-      await expect(vault.keys()).rejects.toThrow("Failed to list vault keys");
+      const url1 = mockFetch.mock.calls[0][0] as string;
+      const url2 = mockFetch.mock.calls[1][0] as string;
+      expect(url1).toBe(url2);
     });
   });
 });
