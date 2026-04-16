@@ -180,6 +180,12 @@ export class Passkey {
     return resp;
   }
 
+  /**
+   * When userId is provided, the response includes PRF salts (extensions.prf.evalByCredential)
+   * for vault support. When omitted (discoverable flow), PRF salts cannot be included because
+   * the server doesn't know which credential will be selected — PRF output will be undefined
+   * and vault() will be unavailable on the client.
+   */
   async beginAuthentication(req: BeginAuthenticationRequest): Promise<BeginAuthenticationResponse> {
     const challenge = this.generateChallenge();
 

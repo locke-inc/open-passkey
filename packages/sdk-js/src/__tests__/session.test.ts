@@ -86,5 +86,11 @@ describe("PasskeyClient session methods", () => {
       mockFetch.mockResolvedValue({ ok: false, status: 401 });
       await expect(client.logout()).resolves.toBeUndefined();
     });
+
+    it("clears prfKey so vault() throws after logout", async () => {
+      mockFetch.mockResolvedValue({ ok: true, status: 200 });
+      await client.logout();
+      expect(() => client.vault()).toThrow("Vault requires PRF support");
+    });
   });
 });

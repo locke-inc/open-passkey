@@ -214,6 +214,16 @@ export class PasskeyClient {
     return result;
   }
 
+  /**
+   * Authenticate with a passkey.
+   *
+   * @param userId - The user identifier (e.g., email). Required for PRF/vault support.
+   *   When provided, the server looks up the user's credentials and includes their
+   *   per-credential PRF salts in the WebAuthn request options. When omitted, the
+   *   browser uses discoverable credentials (the OS passkey picker) — authentication
+   *   works but PRF output is unavailable because the server cannot include salts
+   *   for an unknown credential. If you need vault access, always pass userId.
+   */
   async authenticate(
     userId?: string,
   ): Promise<AuthenticationResult> {
@@ -331,8 +341,19 @@ export class PasskeyClient {
   async logout(): Promise<void> {
     await authFetch(`${this.baseUrl}/logout`, this.sessionToken, { method: "POST" });
     this.sessionToken = null;
+    this.prfKey = null;
+    await Vault.clear();
   }
 
+  /**
+   * Create a Vault backed by the PRF-derived encryption key from the last authenticate() call.
+   *
+   * Throws if authenticate() was not called with a userId, or if the authenticator
+   * does not support the PRF extension. Use Vault.persistKey() after creation to
+   * store the non-extractable CryptoKey in IndexedDB so the vault survives page
+   * refreshes without re-authentication. Use Vault.restore() on page load to
+   * recover a previously persisted vault.
+   */
   vault(): Vault {
     if (!this.prfKey) {
       throw new Error(
@@ -344,6 +365,10 @@ export class PasskeyClient {
 }
 
 export class Vault {
+  private static readonly DB_NAME = "open-passkey";
+  private static readonly STORE_NAME = "vault-keys";
+  private static readonly KEY_ID = "encryption-key";
+
   private encryptionKey: Promise<CryptoKey>;
   private baseUrl: string;
   private sessionToken: string | null;
@@ -352,6 +377,82 @@ export class Vault {
     this.baseUrl = baseUrl;
     this.sessionToken = sessionToken ?? null;
     this.encryptionKey = this.deriveKey(prfOutput);
+  }
+
+  /** Create a Vault from a previously persisted CryptoKey (e.g., restored from IndexedDB). */
+  static fromCryptoKey(key: CryptoKey, baseUrl: string, sessionToken?: string | null): Vault {
+    const v = Object.create(Vault.prototype) as Vault;
+    v.baseUrl = baseUrl;
+    v.sessionToken = sessionToken ?? null;
+    v.encryptionKey = Promise.resolve(key);
+    return v;
+  }
+
+  /** Persist the derived AES-GCM CryptoKey to IndexedDB. The key remains non-extractable. */
+  async persistKey(): Promise<void> {
+    const key = await this.encryptionKey;
+    const db = await Vault.openDB();
+    try {
+      const tx = db.transaction(Vault.STORE_NAME, "readwrite");
+      tx.objectStore(Vault.STORE_NAME).put(key, Vault.KEY_ID);
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  }
+
+  /** Restore a Vault from a previously persisted CryptoKey in IndexedDB. Returns null if not found. */
+  static async restore(baseUrl: string, sessionToken?: string | null): Promise<Vault | null> {
+    try {
+      const db = await Vault.openDB();
+      try {
+        const tx = db.transaction(Vault.STORE_NAME, "readonly");
+        const key = await new Promise<CryptoKey | undefined>((resolve, reject) => {
+          const req = tx.objectStore(Vault.STORE_NAME).get(Vault.KEY_ID);
+          req.onsuccess = () => resolve(req.result as CryptoKey | undefined);
+          req.onerror = () => reject(req.error);
+        });
+        if (!key) return null;
+        return Vault.fromCryptoKey(key, baseUrl, sessionToken);
+      } finally {
+        db.close();
+      }
+    } catch {
+      return null;
+    }
+  }
+
+  /** Clear the persisted CryptoKey from IndexedDB. */
+  static async clear(): Promise<void> {
+    try {
+      const db = await Vault.openDB();
+      try {
+        const tx = db.transaction(Vault.STORE_NAME, "readwrite");
+        tx.objectStore(Vault.STORE_NAME).clear();
+        await new Promise<void>((resolve, reject) => {
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+      } finally {
+        db.close();
+      }
+    } catch {
+      // Ignore — nothing to clear
+    }
+  }
+
+  private static openDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(Vault.DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore(Vault.STORE_NAME);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
   }
 
   private async deriveKey(prfOutput: ArrayBuffer): Promise<CryptoKey> {

@@ -321,6 +321,11 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 
 // BeginAuthentication generates a challenge and returns PublicKeyCredentialRequestOptions.
 // Expects JSON body: {"userId": "..."} (optional — omit for discoverable credentials).
+//
+// When userId is provided, the response includes PRF salts (extensions.prf.evalByCredential)
+// for vault support. When omitted (discoverable flow), PRF salts cannot be included because
+// the server doesn't know which credential will be selected — PRF output will be undefined
+// and vault() will be unavailable on the client.
 func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID string `json:"userId"`

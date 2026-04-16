@@ -103,6 +103,31 @@ const allKeys = await vault.keys();                // string[]
 | `getItem(key)` | `Promise<string \| null>` | Retrieve and decrypt a value (null if not found) |
 | `removeItem(key)` | `Promise<void>` | Delete a stored item |
 | `keys()` | `Promise<string[]>` | List all stored keys |
+| `persistKey()` | `Promise<void>` | Save encryption key to IndexedDB (survives page reload) |
+| `Vault.restore(baseUrl)` | `Promise<Vault \| null>` | Restore a vault from a previously persisted key |
+| `Vault.clear()` | `Promise<void>` | Remove persisted key from IndexedDB |
+
+#### Server contract
+
+The Vault class expects four endpoints on your server, all requiring session authentication:
+
+| Method | Path | Request Body | Success Response |
+|--------|------|-------------|-----------------|
+| PUT | `{baseUrl}/vault/{key}` | `{ "value": "<base64url>" }` | 204 No Content |
+| GET | `{baseUrl}/vault/{key}` | -- | `{ "value": "<base64url>" }` or 404 |
+| DELETE | `{baseUrl}/vault/{key}` | -- | 204 No Content |
+| GET | `{baseUrl}/vault` | -- | `{ "keys": ["key1", "key2"] }` |
+
+Key constraints: 1-256 printable ASCII characters (0x20-0x7E). Values are opaque ciphertext -- the server should store and return them without interpretation. Return `{"keys": []}` (not `null`) for empty key lists.
+
+[Locke Gateway](https://gateway.locke.id) implements these endpoints out of the box. For self-hosted deployments, implement the four routes with your own storage backend.
+
+#### Security details
+
+- **Encryption**: AES-256-GCM with a random 12-byte IV per `setItem` call. The key is derived via HKDF-SHA-256 from the WebAuthn PRF output and stored as a non-extractable `CryptoKey` — JavaScript can use it for encrypt/decrypt but cannot read the raw key bytes.
+- **Post-quantum**: The entire vault key chain is symmetric (HMAC-SHA-256 PRF output → HKDF → AES-GCM). Grover's algorithm halves effective security to 128 bits, which remains safe. The WebAuthn credential itself (ES256) is not post-quantum, but the vault encryption is.
+- **IV collision risk**: AES-GCM's 96-bit random IV has a birthday bound of ~2^32 encryptions per key before nonce collision becomes probable. We evaluated XChaCha20-Poly1305 (192-bit nonce, ~2^96 bound) but rejected it: Web Crypto doesn't support it, so the key would have to live in a plain `ArrayBuffer` instead of the browser's non-extractable key store — trading XSS key-theft resistance for nonce space that isn't needed. Each `setItem` is an HTTP round-trip; at one write per second, hitting 2^32 takes 136 years. Synthetic (counter-based) IVs were also considered but add persistent state management complexity for no practical benefit at vault-scale write volumes.
+- **Logout**: `PasskeyClient.logout()` clears the session, nulls the PRF key, and calls `Vault.clear()` to wipe the IndexedDB-persisted encryption key.
 
 ## Related Packages
 

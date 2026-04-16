@@ -116,6 +116,32 @@ session: {
 ### Not Applicable to Locke Gateway
 The Locke Gateway (`gateway/`) has its own Redis-backed session system with instant revocation. The open-passkey session feature is for **self-hosted deployments** that don't have their own session infrastructure.
 
+## PRF Extension & Vault
+
+### PRF Flow
+1. **Registration**: Server generates random 32-byte PRF salt, stores it with the credential. Client receives salt in `extensions.prf.eval.first`, authenticator evaluates `HMAC(credentialSecret, salt)`.
+2. **Authentication (with userId)**: Server looks up credential, sends stored salt via `extensions.prf.evalByCredential`. Authenticator evaluates same `HMAC` → deterministic 32-byte output. SDK caches in `PasskeyClient.prfKey`.
+3. **Authentication (discoverable, no userId)**: Server **cannot** include PRF salts — it doesn't know which credential will be selected. PRF output is `undefined`. Vault is unavailable.
+
+### Why userId is required for PRF
+PRF salts must be in the WebAuthn request options **before** `navigator.credentials.get()` is called. The salt is per-credential, so the server must look up the user's credentials to include the right salt. With discoverable auth (no userId), the server skips PRF entirely. The `userHandle` in the authenticator's response reveals the userId, but that's **after** the ceremony — too late.
+
+**There is no workaround.** This is a fundamental WebAuthn constraint: PRF evaluation parameters are inputs to the ceremony, not outputs.
+
+### Vault Encryption
+- PRF output (32 bytes) → HKDF-SHA256 (salt: `"open-passkey-vault"`, info: `"aes-256-gcm"`) → AES-256-GCM key (non-extractable)
+- Each `setItem`: random 12-byte IV + AES-GCM encrypt. Server stores `IV || ciphertext` as opaque bytes
+- Key derivation happens once per `Vault` instance; the `CryptoKey` is reused for all operations
+
+### Vault Persistence (IndexedDB)
+- `vault.persistKey()` stores the derived `CryptoKey` in IndexedDB. The key is non-extractable — JS can use it for encrypt/decrypt but cannot read the raw bytes
+- `Vault.restore(baseUrl)` loads the key from IndexedDB without re-authentication
+- `Vault.clear()` removes the key (call on logout)
+- `Vault.fromCryptoKey(key, baseUrl)` constructs a Vault from a `CryptoKey` directly (used internally by `restore`)
+
+### Key constraint for implementors
+PRF output is bound to a specific credential's hardware secret. Two different credentials for the same user produce different PRF outputs (and thus different vault keys), even with the same salt. Vault items are per-credential, not per-user.
+
 ## Key Architectural Decisions
 
 - **Shared test vectors**: `spec/vectors/*.json` contains protocol-level test cases that every language implementation loads and runs against. This is the cross-language contract.

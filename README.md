@@ -344,11 +344,64 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 - **Attestation:** `none` and `packed` (self-attestation + full x5c certificate chain)
 - **Backup flags:** BE/BS exposed in results, spec conformance enforced (SS6.3.3)
 - **PRF extension:** Salt generation, per-credential evaluation, output passthrough
-- **E2E Encrypted Vault:** `localStorage`-style API (`setItem`/`getItem`) with client-side AES-256-GCM encryption derived from WebAuthn PRF output via HKDF — server only stores ciphertext
+- **E2E Encrypted Vault:** `localStorage`-style API — see [Vault (PRF)](#vault-prf) below
 - **userHandle:** Cross-checked against credential owner in discoverable flow
 - **Sign count:** Rollback detection per SS7.2
 - **Token binding:** `"present"` rejected, `"supported"` allowed
 - **Algorithm negotiation:** ML-DSA-65-ES256 preferred, ML-DSA-65 second, ES256 fallback
+
+## Vault (PRF)
+
+open-passkey includes an end-to-end encrypted key-value store powered by the WebAuthn [PRF extension](https://w3c.github.io/webauthn/#prf-extension). The server only ever sees ciphertext — encryption keys are derived on the client from the authenticator's hardware secret and never leave the browser.
+
+```javascript
+const passkey = new PasskeyClient({ baseUrl: "/passkey" });
+
+// userId is REQUIRED for vault — see "Why userId is required" below
+const result = await passkey.authenticate("alice@example.com");
+
+const vault = passkey.vault();
+await vault.setItem("secret", "hunter2");
+const value = await vault.getItem("secret"); // "hunter2"
+
+// Persist the encryption key so the vault survives page refreshes
+await vault.persistKey(); // stores non-extractable CryptoKey in IndexedDB
+```
+
+On subsequent page loads, restore the vault without re-authenticating:
+
+```javascript
+const vault = await Vault.restore("/passkey");
+if (vault) {
+  const value = await vault.getItem("secret"); // works immediately
+}
+```
+
+### How it works
+
+1. During registration, the server generates a random 32-byte PRF salt and stores it with the credential
+2. During authentication, the server sends the salt back in the WebAuthn request options (`extensions.prf.evalByCredential`)
+3. The authenticator evaluates `HMAC(credentialSecret, salt)` and returns a 32-byte PRF output
+4. The SDK derives an AES-256-GCM key via `HKDF-SHA256(prfOutput, salt="open-passkey-vault", info="aes-256-gcm")`
+5. `setItem` encrypts with a random 12-byte IV; `getItem` decrypts. The server stores opaque ciphertext
+
+### Why userId is required
+
+PRF salts must be included in the WebAuthn request options *before* `navigator.credentials.get()` is called. To include the correct salt, the server must look up the user's credentials — which requires knowing the userId upfront.
+
+When `authenticate()` is called without a userId (discoverable credentials / OS passkey picker), the server cannot include PRF salts because it doesn't know which credential will be selected. The authentication succeeds, but `prf.results.first` is `undefined` and `vault()` will throw.
+
+**Rule of thumb:** if your app uses the vault, always pass userId to `authenticate()`.
+
+### Persistence
+
+The derived CryptoKey is non-extractable — even JavaScript cannot read the raw key bytes. When stored in IndexedDB via `persistKey()`, it can only be used for encrypt/decrypt operations through the Web Crypto API. Call `Vault.clear()` on logout to remove it.
+
+| Method | Description |
+|--------|-------------|
+| `vault.persistKey()` | Store the derived CryptoKey in IndexedDB |
+| `Vault.restore(baseUrl, sessionToken?)` | Load a persisted vault (returns `null` if not found) |
+| `Vault.clear()` | Remove the persisted key (call on logout) |
 
 ## Testing
 
