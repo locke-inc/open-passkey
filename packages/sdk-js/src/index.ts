@@ -178,10 +178,15 @@ export class PasskeyClient {
 
     const response = credential.response as AuthenticatorAttestationResponse;
 
-    // Check PRF support from extension results
+    // Check PRF support and capture PRF output from extension results
     const extensionResults = credential.getClientExtensionResults();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const prfSupported = !!(extensionResults as any)?.prf?.enabled;
+    const prfExt = (extensionResults as any)?.prf;
+    const prfSupported = !!prfExt?.enabled;
+    const prfOutput: ArrayBuffer | null = prfExt?.results?.first ?? null;
+    if (prfOutput) {
+      this.prfKey = prfOutput;
+    }
 
     // Step 4: Encode response back to base64url and POST to server
     const finishRes = await fetch(`${this.baseUrl}/register/finish`, {
