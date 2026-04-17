@@ -122,11 +122,11 @@ jobs:
       - name: Install core-php
         run: cd packages/core-php && composer install --no-interaction
       - name: Test core-php
-        run: cd packages/core-php && vendor/bin/phpunit -v
+        run: cd packages/core-php && vendor/bin/phpunit --display-warnings
       - name: Install server-php
         run: cd packages/server-php && composer install --no-interaction
       - name: Test server-php
-        run: cd packages/server-php && vendor/bin/phpunit -v
+        run: cd packages/server-php && vendor/bin/phpunit --display-warnings
 
   core-java:
     runs-on: ubuntu-latest
