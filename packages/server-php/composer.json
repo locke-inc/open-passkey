@@ -18,7 +18,7 @@
         "open-passkey/core": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^10.0 || ^11.0"
     },
     "autoload": {
         "psr-4": {

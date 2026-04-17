@@ -11,7 +11,7 @@
         "ext-json": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^10.0 || ^11.0"
     },
     "suggest": {
         "ext-ffi": "Required for ML-DSA-65 (post-quantum) signature verification via liboqs"
