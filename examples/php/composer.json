@@ -1,0 +1,20 @@
+{
+    "name": "open-passkey/example-php",
+    "private": true,
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../../packages/core-php"
+        },
+        {
+            "type": "path",
+            "url": "../../packages/server-php"
+        }
+    ],
+    "require": {
+        "open-passkey/core": "*",
+        "open-passkey/server": "*"
+    }
+}

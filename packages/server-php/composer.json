@@ -1,0 +1,33 @@
+{
+    "name": "open-passkey/server",
+    "description": "WebAuthn/FIDO2 server library with passkey handler, stores, and session support",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["passkey", "webauthn", "fido2", "server", "authentication"],
+    "homepage": "https://github.com/locke-inc/open-passkey",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../core-php"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "open-passkey/core": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "OpenPasskey\\Server\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "OpenPasskey\\Server\\Tests\\": "tests/"
+        }
+    }
+}

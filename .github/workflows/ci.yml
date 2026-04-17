@@ -91,6 +91,43 @@ jobs:
       - name: Audit dependencies
         run: pip install pip-audit && pip-audit
 
+  core-php:
+    runs-on: ubuntu-latest
+    env:
+      LIBOQS_PATH: /home/runner/_oqs/lib/liboqs.so
+    strategy:
+      matrix:
+        php-version: ["8.1", "8.3", "8.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: openssl, ffi
+      - name: Cache liboqs
+        id: cache-liboqs
+        uses: actions/cache@v5
+        with:
+          path: ~/_oqs
+          key: liboqs-67b35f20
+      - name: Build and install liboqs
+        if: steps.cache-liboqs.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
+          git clone https://github.com/open-quantum-safe/liboqs.git /tmp/liboqs
+          cd /tmp/liboqs && git checkout 67b35f20815b5d735359ca67050c6f59cc2eb26a
+          cmake -S /tmp/liboqs -B /tmp/liboqs/build -G Ninja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$HOME/_oqs
+          ninja -C /tmp/liboqs/build
+          ninja -C /tmp/liboqs/build install
+      - name: Install core-php
+        run: cd packages/core-php && composer install --no-interaction
+      - name: Test core-php
+        run: cd packages/core-php && vendor/bin/phpunit -v
+      - name: Install server-php
+        run: cd packages/server-php && composer install --no-interaction
+      - name: Test server-php
+        run: cd packages/server-php && vendor/bin/phpunit -v
+
   core-java:
     runs-on: ubuntu-latest
     steps:

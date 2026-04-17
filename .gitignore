@@ -38,6 +38,17 @@ obj/
 # Java
 target/
 
+# PHP
+vendor/
+composer.lock
+.phpunit.cache/
+
+# Laravel
+**/storage/framework/views/
+**/storage/framework/sessions/
+**/storage/framework/cache/
+**/bootstrap/cache/
+
 # Python
 *.egg-info/
 __pycache__/

@@ -1,0 +1,21 @@
+{
+    "name": "open-passkey/wordpress",
+    "description": "WordPress plugin for open-passkey WebAuthn/FIDO2 authentication",
+    "license": "MIT",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=8.1",
+        "open-passkey/server": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "OpenPasskey\\WordPress\\": "includes/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        { "type": "path", "url": "../core-php" },
+        { "type": "path", "url": "../server-php" }
+    ]
+}
