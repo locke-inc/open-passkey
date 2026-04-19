@@ -45,6 +45,7 @@ export class Passkey {
   private readonly credentialStore: PasskeyConfig["credentialStore"];
   private readonly allowMultipleCredentials: boolean;
   private readonly sessionConfig?: SessionConfig;
+  private readonly prfSalt?: Uint8Array;
 
   constructor(config: PasskeyConfig) {
     if (!config.rpId) throw new PasskeyError(500, "rpId is required");
@@ -56,6 +57,9 @@ export class Passkey {
     }
     if (!config.origin.startsWith("https://") && !config.origin.startsWith("http://")) {
       throw new PasskeyError(500, `origin must start with https:// or http:// (got "${config.origin}")`);
+    }
+    if (config.prfSalt && config.prfSalt.length !== 32) {
+      throw new PasskeyError(500, `prfSalt must be exactly 32 bytes (got ${config.prfSalt.length})`);
     }
 
     if (config.session) {
@@ -71,6 +75,7 @@ export class Passkey {
     this.challengeLength = config.challengeLength ?? 32;
     this.challengeTimeout = config.challengeTimeout ?? 300_000;
     this.allowMultipleCredentials = config.allowMultipleCredentials ?? false;
+    this.prfSalt = config.prfSalt;
   }
 
   private generateChallenge(): string {
@@ -92,8 +97,7 @@ export class Passkey {
 
     const challenge = this.generateChallenge();
 
-    const prfSalt = new Uint8Array(32);
-    crypto.getRandomValues(prfSalt);
+    const prfSalt = this.prfSalt ?? crypto.getRandomValues(new Uint8Array(32));
 
     const challengeData = JSON.stringify({
       challenge,
@@ -182,9 +186,10 @@ export class Passkey {
 
   /**
    * When userId is provided, the response includes PRF salts (extensions.prf.evalByCredential)
-   * for vault support. When omitted (discoverable flow), PRF salts cannot be included because
-   * the server doesn't know which credential will be selected — PRF output will be undefined
-   * and vault() will be unavailable on the client.
+   * for vault support. When omitted (discoverable flow) and a global prfSalt is configured,
+   * the response includes prf.eval.first with the static salt — enabling PRF output for any
+   * credential the user selects. When omitted and no prfSalt is set, PRF output will be
+   * undefined and vault() will be unavailable on the client.
    */
   async beginAuthentication(req: BeginAuthenticationRequest): Promise<BeginAuthenticationResponse> {
     const challenge = this.generateChallenge();
@@ -220,6 +225,11 @@ export class Passkey {
       if (hasPRF) {
         options.extensions = { prf: { evalByCredential } };
       }
+    } else if (this.prfSalt) {
+      // Discoverable credential flow with global static PRF salt.
+      // Because the salt is the same for all credentials, we can include it
+      // as prf.eval.first without knowing which credential will be selected.
+      options.extensions = { prf: { eval: { first: base64urlEncode(this.prfSalt) } } };
     }
 
     return options;

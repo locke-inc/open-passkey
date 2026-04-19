@@ -60,6 +60,7 @@ export interface RegistrationResult {
   credentialId: string;
   registered: boolean;
   prfSupported: boolean;
+  prfOutput?: ArrayBuffer;
   sessionToken?: string;
 }
 
@@ -67,6 +68,7 @@ export interface AuthenticationResult {
   userId: string;
   authenticated: boolean;
   prfSupported?: boolean;
+  prfOutput?: ArrayBuffer;
   sessionToken?: string;
 }
 
@@ -216,18 +218,22 @@ export class PasskeyClient {
     if (result.sessionToken) {
       this.sessionToken = result.sessionToken;
     }
+    if (prfOutput) {
+      result.prfOutput = prfOutput;
+    }
     return result;
   }
 
   /**
    * Authenticate with a passkey.
    *
-   * @param userId - The user identifier (e.g., email). Required for PRF/vault support.
-   *   When provided, the server looks up the user's credentials and includes their
-   *   per-credential PRF salts in the WebAuthn request options. When omitted, the
-   *   browser uses discoverable credentials (the OS passkey picker) — authentication
-   *   works but PRF output is unavailable because the server cannot include salts
-   *   for an unknown credential. If you need vault access, always pass userId.
+   * @param userId - The user identifier (e.g., email). When provided, the server looks
+   *   up the user's credentials and includes their per-credential PRF salts in the
+   *   WebAuthn request options (evalByCredential). When omitted, the browser uses
+   *   discoverable credentials (the OS passkey picker). If the server is configured
+   *   with a global static PRF salt, PRF output is still available in discoverable
+   *   mode via prf.eval.first. Without a global salt, PRF output is unavailable when
+   *   userId is omitted.
    */
   async authenticate(
     userId?: string,
@@ -332,6 +338,7 @@ export class PasskeyClient {
     }
     if (prfOutput) {
       this.prfKey = prfOutput;
+      result.prfOutput = prfOutput;
     }
     return result;
   }

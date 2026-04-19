@@ -58,6 +58,20 @@ type Config struct {
 	// registration options (preventing same-authenticator duplicates) but the
 	// ceremony is allowed to proceed — suitable for add-device flows.
 	AllowMultipleCredentials bool
+
+	// PRFSalt is an optional static 32-byte salt used for the WebAuthn PRF extension.
+	// When set, this salt is used for ALL credentials instead of generating random
+	// per-credential salts. This enables PRF output during discoverable credential
+	// (usernameless) authentication, because the server can include the salt in
+	// prf.eval.first without knowing which credential will be selected.
+	//
+	// Security: The PRF output is HMAC-SHA256(credentialSecret, salt). Since each
+	// credential's secret has full 256-bit entropy, a static salt still produces
+	// unique, cryptographically strong output per credential.
+	//
+	// When nil (default), random 32-byte salts are generated per credential and
+	// stored on StoredCredential.PRFSalt (requires userId for authentication PRF).
+	PRFSalt []byte
 }
 
 func (c *Config) applyDefaults() {
@@ -87,6 +101,9 @@ func (c *Config) validate() error {
 	}
 	if !strings.HasPrefix(c.Origin, "https://") && !strings.HasPrefix(c.Origin, "http://") {
 		return fmt.Errorf("%w: Origin must start with https:// or http:// (got %q)", ErrInvalidConfig, c.Origin)
+	}
+	if len(c.PRFSalt) > 0 && len(c.PRFSalt) != 32 {
+		return fmt.Errorf("%w: PRFSalt must be exactly 32 bytes (got %d)", ErrInvalidConfig, len(c.PRFSalt))
 	}
 	return nil
 }
@@ -168,11 +185,16 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate a random 32-byte PRF salt
-	prfSalt := make([]byte, 32)
-	if _, err := rand.Read(prfSalt); err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to generate PRF salt")
-		return
+	// Determine PRF salt: use global static salt if configured, otherwise generate random
+	var prfSalt []byte
+	if len(p.config.PRFSalt) > 0 {
+		prfSalt = p.config.PRFSalt
+	} else {
+		prfSalt = make([]byte, 32)
+		if _, err := rand.Read(prfSalt); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to generate PRF salt")
+			return
+		}
 	}
 
 	// Store challenge + PRF salt together as JSON
@@ -323,9 +345,10 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 // Expects JSON body: {"userId": "..."} (optional — omit for discoverable credentials).
 //
 // When userId is provided, the response includes PRF salts (extensions.prf.evalByCredential)
-// for vault support. When omitted (discoverable flow), PRF salts cannot be included because
-// the server doesn't know which credential will be selected — PRF output will be undefined
-// and vault() will be unavailable on the client.
+// for vault support. When omitted (discoverable flow) and a global PRFSalt is configured,
+// the response includes prf.eval.first with the static salt — enabling PRF output for any
+// credential the user selects. When omitted and no global PRFSalt is set, PRF output will
+// be undefined and vault() will be unavailable on the client.
 func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID string `json:"userId"`
@@ -389,6 +412,17 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 					"evalByCredential": evalByCredential,
 				},
 			}
+		}
+	} else if len(p.config.PRFSalt) > 0 {
+		// Discoverable credential flow with global static PRF salt.
+		// Because the salt is the same for all credentials, we can include it
+		// as prf.eval.first without knowing which credential will be selected.
+		options["extensions"] = map[string]any{
+			"prf": map[string]any{
+				"eval": map[string]string{
+					"first": base64.RawURLEncoding.EncodeToString(p.config.PRFSalt),
+				},
+			},
 		}
 	}
 

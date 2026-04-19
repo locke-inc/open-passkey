@@ -36,6 +36,21 @@ export interface PasskeyConfig {
   challengeTimeout?: number; // milliseconds, default 300000 (5 min)
   allowMultipleCredentials?: boolean; // default false
   session?: SessionConfig;
+
+  /**
+   * Optional static 32-byte PRF salt used for all credentials.
+   * When set, this salt is used instead of generating random per-credential salts.
+   * Enables PRF output during discoverable credential (usernameless) authentication,
+   * because the server can include the salt in prf.eval.first without knowing which
+   * credential will be selected.
+   *
+   * Security: prfOutput = HMAC-SHA256(credentialSecret, salt). Since each credential's
+   * secret has full 256-bit entropy, a static salt still produces unique output per credential.
+   *
+   * When undefined (default), random 32-byte salts are generated per credential and
+   * stored on StoredCredential.prfSalt (requires userId for authentication PRF).
+   */
+  prfSalt?: Uint8Array;
 }
 
 // --- Request types ---
