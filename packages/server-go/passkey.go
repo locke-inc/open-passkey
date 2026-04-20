@@ -508,6 +508,7 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 
 	resp := map[string]any{
 		"userId":        stored.UserID,
+		"credentialId":  base64.RawURLEncoding.EncodeToString(stored.CredentialID),
 		"authenticated": true,
 	}
 	if stored.PRFSupported {

@@ -282,6 +282,7 @@ pub async fn finish_authentication(
 
     let mut resp = json!({
         "userId": stored.user_id,
+        "credentialId": req.credential.id,
         "authenticated": true,
     });
     if stored.prf_supported {

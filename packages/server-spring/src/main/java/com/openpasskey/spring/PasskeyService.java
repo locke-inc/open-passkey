@@ -228,6 +228,7 @@ public class PasskeyService {
 
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("userId", stored.userId());
+        resp.put("credentialId", credId);
         resp.put("authenticated", true);
         if (stored.prfSupported()) resp.put("prfSupported", true);
 

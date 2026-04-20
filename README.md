@@ -1,6 +1,6 @@
 # open-passkey
 
-An open-source library for adding passkey authentication to any app. Built on [WebAuthn](https://www.w3.org/TR/webauthn-3/) with hybrid post-quantum signature verification (ML-DSA-65-ES256). Available for Go, TypeScript, Python, Java, .NET, and Rust.
+An open-source library for adding passkey authentication to any app. Built on [WebAuthn](https://www.w3.org/TR/webauthn-3/) with hybrid post-quantum signature verification (ML-DSA-65-ES256). Available for Go, TypeScript, Python, Java, .NET, Rust, PHP, and Ruby.
 
 > **Status:** Production-ready for ES256 passkeys. Post-quantum algorithms verified but awaiting browser support.
 
@@ -8,11 +8,11 @@ An open-source library for adding passkey authentication to any app. Built on [W
 
 open-passkey implements **ML-DSA-65-ES256** hybrid composite signatures ([draft-ietf-jose-pq-composite-sigs](https://datatracker.ietf.org/doc/draft-ietf-jose-pq-composite-sigs/)), combining a NIST-standardized post-quantum algorithm with classical ECDSA in a single credential. Both signature components must verify independently. If either is broken, the other still protects you.
 
-| Algorithm | COSE alg | Status | Go | TS | Python | Java | .NET | Rust |
-|-----------|----------|--------|----|----|--------|------|------|------|
-| **ML-DSA-65-ES256** (composite) | `-52` | IETF Draft | Yes | Yes | Yes | Yes | Yes | Yes |
-| **ML-DSA-65** (PQ only) | `-49` | NIST FIPS 204 | Yes | Yes | Yes | Yes | Yes | Yes |
-| **ES256** (ECDSA P-256) | `-7` | Generally Available | Yes | Yes | Yes | Yes | Yes | Yes |
+| Algorithm | COSE alg | Status | Go | TS | Python | Java | .NET | Rust | PHP | Ruby |
+|-----------|----------|--------|----|----|--------|------|------|------|-----|------|
+| **ML-DSA-65-ES256** (composite) | `-52` | IETF Draft | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| **ML-DSA-65** (PQ only) | `-49` | NIST FIPS 204 | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| **ES256** (ECDSA P-256) | `-7` | Generally Available | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 
 During registration, the server advertises preferred algorithms in `pubKeyCredParams`. During authentication, the core libraries read the COSE `alg` field from the stored credential and dispatch to the correct verifier automatically. No application code changes needed when PQ support arrives in browsers.
 
@@ -99,6 +99,29 @@ app.include_router(
 )
 ```
 
+### Rails (Ruby)
+
+```ruby
+# Gemfile
+gem "open-passkey-rails"
+
+# config/routes.rb
+Rails.application.routes.draw do
+  mount OpenPasskey::Engine => "/passkey"
+end
+
+# config/initializers/passkey.rb
+OpenPasskey.configure do |c|
+  c.rp_id = "localhost"
+  c.rp_display_name = "My App"
+  c.origin = "http://localhost:3005"
+  c.session = OpenPasskey::SessionConfig.new(
+    secret: ENV["PASSKEY_SESSION_SECRET"],
+    secure: false,
+  )
+end
+```
+
 ### React (with Next.js)
 
 ```tsx
@@ -182,6 +205,8 @@ open-passkey/
 │   ├── core-java/          # Java core protocol
 │   ├── core-dotnet/        # .NET core protocol
 │   ├── core-rust/          # Rust core protocol
+│   ├── core-php/           # PHP core protocol
+│   ├── core-ruby/          # Ruby core protocol
 │   ├── server-ts/          # Shared TS server logic (Passkey class)
 │   ├── server-go/          # Go HTTP bindings (stdlib http.HandlerFunc)
 │   ├── server-express/     # Express.js
@@ -197,6 +222,11 @@ open-passkey/
 │   ├── server-flask/       # Flask (thin wrapper around server-py)
 │   ├── server-fastapi/     # FastAPI (thin wrapper around server-py)
 │   ├── server-django/      # Django (thin wrapper around server-py)
+│   ├── server-php/         # Shared PHP server logic (PasskeyHandler)
+│   ├── server-laravel/     # Laravel (thin wrapper around server-php)
+│   ├── server-symfony/     # Symfony (thin wrapper around server-php)
+│   ├── server-wordpress/   # WordPress plugin
+│   ├── server-rails/       # Rails Engine
 │   ├── server-spring/      # Spring Boot
 │   ├── server-aspnet/      # ASP.NET Core
 │   ├── server-axum/        # Axum (Rust)
@@ -211,7 +241,7 @@ open-passkey/
 └── tools/vecgen/           # Test vector generator
 ```
 
-The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Server packages** (`server-ts`, `server-go`, `server-py`) contain shared business logic; **framework bindings** are thin adapters (~50-80 lines). **Frontend SDKs** all wrap `@open-passkey/sdk` (`PasskeyClient`), which handles the browser WebAuthn API and HTTP calls — framework packages only add framework-specific state management (React hooks, Vue refs, Svelte stores, Angular DI). Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography or client logic.
+The **core protocol** is pure WebAuthn/FIDO2 verification logic with no framework dependencies. **Server packages** (`server-ts`, `server-go`, `server-py`, `server-php`) contain shared business logic; **framework bindings** are thin adapters (~50-80 lines). **Frontend SDKs** all wrap `@open-passkey/sdk` (`PasskeyClient`), which handles the browser WebAuthn API and HTTP calls — framework packages only add framework-specific state management (React hooks, Vue refs, Svelte stores, Angular DI). Adding passkey support to a new framework only requires writing an adapter, not reimplementing cryptography or client logic.
 
 ## Packages
 
@@ -227,6 +257,8 @@ Every core library passes the same 31 shared test vectors. Zero framework depend
 | `core-java` | Java | BouncyCastle | BouncyCastle bcpqc | Jackson CBOR |
 | `core-dotnet` | C# | `System.Security.Cryptography` | BouncyCastle.Cryptography | `PeterO.Cbor` |
 | `core-rust` | Rust | `p256` + `ecdsa` | `fips204` | `ciborium` |
+| `core-php` | PHP | `ext-openssl` | `ext-ffi` (liboqs) | Custom decoder |
+| `core-ruby` | Ruby | `openssl` (stdlib) | `ffi` (liboqs) | Custom decoder |
 
 ### Server Bindings
 
@@ -271,6 +303,27 @@ Single Go module with standard `http.HandlerFunc` handlers. Pluggable `Challenge
 | `server-fastapi` | FastAPI | `app.include_router(create_passkey_router(config))` |
 | `server-django` | Django | `configure(...)` + `include(passkey_urls)` |
 
+#### PHP (4 bindings)
+
+All share `open-passkey/server` — a framework-agnostic `PasskeyHandler` class with challenge/credential store interfaces.
+
+| Package | Framework | Init Pattern |
+|---------|-----------|-------------|
+| `server-php` | Any (shared logic) | `new PasskeyHandler($config)` |
+| `server-laravel` | Laravel | Auto-discovery via `PasskeyServiceProvider` |
+| `server-symfony` | Symfony | `OpenPasskeyBundle` registration |
+| `server-wordpress` | WordPress | Plugin activation (admin settings UI included) |
+
+> **WordPress distribution:** The plugin zip is published on the [GitHub Releases](https://github.com/locke-inc/open-passkey/releases) page for easy installation via WP Admin → Plugins → Upload.
+
+#### Ruby (1 binding)
+
+| Package | Framework | Init Pattern |
+|---------|-----------|-------------|
+| `server-rails` | Rails | `mount OpenPasskey::Engine => "/passkey"` |
+
+Rails Engine with pluggable stores (`MemoryChallengeStore`, `RailsCacheChallengeStore`, `MemoryCredentialStore`). Session support via HMAC-SHA256 stateless cookies.
+
 #### Other Languages
 
 | Package | Framework | Init Pattern |
@@ -303,6 +356,7 @@ Every framework binding has a working example in `examples/`. Each is a complete
 cd examples/express && npm install && npm start
 cd examples/fiber   && go run main.go
 cd examples/fastapi && pip install -r requirements.txt && python app.py
+cd examples/rails   && bundle install && bundle exec rackup -p 3005
 ```
 
 **Frontend examples** (use [Locke Gateway](https://gateway.locke.id) — no server to run):
@@ -338,6 +392,9 @@ cd examples/fastapi && pip install -r requirements.txt && python app.py
 | `examples/spring` | Spring Boot | 8080 | SDK (`<script>`) |
 | `examples/aspnet` | ASP.NET Core | 5000 | SDK (`<script>`) |
 | `examples/axum` | Axum (Rust) | 3000 | SDK (`<script>`) |
+| `examples/php` | PHP (vanilla) | 8000 | SDK (`<script>`) |
+| `examples/laravel` | Laravel | 8001 | SDK (`<script>`) |
+| `examples/rails` | Rails | 3005 | SDK (`<script>`) |
 
 ## Features
 
@@ -405,7 +462,7 @@ The derived CryptoKey is non-extractable — even JavaScript cannot read the raw
 
 ## Testing
 
-31 shared test vectors across 3 ceremony files, verified in Go, TypeScript, Python, Java, .NET, and Rust:
+31 shared test vectors across 3 ceremony files, verified in Go, TypeScript, Python, Java, .NET, Rust, PHP, and Ruby:
 
 ```bash
 ./scripts/test-all.sh
@@ -419,13 +476,15 @@ The derived CryptoKey is non-extractable — even JavaScript cannot read the raw
 | core-java | 31 vectors | Same vectors, Java |
 | core-dotnet | 31 vectors | Same vectors, .NET |
 | core-rust | 31 vectors | Same vectors, Rust |
+| core-php | 31 vectors | Same vectors, PHP |
+| core-ruby | 31 vectors | Same vectors, Ruby |
 | server-go | 31 tests | HTTP handlers, stores, userHandle |
 | authenticator-ts | 7 tests | Round-trip creation/assertion |
 | angular | 19 tests | Components, service (wraps SDK) |
 
 ## Development
 
-**Prerequisites:** Go 1.21+, Node.js 18+. Optional: Python 3.10+, JDK 17+, .NET 10+, Rust 1.70+.
+**Prerequisites:** Go 1.21+, Node.js 18+. Optional: Python 3.10+, JDK 17+, .NET 10+, Rust 1.70+, PHP 8.1+, Ruby 3.1+.
 
 ```bash
 # Generate test vectors
@@ -437,15 +496,14 @@ cd tools/vecgen && go run main.go -out ../../spec/vectors
 
 ## Roadmap
 
-- [x] ES256 + ML-DSA-65 + ML-DSA-65-ES256 composite verification (6 languages)
-- [x] 18 server packages covering 20 frameworks (9 TS, 5 Go, 3 Python, Spring, ASP.NET, Axum)
+- [x] ES256 + ML-DSA-65 + ML-DSA-65-ES256 composite verification (8 languages)
+- [x] 23 server packages covering 25 frameworks (9 TS, 5 Go, 3 Python, 4 PHP, Rails, Spring, ASP.NET, Axum)
 - [x] 6 frontend SDKs (React, Vue, Svelte, Solid, Angular, vanilla JS)
 - [x] Go HTTP server bindings with pluggable stores
 - [x] Packed attestation (self + x5c)
 - [x] Backup flags, userHandle verification, PRF extension
 - [x] 31 shared cross-language test vectors
-- [ ] Ruby + PHP core libraries
-- [ ] Rails + Laravel server bindings
+- [x] Ruby core library + Rails server binding
 - [ ] Additional attestation formats (TPM, Android)
 
 ## Contributing

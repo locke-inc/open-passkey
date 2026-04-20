@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "rails", "~> 8.0"
+gem "puma", "~> 6.0"
+gem "open-passkey-rails", path: "../../packages/server-rails"
+gem "open-passkey-core", path: "../../packages/core-ruby"

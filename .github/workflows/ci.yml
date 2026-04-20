@@ -128,6 +128,42 @@ jobs:
       - name: Test server-php
         run: cd packages/server-php && vendor/bin/phpunit --display-warnings
 
+  core-ruby:
+    runs-on: ubuntu-latest
+    env:
+      LIBOQS_PATH: /home/runner/_oqs/lib/liboqs.so
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: packages/core-ruby
+      - name: Cache liboqs
+        id: cache-liboqs
+        uses: actions/cache@v5
+        with:
+          path: ~/_oqs
+          key: liboqs-67b35f20
+      - name: Build and install liboqs
+        if: steps.cache-liboqs.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build libssl-dev
+          git clone https://github.com/open-quantum-safe/liboqs.git /tmp/liboqs
+          cd /tmp/liboqs && git checkout 67b35f20815b5d735359ca67050c6f59cc2eb26a
+          cmake -S /tmp/liboqs -B /tmp/liboqs/build -G Ninja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$HOME/_oqs
+          ninja -C /tmp/liboqs/build
+          ninja -C /tmp/liboqs/build install
+      - name: Test core-ruby
+        working-directory: packages/core-ruby
+        run: bundle exec rspec
+      - name: Install server-rails
+        working-directory: packages/server-rails
+        run: bundle install
+      - name: Test server-rails
+        working-directory: packages/server-rails
+        run: bundle exec rspec
+
   core-java:
     runs-on: ubuntu-latest
     steps:

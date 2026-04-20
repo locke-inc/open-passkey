@@ -125,6 +125,7 @@ export interface BeginAuthenticationResponse {
 
 export interface FinishAuthenticationResponse {
   userId: string;
+  credentialId: string;
   authenticated: true;
   prfSupported?: boolean;
   sessionToken?: string;

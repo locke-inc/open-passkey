@@ -196,6 +196,7 @@ public class PasskeyService
         var resp = new Dictionary<string, object>
         {
             ["userId"] = stored.UserId,
+            ["credentialId"] = credId,
             ["authenticated"] = true,
         };
         if (stored.PrfSupported) resp["prfSupported"] = true;

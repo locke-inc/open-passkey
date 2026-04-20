@@ -272,6 +272,7 @@ export class Passkey {
 
     const resp: FinishAuthenticationResponse = {
       userId: stored.userId,
+      credentialId: req.credential.id,
       authenticated: true,
     };
     if (stored.prfSupported) {

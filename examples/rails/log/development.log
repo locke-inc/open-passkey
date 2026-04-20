@@ -1,0 +1,1173 @@
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:24:34 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:24:34 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/style.css"):
+  
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (10.4ms)
+Security warning: an embedded <script> tag on another site requested protected JavaScript. If you know what you're doing, go ahead and disable forgery protection on this action to permit cross-origin JavaScript embedding.
+Completed 422 Unprocessable Content in 13ms (GC: 1.6ms)
+
+
+  
+ActionController::InvalidCrossOriginRequest (Security warning: an embedded <script> tag on another site requested protected JavaScript. If you know what you're doing, go ahead and disable forgery protection on this action to permit cross-origin JavaScript embedding.):
+  
+actionpack (8.1.3) lib/action_controller/metal/request_forgery_protection.rb:441:in 'ActionController::RequestForgeryProtection#verify_same_origin_request'
+activesupport (8.1.3) lib/active_support/callbacks.rb:362:in 'block in ActiveSupport::Callbacks::CallTemplate::MethodCall#make_lambda'
+activesupport (8.1.3) lib/active_support/callbacks.rb:208:in 'ActiveSupport::Callbacks::Filters::After#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:564:in 'block in ActiveSupport::Callbacks::CallbackSequence#invoke_after'
+activesupport (8.1.3) lib/active_support/callbacks.rb:564:in 'Array#each'
+activesupport (8.1.3) lib/active_support/callbacks.rb:564:in 'ActiveSupport::Callbacks::CallbackSequence#invoke_after'
+activesupport (8.1.3) lib/active_support/callbacks.rb:111:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionview (8.1.3) lib/action_view/rendering.rb:40:in 'ActionView::Rendering#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started GET "/favicon.ico" for 127.0.0.1 at 2026-04-20 06:24:34 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/favicon.ico"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:24:36 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:24:36 -0400
+Processing by StaticController#passkey_js as */*
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.3ms)
+Security warning: an embedded <script> tag on another site requested protected JavaScript. If you know what you're doing, go ahead and disable forgery protection on this action to permit cross-origin JavaScript embedding.
+Completed 422 Unprocessable Content in 1ms (GC: 0.0ms)
+
+
+  
+ActionController::InvalidCrossOriginRequest (Security warning: an embedded <script> tag on another site requested protected JavaScript. If you know what you're doing, go ahead and disable forgery protection on this action to permit cross-origin JavaScript embedding.):
+  
+actionpack (8.1.3) lib/action_controller/metal/request_forgery_protection.rb:441:in 'ActionController::RequestForgeryProtection#verify_same_origin_request'
+activesupport (8.1.3) lib/active_support/callbacks.rb:362:in 'block in ActiveSupport::Callbacks::CallTemplate::MethodCall#make_lambda'
+activesupport (8.1.3) lib/active_support/callbacks.rb:208:in 'ActiveSupport::Callbacks::Filters::After#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:564:in 'block in ActiveSupport::Callbacks::CallbackSequence#invoke_after'
+activesupport (8.1.3) lib/active_support/callbacks.rb:564:in 'Array#each'
+activesupport (8.1.3) lib/active_support/callbacks.rb:564:in 'ActiveSupport::Callbacks::CallbackSequence#invoke_after'
+activesupport (8.1.3) lib/active_support/callbacks.rb:111:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionview (8.1.3) lib/action_view/rendering.rb:40:in 'ActionView::Rendering#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 18ms (GC: 0.8ms)
+
+
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:24:37 -0400
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:24:37 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:25:11 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:25:11 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:25:11 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Processing by StaticController#style_css as CSS
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/shared/style.css (0.1ms)
+Completed 500 Internal Server Error in 1ms (GC: 0.1ms)
+
+
+  
+ActionController::MissingFile (Cannot read file /Users/connor/Locke/MONOREPO/open-passkey/shared/style.css):
+  
+app/controllers/static_controller.rb:17:in 'StaticController#style_css'
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/shared/passkey.js (0.2ms)
+Completed 500 Internal Server Error in 14ms (GC: 0.8ms)
+
+
+  
+ActionController::MissingFile (Cannot read file /Users/connor/Locke/MONOREPO/open-passkey/shared/passkey.js):
+  
+app/controllers/static_controller.rb:13:in 'StaticController#passkey_js'
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:25:38 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:25:38 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:25:38 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/passkey.js"):
+  
+  
+ActionController::RoutingError (No route matches [GET] "/style.css"):
+  
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:25:40 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:25:40 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:25:40 -0400
+Processing by StaticController#passkey_js as */*
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.3ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.3ms)
+Completed 200 OK in 1ms (GC: 0.2ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:25:40 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 500 Internal Server Error in 0ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:41:in 'OpenPasskey::PasskeyController#session_status'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:25:55 -0400
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:25:55 -0400
+Processing by StaticController#style_css as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:25:57 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:25:57 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:25:57 -0400
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.3ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:25:57 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 500 Internal Server Error in 0ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:41:in 'OpenPasskey::PasskeyController#session_status'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:25:58 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:25:58 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:25:58 -0400
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.3ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:25:58 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 500 Internal Server Error in 2ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:41:in 'OpenPasskey::PasskeyController#session_status'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:26:00 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:26:00 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:26:00 -0400
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:26:00 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 500 Internal Server Error in 0ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:41:in 'OpenPasskey::PasskeyController#session_status'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started POST "/passkey/register/begin" for 127.0.0.1 at 2026-04-20 06:26:06 -0400
+Processing by OpenPasskey::PasskeyController#begin_registration as */*
+  Parameters: {"userId" => "example@example.com", "username" => "example@example.com", "passkey" => {"userId" => "example@example.com", "username" => "example@example.com"}}
+Completed 200 OK in 3ms (Views: 0.7ms | GC: 0.0ms)
+
+
+Started POST "/passkey/register/finish" for 127.0.0.1 at 2026-04-20 06:26:12 -0400
+Processing by OpenPasskey::PasskeyController#finish_registration as */*
+  Parameters: {"userId" => "example@example.com", "prfSupported" => true, "credential" => {"id" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "rawId" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiek91OWFzdGRWV1VJRGRSOEpTS1Y0bFNZZ0I2MDNETXRHOW9sMHBaWmZCTSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "attestationObject" => "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViYSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NdAAAAAPv8MAcVTk7MjAtuAgVX170AFHIh4bk_XqfFUAm70Buzi8xxr2-gpQECAyYgASFYIMDdwFpq7yl_yvyd0kMelndPXi_tLFA1F_Z7W-h7GuY9IlggbrPhgQdth0vvtY25Vt6FrMM5BOGzUuHmT6mrzBqzLZA"}}, "passkey" => {"userId" => "example@example.com", "prfSupported" => true, "credential" => {"id" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "rawId" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiek91OWFzdGRWV1VJRGRSOEpTS1Y0bFNZZ0I2MDNETXRHOW9sMHBaWmZCTSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "attestationObject" => "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViYSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NdAAAAAPv8MAcVTk7MjAtuAgVX170AFHIh4bk_XqfFUAm70Buzi8xxr2-gpQECAyYgASFYIMDdwFpq7yl_yvyd0kMelndPXi_tLFA1F_Z7W-h7GuY9IlggbrPhgQdth0vvtY25Vt6FrMM5BOGzUuHmT6mrzBqzLZA"}}}}
+Completed 500 Internal Server Error in 1ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:74:in 'OpenPasskey::PasskeyController#set_session_cookie'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:17:in 'OpenPasskey::PasskeyController#finish_registration'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:44:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started POST "/passkey/register/begin" for 127.0.0.1 at 2026-04-20 06:26:18 -0400
+Processing by OpenPasskey::PasskeyController#begin_registration as */*
+  Parameters: {"userId" => "test@example.com", "username" => "test@example.com", "passkey" => {"userId" => "test@example.com", "username" => "test@example.com"}}
+Completed 200 OK in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:26:33 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:26:33 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:26:33 -0400
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:26:33 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 500 Internal Server Error in 0ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:41:in 'OpenPasskey::PasskeyController#session_status'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started GET "/favicon.ico" for 127.0.0.1 at 2026-04-20 06:26:33 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/favicon.ico"):
+  
+Started POST "/passkey/login/begin" for 127.0.0.1 at 2026-04-20 06:26:36 -0400
+Processing by OpenPasskey::PasskeyController#begin_authentication as */*
+  Parameters: {"passkey" => {}}
+Completed 200 OK in 1ms (Views: 0.4ms | GC: 0.0ms)
+
+
+Started POST "/passkey/login/finish" for 127.0.0.1 at 2026-04-20 06:26:42 -0400
+Processing by OpenPasskey::PasskeyController#finish_authentication as */*
+  Parameters: {"userId" => "cK9lUxtWmsq291QyfWzlJ21nvkXcuBS-2T4HQSD0Jeg", "credential" => {"id" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "rawId" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiY0s5bFV4dFdtc3EyOTFReWZXemxKMjFudmtYY3VCUy0yVDRIUVNEMEplZyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZSwib3RoZXJfa2V5c19jYW5fYmVfYWRkZWRfaGVyZSI6ImRvIG5vdCBjb21wYXJlIGNsaWVudERhdGFKU09OIGFnYWluc3QgYSB0ZW1wbGF0ZS4gU2VlIGh0dHBzOi8vZ29vLmdsL3lhYlBleCJ9", "authenticatorData" => "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA", "signature" => "MEYCIQDRPMpAagFWS3xF1AgdPBrvWXdizWOmsI-C9QeC70H-pAIhAIKvuv7bf8I_2VLKOiQ-H_1j2Tmohh_2bXl9VAtSbnBS", "userHandle" => "ZXhhbXBsZUBleGFtcGxlLmNvbQ"}}, "passkey" => {"userId" => "cK9lUxtWmsq291QyfWzlJ21nvkXcuBS-2T4HQSD0Jeg", "credential" => {"id" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "rawId" => "ciHhuT9ep8VQCbvQG7OLzHGvb6A", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiY0s5bFV4dFdtc3EyOTFReWZXemxKMjFudmtYY3VCUy0yVDRIUVNEMEplZyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZSwib3RoZXJfa2V5c19jYW5fYmVfYWRkZWRfaGVyZSI6ImRvIG5vdCBjb21wYXJlIGNsaWVudERhdGFKU09OIGFnYWluc3QgYSB0ZW1wbGF0ZS4gU2VlIGh0dHBzOi8vZ29vLmdsL3lhYlBleCJ9", "authenticatorData" => "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA", "signature" => "MEYCIQDRPMpAagFWS3xF1AgdPBrvWXdizWOmsI-C9QeC70H-pAIhAIKvuv7bf8I_2VLKOiQ-H_1j2Tmohh_2bXl9VAtSbnBS", "userHandle" => "ZXhhbXBsZUBleGFtcGxlLmNvbQ"}}}}
+Completed 500 Internal Server Error in 4ms (GC: 0.0ms)
+
+
+  
+NameError (undefined local variable or method 'cookies' for an instance of OpenPasskey::PasskeyController):
+  
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:96:in 'method_missing'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:74:in 'OpenPasskey::PasskeyController#set_session_cookie'
+/Users/connor/Locke/MONOREPO/open-passkey/packages/server-rails/app/controllers/open_passkey/passkey_controller.rb:34:in 'OpenPasskey::PasskeyController#finish_authentication'
+actionpack (8.1.3) lib/action_controller/metal/basic_implicit_render.rb:8:in 'ActionController::BasicImplicitRender#send_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:221:in 'AbstractController::Base#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rendering.rb:199:in 'ActionController::Rendering#process_action'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:267:in 'block in AbstractController::Callbacks#process_action'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
+actionpack (8.1.3) lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
+activesupport (8.1.3) lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
+activesupport (8.1.3) lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
+actionpack (8.1.3) lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
+actionpack (8.1.3) lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
+actionpack (8.1.3) lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
+actionpack (8.1.3) lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
+actionpack (8.1.3) lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Kernel#public_send'
+railties (8.1.3) lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
+actionpack (8.1.3) lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'Array#each'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
+actionpack (8.1.3) lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
+actionpack (8.1.3) lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
+railties (8.1.3) lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/etag.rb:29:in 'Rack::ETag#call'
+rack (3.2.6) lib/rack/conditional_get.rb:44:in 'Rack::ConditionalGet#call'
+rack (3.2.6) lib/rack/head.rb:15:in 'Rack::Head#call'
+actionpack (8.1.3) lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
+rack-session (2.1.2) lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
+activesupport (8.1.3) lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
+actionpack (8.1.3) lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
+railties (8.1.3) lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
+railties (8.1.3) lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
+rack (3.2.6) lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
+rack (3.2.6) lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
+actionpack (8.1.3) lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
+rack (3.2.6) lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
+railties (8.1.3) lib/rails/engine.rb:534:in 'Rails::Engine#call'
+rack (3.2.6) lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
+rack (3.2.6) lib/rack/lint.rb:93:in 'Rack::Lint::Wrapper#response'
+rack (3.2.6) lib/rack/lint.rb:16:in 'Rack::Lint#call'
+rack (3.2.6) lib/rack/show_exceptions.rb:31:in 'Rack::ShowExceptions#call'
+rack (3.2.6) lib/rack/common_logger.rb:43:in 'Rack::CommonLogger#call'
+rack (3.2.6) lib/rack/content_length.rb:20:in 'Rack::ContentLength#call'
+puma (6.6.1) lib/puma/configuration.rb:279:in 'Puma::Configuration::ConfigMiddleware#call'
+puma (6.6.1) lib/puma/request.rb:99:in 'block in Puma::Request#handle_request'
+puma (6.6.1) lib/puma/thread_pool.rb:390:in 'Puma::ThreadPool#with_force_shutdown'
+puma (6.6.1) lib/puma/request.rb:98:in 'Puma::Request#handle_request'
+puma (6.6.1) lib/puma/server.rb:472:in 'Puma::Server#process_client'
+puma (6.6.1) lib/puma/server.rb:254:in 'block in Puma::Server#run'
+puma (6.6.1) lib/puma/thread_pool.rb:167:in 'block in Puma::ThreadPool#spawn_thread'
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:04 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:04 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:04 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/style.css"):
+  
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (7.1ms)
+Completed 200 OK in 7ms (GC: 0.4ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:05 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 401 Unauthorized in 1ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:06 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:06 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:06 -0400
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.3ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:06 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 401 Unauthorized in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:07 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:07 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:07 -0400
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:07 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 401 Unauthorized in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started POST "/passkey/register/begin" for 127.0.0.1 at 2026-04-20 06:28:12 -0400
+Processing by OpenPasskey::PasskeyController#begin_registration as */*
+  Parameters: {"userId" => "example@example.com", "username" => "example@example.com", "passkey" => {"userId" => "example@example.com", "username" => "example@example.com"}}
+Completed 200 OK in 1ms (Views: 0.4ms | GC: 0.0ms)
+
+
+Started POST "/passkey/register/finish" for 127.0.0.1 at 2026-04-20 06:28:17 -0400
+Processing by OpenPasskey::PasskeyController#finish_registration as */*
+  Parameters: {"userId" => "example@example.com", "prfSupported" => true, "credential" => {"id" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "rawId" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiUXJ2YkFWUUhuMFprcC1tcURrVlVEajU4cXlnTkcwR1FrcndIc3MtYms1VSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "attestationObject" => "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViYSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NdAAAAAPv8MAcVTk7MjAtuAgVX170AFF1UCYBqIkgDS89OL2x371k4lVBbpQECAyYgASFYIO9SwthN8Kz7892OL208A259hDZzuXs8Q4YmAR6iDno4Ilgg9KWnF_CJuMGhHYxSR2gW1PTI4Q1kPrBbzVdwt0XCc9o"}}, "passkey" => {"userId" => "example@example.com", "prfSupported" => true, "credential" => {"id" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "rawId" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiUXJ2YkFWUUhuMFprcC1tcURrVlVEajU4cXlnTkcwR1FrcndIc3MtYms1VSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "attestationObject" => "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViYSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NdAAAAAPv8MAcVTk7MjAtuAgVX170AFF1UCYBqIkgDS89OL2x371k4lVBbpQECAyYgASFYIO9SwthN8Kz7892OL208A259hDZzuXs8Q4YmAR6iDno4Ilgg9KWnF_CJuMGhHYxSR2gW1PTI4Q1kPrBbzVdwt0XCc9o"}}}}
+Completed 200 OK in 2ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:17 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 1ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:20 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:20 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:20 -0400
+Processing by StaticController#passkey_js as */*
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.5ms)
+Completed 200 OK in 1ms (GC: 0.0ms)
+
+
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.3ms)
+Completed 200 OK in 1ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:20 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:29 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:29 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:29 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:29 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started POST "/passkey/logout" for 127.0.0.1 at 2026-04-20 06:28:30 -0400
+Processing by OpenPasskey::PasskeyController#logout as */*
+Completed 200 OK in 1ms (Views: 0.2ms | GC: 0.0ms)
+
+
+Started POST "/passkey/login/begin" for 127.0.0.1 at 2026-04-20 06:28:30 -0400
+Processing by OpenPasskey::PasskeyController#begin_authentication as */*
+  Parameters: {"passkey" => {}}
+Completed 200 OK in 0ms (Views: 0.3ms | GC: 0.0ms)
+
+
+Started POST "/passkey/login/finish" for 127.0.0.1 at 2026-04-20 06:28:36 -0400
+Processing by OpenPasskey::PasskeyController#finish_authentication as */*
+  Parameters: {"userId" => "i4yjabrH3thqHhkx7m2ZZKu1kNldvqXZQI_CB9Zs194", "credential" => {"id" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "rawId" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiaTR5amFickgzdGhxSGhreDdtMlpaS3Uxa05sZHZxWFpRSV9DQjlaczE5NCIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "authenticatorData" => "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA", "signature" => "MEUCIQDEKsmH5eJBkbAVTbxYCxL3up1dirnSigBLEzVrO4kP5QIgR3glKgS5VnCetn1wVw888EmlEs6fKmVtoSDkUztJM_4", "userHandle" => "ZXhhbXBsZUBleGFtcGxlLmNvbQ"}}, "passkey" => {"userId" => "i4yjabrH3thqHhkx7m2ZZKu1kNldvqXZQI_CB9Zs194", "credential" => {"id" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "rawId" => "XVQJgGoiSANLz04vbHfvWTiVUFs", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiaTR5amFickgzdGhxSGhreDdtMlpaS3Uxa05sZHZxWFpRSV9DQjlaczE5NCIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "authenticatorData" => "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MdAAAAAA", "signature" => "MEUCIQDEKsmH5eJBkbAVTbxYCxL3up1dirnSigBLEzVrO4kP5QIgR3glKgS5VnCetn1wVw888EmlEs6fKmVtoSDkUztJM_4", "userHandle" => "ZXhhbXBsZUBleGFtcGxlLmNvbQ"}}}}
+Completed 200 OK in 3ms (Views: 0.2ms | GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:36 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:37 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:37 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:37 -0400
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:37 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 1ms (Views: 0.4ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:42 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:42 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:42 -0400
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:42 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:28:49 -0400
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:28:49 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:28:49 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Processing by StaticController#style_css as CSS
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.4ms)
+Completed 200 OK in 1ms (GC: 0.1ms)
+
+
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.2ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:28:49 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 0ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started POST "/passkey/logout" for 127.0.0.1 at 2026-04-20 06:28:54 -0400
+Processing by OpenPasskey::PasskeyController#logout as */*
+Completed 200 OK in 1ms (Views: 0.2ms | GC: 0.8ms)
+
+
+Started POST "/passkey/register/begin" for 127.0.0.1 at 2026-04-20 06:29:01 -0400
+Processing by OpenPasskey::PasskeyController#begin_registration as */*
+  Parameters: {"userId" => "example2@example.com", "username" => "example2@example.com", "passkey" => {"userId" => "example2@example.com", "username" => "example2@example.com"}}
+Completed 200 OK in 0ms (Views: 0.2ms | GC: 0.0ms)
+
+
+Started POST "/passkey/register/finish" for 127.0.0.1 at 2026-04-20 06:29:05 -0400
+Processing by OpenPasskey::PasskeyController#finish_registration as */*
+  Parameters: {"userId" => "example2@example.com", "prfSupported" => true, "credential" => {"id" => "NZtpy6slxY4wxVlLgOU1WoLK3Rg", "rawId" => "NZtpy6slxY4wxVlLgOU1WoLK3Rg", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiTEhwNmhNbW9RSUdhX0oxRVlXcTFtbVZjbHpfOXh4ODIxTC1nY01ScVZiZyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "attestationObject" => "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViYSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NdAAAAAPv8MAcVTk7MjAtuAgVX170AFDWbacurJcWOMMVZS4DlNVqCyt0YpQECAyYgASFYIE1YyZjOYYQeAsNbpALpUC7P8nU0nUm3JwikI1kQRRWPIlgg2alqvrYAqvTpbV2PJUWBueyUMJB5QspUzHcj7M-7hr4"}}, "passkey" => {"userId" => "example2@example.com", "prfSupported" => true, "credential" => {"id" => "NZtpy6slxY4wxVlLgOU1WoLK3Rg", "rawId" => "NZtpy6slxY4wxVlLgOU1WoLK3Rg", "type" => "public-key", "response" => {"clientDataJSON" => "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiTEhwNmhNbW9RSUdhX0oxRVlXcTFtbVZjbHpfOXh4ODIxTC1nY01ScVZiZyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzAwNSIsImNyb3NzT3JpZ2luIjpmYWxzZX0", "attestationObject" => "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViYSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NdAAAAAPv8MAcVTk7MjAtuAgVX170AFDWbacurJcWOMMVZS4DlNVqCyt0YpQECAyYgASFYIE1YyZjOYYQeAsNbpALpUC7P8nU0nUm3JwikI1kQRRWPIlgg2alqvrYAqvTpbV2PJUWBueyUMJB5QspUzHcj7M-7hr4"}}}}
+Completed 200 OK in 1ms (Views: 0.1ms | GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:29:05 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 1ms (Views: 0.1ms | GC: 0.5ms)
+
+
+Started GET "/.well-known/appspecific/com.chrome.devtools.json" for 127.0.0.1 at 2026-04-20 06:29:07 -0400
+  
+ActionController::RoutingError (No route matches [GET] "/.well-known/appspecific/com.chrome.devtools.json"):
+  
+Started GET "/passkey.js" for 127.0.0.1 at 2026-04-20 06:29:07 -0400
+Started GET "/style.css" for 127.0.0.1 at 2026-04-20 06:29:07 -0400
+Processing by StaticController#passkey_js as */*
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/passkey.js (0.2ms)
+Completed 200 OK in 1ms (GC: 0.0ms)
+
+
+Processing by StaticController#style_css as CSS
+Sent file /Users/connor/Locke/MONOREPO/open-passkey/examples/shared/style.css (0.1ms)
+Completed 200 OK in 0ms (GC: 0.0ms)
+
+
+Started GET "/passkey/session" for 127.0.0.1 at 2026-04-20 06:29:07 -0400
+Processing by OpenPasskey::PasskeyController#session_status as */*
+Completed 200 OK in 1ms (Views: 0.1ms | GC: 0.0ms)
+
+

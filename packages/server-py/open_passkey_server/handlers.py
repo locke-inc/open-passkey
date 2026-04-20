@@ -169,7 +169,7 @@ class PasskeyHandler:
         stored.sign_count = result.sign_count
         self.config.credential_store.update(stored)
 
-        resp: dict = {"userId": stored.user_id, "authenticated": True}
+        resp: dict = {"userId": stored.user_id, "credentialId": credential["id"], "authenticated": True}
         if stored.prf_supported:
             resp["prfSupported"] = True
         if self.config.session is not None:
