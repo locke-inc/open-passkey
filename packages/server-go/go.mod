@@ -2,7 +2,7 @@ module github.com/locke-inc/open-passkey/packages/server-go
 
 go 1.25
 
-require github.com/locke-inc/open-passkey/packages/core-go v0.0.1
+require github.com/locke-inc/open-passkey/packages/core-go v0.1.3
 
 require (
 	github.com/cloudflare/circl v1.6.3 // indirect
