@@ -32,6 +32,6 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "cborg": "^4.2.8"
+    "cborg": "^5.1.1"
   }
 }
