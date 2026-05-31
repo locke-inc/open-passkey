@@ -23,6 +23,7 @@ def configure(
     credential_store,
     challenge_length: int = 32,
     challenge_timeout_seconds: float = 300.0,
+    additional_origins: list[str] | None = None,
     session=None,
 ):
     """Must be called before including passkey urls."""
@@ -35,6 +36,7 @@ def configure(
         credential_store=credential_store,
         challenge_length=challenge_length,
         challenge_timeout_seconds=challenge_timeout_seconds,
+        additional_origins=additional_origins,
         session=session,
     )
     _config = config

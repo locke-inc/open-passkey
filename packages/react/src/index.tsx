@@ -32,7 +32,7 @@ export interface PasskeyProviderProps extends PasskeyClientConfig {
 }
 
 export function PasskeyProvider({ children, ...config }: PasskeyProviderProps) {
-  const client = useMemo(() => new PasskeyClient(config), [config.baseUrl, config.provider, config.rpId]);
+  const client = useMemo(() => new PasskeyClient(config), [config.baseUrl, config.provider, config.rpId, config.getToken]);
 
   return (
     <PasskeyContext.Provider value={client}>

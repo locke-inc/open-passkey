@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 
@@ -5,7 +6,7 @@ namespace OpenPasskey.Core;
 
 internal static class ClientData
 {
-    public static byte[] Verify(string clientDataJSONB64, string expectedType, string expectedChallenge, string expectedOrigin)
+    public static byte[] Verify(string clientDataJSONB64, string expectedType, string expectedChallenge, string expectedOrigin, IReadOnlyList<string>? additionalOrigins = null)
     {
         byte[] raw = Base64Url.Decode(clientDataJSONB64);
         string text = Encoding.UTF8.GetString(raw);
@@ -20,7 +21,7 @@ internal static class ClientData
             throw new WebAuthnException("type_mismatch");
         if (challenge != expectedChallenge)
             throw new WebAuthnException("challenge_mismatch");
-        if (origin != expectedOrigin)
+        if (origin != expectedOrigin && (additionalOrigins == null || !additionalOrigins.Contains(origin)))
             throw new WebAuthnException("origin_mismatch");
 
         if (root.TryGetProperty("tokenBinding", out JsonElement tb))

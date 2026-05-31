@@ -34,7 +34,8 @@ public final class WebAuthn {
                 input.getClientDataJSON(),
                 "webauthn.create",
                 input.getExpectedChallenge(),
-                input.getExpectedOrigin()
+                input.getExpectedOrigin(),
+                input.getAdditionalOrigins()
         );
 
         // 2. Decode CBOR attestation object
@@ -140,7 +141,8 @@ public final class WebAuthn {
                 input.getClientDataJSON(),
                 "webauthn.get",
                 input.getExpectedChallenge(),
-                input.getExpectedOrigin()
+                input.getExpectedOrigin(),
+                input.getAdditionalOrigins()
         );
 
         // 2. Decode authenticator data

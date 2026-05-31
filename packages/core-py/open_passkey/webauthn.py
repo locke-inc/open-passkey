@@ -51,6 +51,7 @@ def verify_registration(
     client_data_json: str,
     attestation_object: str,
     require_user_verification: bool = False,
+    additional_origins: list[str] | None = None,
 ) -> RegistrationResult:
     """Verify a WebAuthn registration ceremony.
 
@@ -58,7 +59,8 @@ def verify_registration(
     """
     # Verify client data
     client_data_json_raw = verify_client_data(
-        client_data_json, "webauthn.create", expected_challenge, expected_origin
+        client_data_json, "webauthn.create", expected_challenge, expected_origin,
+        additional_origins,
     )
 
     # Decode CBOR attestation object
@@ -151,6 +153,7 @@ def verify_authentication(
     authenticator_data: str,
     signature: str,
     require_user_verification: bool = False,
+    additional_origins: list[str] | None = None,
 ) -> AuthenticationResult:
     """Verify a WebAuthn authentication ceremony.
 
@@ -158,7 +161,8 @@ def verify_authentication(
     """
     # Verify client data
     client_data_json_raw = verify_client_data(
-        client_data_json, "webauthn.get", expected_challenge, expected_origin
+        client_data_json, "webauthn.get", expected_challenge, expected_origin,
+        additional_origins,
     )
 
     # Decode authenticator data

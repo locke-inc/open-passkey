@@ -39,6 +39,7 @@ pub fn verify_registration(input: RegistrationInput) -> Result<RegistrationResul
         "webauthn.create",
         &input.expected_challenge,
         &input.expected_origin,
+        input.additional_origins.as_ref(),
     )?;
 
     // 2. Decode attestation object (CBOR)
@@ -145,6 +146,7 @@ pub fn verify_authentication(
         "webauthn.get",
         &input.expected_challenge,
         &input.expected_origin,
+        input.additional_origins.as_ref(),
     )?;
 
     // 2. Decode authenticator data

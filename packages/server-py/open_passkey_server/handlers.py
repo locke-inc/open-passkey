@@ -78,6 +78,7 @@ class PasskeyHandler:
                 expected_origin=self.config.origin,
                 client_data_json=credential["response"]["clientDataJSON"],
                 attestation_object=credential["response"]["attestationObject"],
+                additional_origins=self.config.additional_origins,
             )
         except Exception as e:
             logger.warning("registration verification failed: %s", e)
@@ -159,6 +160,7 @@ class PasskeyHandler:
                 client_data_json=credential["response"]["clientDataJSON"],
                 authenticator_data=credential["response"]["authenticatorData"],
                 signature=credential["response"]["signature"],
+                additional_origins=self.config.additional_origins,
             )
         except PasskeyError:
             raise

@@ -28,6 +28,7 @@ export function verifyRegistration(
     "webauthn.create",
     input.expectedChallenge,
     input.expectedOrigin,
+    input.additionalOrigins,
   );
 
   // Decode CBOR attestation object

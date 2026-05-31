@@ -42,14 +42,15 @@ var (
 
 // Config holds the relying party configuration.
 type Config struct {
-	RPID             string
-	RPDisplayName    string
-	Origin           string
-	ChallengeStore   ChallengeStore
-	CredentialStore  CredentialStore
-	ChallengeLength  int            // bytes of randomness; default 32
-	ChallengeTimeout time.Duration  // how long a challenge is valid; default 5 minutes
-	Session          *SessionConfig // optional; enables stateless session cookies
+	RPID              string
+	RPDisplayName     string
+	Origin            string
+	AdditionalOrigins []string // additional accepted origins (e.g. multiple app ports in dev)
+	ChallengeStore    ChallengeStore
+	CredentialStore   CredentialStore
+	ChallengeLength   int            // bytes of randomness; default 32
+	ChallengeTimeout  time.Duration  // how long a challenge is valid; default 5 minutes
+	Session           *SessionConfig // optional; enables stateless session cookies
 
 	// AllowMultipleCredentials controls whether a user can register more than one
 	// passkey. When false (default), BeginRegistration returns 409 Conflict if the
@@ -297,6 +298,7 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		RPID:              p.config.RPID,
 		ExpectedChallenge: stored.Challenge,
 		ExpectedOrigin:    p.config.Origin,
+		AdditionalOrigins: p.config.AdditionalOrigins,
 		ClientDataJSON:    req.Credential.Response.ClientDataJSON,
 		AttestationObject: req.Credential.Response.AttestationObject,
 	})
@@ -487,6 +489,7 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 		RPID:                p.config.RPID,
 		ExpectedChallenge:   challenge,
 		ExpectedOrigin:      p.config.Origin,
+		AdditionalOrigins:   p.config.AdditionalOrigins,
 		StoredPublicKeyCOSE: stored.PublicKeyCOSE,
 		StoredSignCount:     stored.SignCount,
 		ClientDataJSON:      req.Credential.Response.ClientDataJSON,

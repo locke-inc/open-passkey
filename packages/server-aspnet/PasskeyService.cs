@@ -96,6 +96,7 @@ public class PasskeyService
             RpId = _config.RpId,
             ExpectedChallenge = storedChallenge,
             ExpectedOrigin = _config.Origin,
+            AdditionalOrigins = _config.AdditionalOrigins,
             ClientDataJSON = response.GetProperty("clientDataJSON").GetString()!,
             AttestationObject = response.GetProperty("attestationObject").GetString()!,
         });
@@ -183,6 +184,7 @@ public class PasskeyService
             RpId = _config.RpId,
             ExpectedChallenge = challenge,
             ExpectedOrigin = _config.Origin,
+            AdditionalOrigins = _config.AdditionalOrigins,
             StoredPublicKeyCose = stored.PublicKeyCose,
             StoredSignCount = stored.SignCount,
             ClientDataJSON = response.GetProperty("clientDataJSON").GetString()!,

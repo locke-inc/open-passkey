@@ -26,6 +26,7 @@ class PasskeyConfig:
     challenge_length: int = 32
     challenge_timeout_seconds: float = 300.0
     allow_multiple_credentials: bool = False
+    additional_origins: list[str] | None = None
     session: SessionConfig | None = None
 
     def __post_init__(self):

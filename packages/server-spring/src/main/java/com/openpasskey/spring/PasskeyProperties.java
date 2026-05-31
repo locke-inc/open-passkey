@@ -2,6 +2,8 @@ package com.openpasskey.spring;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.List;
+
 /**
  * Configuration properties for open-passkey.
  * Bind via application.yml:
@@ -9,6 +11,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     rp-id: example.com
  *     rp-display-name: Example
  *     origin: https://example.com
+ *     additional-origins:
+ *       - https://app.example.com
  */
 @ConfigurationProperties(prefix = "open-passkey")
 public class PasskeyProperties {
@@ -16,6 +20,7 @@ public class PasskeyProperties {
     private String rpId;
     private String rpDisplayName;
     private String origin;
+    private List<String> additionalOrigins;
     private int challengeLength = 32;
     private long challengeTimeoutSeconds = 300;
     private boolean allowMultipleCredentials = false;
@@ -37,6 +42,9 @@ public class PasskeyProperties {
 
     public String getOrigin() { return origin; }
     public void setOrigin(String origin) { this.origin = origin; }
+
+    public List<String> getAdditionalOrigins() { return additionalOrigins; }
+    public void setAdditionalOrigins(List<String> additionalOrigins) { this.additionalOrigins = additionalOrigins; }
 
     public int getChallengeLength() { return challengeLength; }
     public void setChallengeLength(int challengeLength) { this.challengeLength = challengeLength; }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace OpenPasskey.AspNet;
 
 /// <summary>
@@ -8,6 +10,7 @@ public class PasskeyConfig
     public string RpId { get; set; } = "";
     public string RpDisplayName { get; set; } = "";
     public string Origin { get; set; } = "";
+    public IReadOnlyList<string>? AdditionalOrigins { get; set; }
     public IChallengeStore ChallengeStore { get; set; } = new MemoryChallengeStore();
     public ICredentialStore CredentialStore { get; set; } = new MemoryCredentialStore();
     public int ChallengeLength { get; set; } = 32;

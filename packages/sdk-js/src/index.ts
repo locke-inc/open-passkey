@@ -34,6 +34,16 @@ export interface PasskeyClientConfig {
   provider?: ProviderName;
   /** Relying Party ID sent to hosted providers (e.g., "app.example.com"). Required when using provider. */
   rpId?: string;
+  /**
+   * Optional callback that returns a Bearer token to attach to all SDK requests.
+   * Use this when your passkey endpoints require authentication (e.g., adding a passkey
+   * to an already-authenticated user). Can be synchronous or async.
+   *
+   * Example:
+   *   getToken: () => localStorage.getItem('jwt')
+   *   getToken: async () => (await authService.getToken())
+   */
+  getToken?: () => string | null | undefined | Promise<string | null | undefined>;
 }
 
 interface BeginRegistrationResponse {
@@ -89,6 +99,7 @@ function authFetch(
 export class PasskeyClient {
   private readonly baseUrl: string;
   private readonly rpId?: string;
+  private readonly getToken?: () => string | null | undefined | Promise<string | null | undefined>;
   private prfKey: ArrayBuffer | null = null;
   private sessionToken: string | null = null;
 
@@ -116,6 +127,18 @@ export class PasskeyClient {
         '  new PasskeyClient({ baseUrl: "/passkey" })'
       );
     }
+
+    this.getToken = config.getToken;
+  }
+
+  private async fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {
+    const token = this.getToken ? await this.getToken() : (this.sessionToken || null);
+    if (token) {
+      const headers = new Headers(init?.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      return fetch(url, { ...init, headers });
+    }
+    return fetch(url, { ...init, credentials: "include" });
   }
 
   async register(
@@ -126,11 +149,10 @@ export class PasskeyClient {
     const beginBody: Record<string, string> = { userId, username };
     if (this.rpId) beginBody.rpId = this.rpId;
 
-    const beginRes = await fetch(`${this.baseUrl}/register/begin`, {
+    const beginRes = await this.fetchWithAuth(`${this.baseUrl}/register/begin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(beginBody),
-      credentials: "include",
     });
     if (!beginRes.ok) {
       const err = await beginRes.json();
@@ -191,7 +213,7 @@ export class PasskeyClient {
     }
 
     // Step 4: Encode response back to base64url and POST to server
-    const finishRes = await fetch(`${this.baseUrl}/register/finish`, {
+    const finishRes = await this.fetchWithAuth(`${this.baseUrl}/register/finish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -207,7 +229,6 @@ export class PasskeyClient {
           },
         },
       }),
-      credentials: "include",
     });
     if (!finishRes.ok) {
       const err = await finishRes.json();
@@ -243,11 +264,10 @@ export class PasskeyClient {
     if (userId) beginBody.userId = userId;
     if (this.rpId) beginBody.rpId = this.rpId;
 
-    const beginRes = await fetch(`${this.baseUrl}/login/begin`, {
+    const beginRes = await this.fetchWithAuth(`${this.baseUrl}/login/begin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(beginBody),
-      credentials: "include",
     });
     if (!beginRes.ok) {
       const err = await beginRes.json();
@@ -321,11 +341,10 @@ export class PasskeyClient {
     };
 
     // Step 4: POST result to server
-    const finishRes = await fetch(`${this.baseUrl}/login/finish`, {
+    const finishRes = await this.fetchWithAuth(`${this.baseUrl}/login/finish`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(finishPayload),
-      credentials: "include",
     });
     if (!finishRes.ok) {
       const err = await finishRes.json();
@@ -344,14 +363,14 @@ export class PasskeyClient {
   }
 
   async getSession(): Promise<AuthenticationResult | null> {
-    const res = await authFetch(`${this.baseUrl}/session`, this.sessionToken);
+    const res = await this.fetchWithAuth(`${this.baseUrl}/session`);
     if (res.status === 401) return null;
     if (!res.ok) throw new Error("Failed to get session");
     return res.json();
   }
 
   async logout(): Promise<void> {
-    await authFetch(`${this.baseUrl}/logout`, this.sessionToken, { method: "POST" });
+    await this.fetchWithAuth(`${this.baseUrl}/logout`, { method: "POST" });
     this.sessionToken = null;
     this.prfKey = null;
     await Vault.clear();

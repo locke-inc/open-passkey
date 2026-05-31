@@ -30,6 +30,7 @@ export interface PasskeyConfig {
   rpId: string;
   rpDisplayName: string;
   origin: string;
+  additionalOrigins?: string[];
   challengeStore: ChallengeStore;
   credentialStore: CredentialStore;
   challengeLength?: number; // bytes, default 32

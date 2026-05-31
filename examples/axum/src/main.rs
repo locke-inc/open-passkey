@@ -8,6 +8,7 @@ async fn main() {
         rp_id: "localhost".into(),
         rp_display_name: "Open Passkey Axum Example".into(),
         origin: "http://localhost:3000".into(),
+        additional_origins: None,
         challenge_length: 32,
         challenge_timeout_seconds: 300,
         allow_multiple_credentials: false,

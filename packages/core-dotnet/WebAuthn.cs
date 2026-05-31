@@ -11,7 +11,8 @@ public static class WebAuthn
             input.ClientDataJSON,
             "webauthn.create",
             input.ExpectedChallenge,
-            input.ExpectedOrigin
+            input.ExpectedOrigin,
+            input.AdditionalOrigins
         );
 
         // Decode CBOR attestation object
@@ -106,7 +107,8 @@ public static class WebAuthn
             input.ClientDataJSON,
             "webauthn.get",
             input.ExpectedChallenge,
-            input.ExpectedOrigin
+            input.ExpectedOrigin,
+            input.AdditionalOrigins
         );
 
         byte[] authDataRaw = Base64Url.Decode(input.AuthenticatorData);

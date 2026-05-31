@@ -18,6 +18,7 @@ export function verifyClientData(
   expectedType: string,
   expectedChallenge: string,
   expectedOrigin: string,
+  additionalOrigins?: string[],
 ): Uint8Array {
   const raw = base64urlDecode(clientDataJSONB64);
   const text = new TextDecoder().decode(raw);
@@ -25,7 +26,9 @@ export function verifyClientData(
 
   if (cd.type !== expectedType) throw new TypeMismatchError();
   if (cd.challenge !== expectedChallenge) throw new ChallengeMismatchError();
-  if (cd.origin !== expectedOrigin) throw new OriginMismatchError();
+  if (cd.origin !== expectedOrigin && !additionalOrigins?.includes(cd.origin)) {
+    throw new OriginMismatchError();
+  }
   if (cd.tokenBinding?.status === "present") throw new TokenBindingUnsupportedError();
 
   return raw;

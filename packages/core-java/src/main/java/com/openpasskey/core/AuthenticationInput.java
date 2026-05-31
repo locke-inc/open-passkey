@@ -1,5 +1,7 @@
 package com.openpasskey.core;
 
+import java.util.List;
+
 /**
  * Input parameters for WebAuthn authentication verification.
  * All binary fields are base64url-encoded strings (no padding).
@@ -8,6 +10,7 @@ public class AuthenticationInput {
     private final String rpId;
     private final String expectedChallenge;
     private final String expectedOrigin;
+    private final List<String> additionalOrigins;
     private final String storedPublicKeyCose;
     private final int storedSignCount;
     private final String clientDataJSON;
@@ -18,7 +21,7 @@ public class AuthenticationInput {
     public AuthenticationInput(String rpId, String expectedChallenge, String expectedOrigin,
                                String storedPublicKeyCose, int storedSignCount,
                                String clientDataJSON, String authenticatorData, String signature) {
-        this(rpId, expectedChallenge, expectedOrigin, storedPublicKeyCose, storedSignCount,
+        this(rpId, expectedChallenge, expectedOrigin, null, storedPublicKeyCose, storedSignCount,
              clientDataJSON, authenticatorData, signature, false);
     }
 
@@ -26,9 +29,19 @@ public class AuthenticationInput {
                                String storedPublicKeyCose, int storedSignCount,
                                String clientDataJSON, String authenticatorData, String signature,
                                boolean requireUserVerification) {
+        this(rpId, expectedChallenge, expectedOrigin, null, storedPublicKeyCose, storedSignCount,
+             clientDataJSON, authenticatorData, signature, requireUserVerification);
+    }
+
+    public AuthenticationInput(String rpId, String expectedChallenge, String expectedOrigin,
+                               List<String> additionalOrigins,
+                               String storedPublicKeyCose, int storedSignCount,
+                               String clientDataJSON, String authenticatorData, String signature,
+                               boolean requireUserVerification) {
         this.rpId = rpId;
         this.expectedChallenge = expectedChallenge;
         this.expectedOrigin = expectedOrigin;
+        this.additionalOrigins = additionalOrigins;
         this.storedPublicKeyCose = storedPublicKeyCose;
         this.storedSignCount = storedSignCount;
         this.clientDataJSON = clientDataJSON;
@@ -40,6 +53,7 @@ public class AuthenticationInput {
     public String getRpId() { return rpId; }
     public String getExpectedChallenge() { return expectedChallenge; }
     public String getExpectedOrigin() { return expectedOrigin; }
+    public List<String> getAdditionalOrigins() { return additionalOrigins; }
     public String getStoredPublicKeyCose() { return storedPublicKeyCose; }
     public int getStoredSignCount() { return storedSignCount; }
     public String getClientDataJSON() { return clientDataJSON; }

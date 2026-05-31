@@ -15,6 +15,7 @@ pub fn verify_client_data(
     expected_type: &str,
     expected_challenge: &str,
     expected_origin: &str,
+    additional_origins: Option<&Vec<String>>,
 ) -> Result<ClientData, WebAuthnError> {
     let raw_bytes = base64url::decode(client_data_json_b64)?;
     let json: serde_json::Value = serde_json::from_slice(&raw_bytes)
@@ -45,7 +46,9 @@ pub fn verify_client_data(
         .ok_or_else(|| WebAuthnError::InvalidInput("missing origin in clientDataJSON".into()))?
         .to_string();
 
-    if origin != expected_origin {
+    let origin_valid = origin == expected_origin
+        || additional_origins.map_or(false, |origins| origins.iter().any(|o| o == &origin));
+    if !origin_valid {
         return Err(WebAuthnError::OriginMismatch);
     }
 

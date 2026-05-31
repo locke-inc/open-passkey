@@ -16,6 +16,7 @@ def verify_client_data(
     expected_type: str,
     expected_challenge: str,
     expected_origin: str,
+    additional_origins: list[str] | None = None,
 ) -> bytes:
     """Decode and verify clientDataJSON. Returns the raw bytes."""
     raw = base64url_decode(client_data_json_b64)
@@ -25,7 +26,9 @@ def verify_client_data(
         raise TypeMismatchError()
     if cd.get("challenge") != expected_challenge:
         raise ChallengeMismatchError()
-    if cd.get("origin") != expected_origin:
+
+    allowed_origins = {expected_origin, *(additional_origins or [])}
+    if cd.get("origin") not in allowed_origins:
         raise OriginMismatchError()
 
     token_binding = cd.get("tokenBinding")

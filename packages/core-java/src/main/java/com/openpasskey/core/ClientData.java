@@ -3,6 +3,8 @@ package com.openpasskey.core;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.List;
+
 /**
  * Client data JSON verification.
  */
@@ -16,6 +18,17 @@ public final class ClientData {
      */
     public static byte[] verify(String clientDataJSONB64, String expectedType,
                                 String expectedChallenge, String expectedOrigin)
+            throws WebAuthnException {
+        return verify(clientDataJSONB64, expectedType, expectedChallenge, expectedOrigin, null);
+    }
+
+    /**
+     * Verifies the clientDataJSON and returns the raw decoded bytes.
+     * Supports additional origins for multi-origin validation.
+     */
+    public static byte[] verify(String clientDataJSONB64, String expectedType,
+                                String expectedChallenge, String expectedOrigin,
+                                List<String> additionalOrigins)
             throws WebAuthnException {
         byte[] raw = Base64Url.decode(clientDataJSONB64);
         JsonNode json;
@@ -41,7 +54,8 @@ public final class ClientData {
 
         // Verify origin
         String origin = json.has("origin") ? json.get("origin").asText() : null;
-        if (!expectedOrigin.equals(origin)) {
+        if (!expectedOrigin.equals(origin)
+                && (additionalOrigins == null || !additionalOrigins.contains(origin))) {
             throw new WebAuthnException("origin_mismatch",
                     "Expected origin '" + expectedOrigin + "' but got '" + origin + "'");
         }

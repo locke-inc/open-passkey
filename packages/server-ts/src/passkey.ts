@@ -44,6 +44,7 @@ export class Passkey {
   private readonly challengeStore: PasskeyConfig["challengeStore"];
   private readonly credentialStore: PasskeyConfig["credentialStore"];
   private readonly allowMultipleCredentials: boolean;
+  private readonly additionalOrigins?: string[];
   private readonly sessionConfig?: SessionConfig;
   private readonly prfSalt?: Uint8Array;
 
@@ -70,6 +71,7 @@ export class Passkey {
     this.rpId = config.rpId;
     this.rpDisplayName = config.rpDisplayName;
     this.origin = config.origin;
+    this.additionalOrigins = config.additionalOrigins;
     this.challengeStore = config.challengeStore;
     this.credentialStore = config.credentialStore;
     this.challengeLength = config.challengeLength ?? 32;
@@ -153,6 +155,7 @@ export class Passkey {
       rpId: this.rpId,
       expectedChallenge: stored.challenge,
       expectedOrigin: this.origin,
+      additionalOrigins: this.additionalOrigins,
       clientDataJSON: req.credential.response.clientDataJSON,
       attestationObject: req.credential.response.attestationObject,
     });
@@ -260,6 +263,7 @@ export class Passkey {
       rpId: this.rpId,
       expectedChallenge: challenge,
       expectedOrigin: this.origin,
+      additionalOrigins: this.additionalOrigins,
       storedPublicKeyCose: stored.publicKeyCose,
       storedSignCount: stored.signCount,
       clientDataJSON: req.credential.response.clientDataJSON,

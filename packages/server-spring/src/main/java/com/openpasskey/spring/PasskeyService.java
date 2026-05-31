@@ -128,8 +128,10 @@ public class PasskeyService {
             props.getRpId(),
             storedChallenge,
             props.getOrigin(),
+            props.getAdditionalOrigins(),
             response.get("clientDataJSON"),
-            response.get("attestationObject")
+            response.get("attestationObject"),
+            false
         ));
 
         boolean prfEnabled = prfSupported != null && prfSupported;
@@ -217,11 +219,13 @@ public class PasskeyService {
             props.getRpId(),
             challenge,
             props.getOrigin(),
+            props.getAdditionalOrigins(),
             b64url(stored.publicKeyCose()),
             (int) stored.signCount(),
             response.get("clientDataJSON"),
             response.get("authenticatorData"),
-            response.get("signature")
+            response.get("signature"),
+            false
         ));
 
         credentialStore.update(stored.withSignCount(result.getSignCount()));

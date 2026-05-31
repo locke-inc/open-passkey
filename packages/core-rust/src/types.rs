@@ -59,6 +59,7 @@ pub struct RegistrationInput {
     pub client_data_json: String,
     pub expected_challenge: String,
     pub expected_origin: String,
+    pub additional_origins: Option<Vec<String>>,
     pub rp_id: String,
     pub require_user_verification: bool,
 }
@@ -81,6 +82,7 @@ pub struct AuthenticationInput {
     pub signature: String,
     pub expected_challenge: String,
     pub expected_origin: String,
+    pub additional_origins: Option<Vec<String>>,
     pub rp_id: String,
     pub stored_public_key_cose: String,
     pub stored_sign_count: u32,

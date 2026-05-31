@@ -203,6 +203,7 @@ export function verifyAuthentication(
     "webauthn.get",
     input.expectedChallenge,
     input.expectedOrigin,
+    input.additionalOrigins,
   );
 
   const authDataRaw = base64urlDecode(input.authenticatorData);

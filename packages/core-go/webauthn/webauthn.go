@@ -73,9 +73,10 @@ type RegistrationInput struct {
 	RPID                    string
 	ExpectedChallenge       string // base64url-encoded
 	ExpectedOrigin          string
-	ClientDataJSON          string // base64url-encoded
-	AttestationObject       string // base64url-encoded
-	RequireUserVerification bool   // If true, UV flag (bit 2) must be set. Default false.
+	AdditionalOrigins       []string // additional accepted origins (e.g. multiple ports in dev)
+	ClientDataJSON          string   // base64url-encoded
+	AttestationObject       string   // base64url-encoded
+	RequireUserVerification bool     // If true, UV flag (bit 2) must be set. Default false.
 }
 
 type RegistrationResult struct {
@@ -94,6 +95,7 @@ type AuthenticationInput struct {
 	RPID                    string
 	ExpectedChallenge       string // base64url-encoded
 	ExpectedOrigin          string
+	AdditionalOrigins       []string // additional accepted origins (e.g. multiple ports in dev)
 	StoredPublicKeyCOSE     []byte
 	StoredSignCount         uint32
 	ClientDataJSON          string // base64url-encoded
@@ -122,7 +124,7 @@ type clientData struct {
 	TokenBinding *tokenBindingData `json:"tokenBinding,omitempty"`
 }
 
-func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expectedOrigin string) ([]byte, error) {
+func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expectedOrigin string, additionalOrigins []string) ([]byte, error) {
 	raw, err := b64Decode(clientDataJSONB64)
 	if err != nil {
 		return nil, fmt.Errorf("decoding clientDataJSON: %w", err)
@@ -139,7 +141,7 @@ func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expect
 	if cd.Challenge != expectedChallenge {
 		return nil, ErrChallengeMismatch
 	}
-	if cd.Origin != expectedOrigin {
+	if !originMatches(cd.Origin, expectedOrigin, additionalOrigins) {
 		return nil, ErrOriginMismatch
 	}
 	if cd.TokenBinding != nil && cd.TokenBinding.Status == "present" {
@@ -147,6 +149,18 @@ func verifyClientData(clientDataJSONB64, expectedType, expectedChallenge, expect
 	}
 
 	return raw, nil
+}
+
+func originMatches(actual, primary string, additional []string) bool {
+	if actual == primary {
+		return true
+	}
+	for _, o := range additional {
+		if actual == o {
+			return true
+		}
+	}
+	return false
 }
 
 // --- Authenticator data parsing ---
@@ -541,7 +555,7 @@ func verifySignature(coseKeyData, authData, clientDataJSON, signatureBytes []byt
 // --- Public API ---
 
 func VerifyRegistration(input RegistrationInput) (*RegistrationResult, error) {
-	clientDataJSONRaw, err := verifyClientData(input.ClientDataJSON, "webauthn.create", input.ExpectedChallenge, input.ExpectedOrigin)
+	clientDataJSONRaw, err := verifyClientData(input.ClientDataJSON, "webauthn.create", input.ExpectedChallenge, input.ExpectedOrigin, input.AdditionalOrigins)
 	if err != nil {
 		return nil, err
 	}
@@ -596,7 +610,7 @@ func VerifyRegistration(input RegistrationInput) (*RegistrationResult, error) {
 }
 
 func VerifyAuthentication(input AuthenticationInput) (*AuthenticationResult, error) {
-	clientDataJSONRaw, err := verifyClientData(input.ClientDataJSON, "webauthn.get", input.ExpectedChallenge, input.ExpectedOrigin)
+	clientDataJSONRaw, err := verifyClientData(input.ClientDataJSON, "webauthn.get", input.ExpectedChallenge, input.ExpectedOrigin, input.AdditionalOrigins)
 	if err != nil {
 		return nil, err
 	}

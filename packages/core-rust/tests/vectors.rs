@@ -52,6 +52,7 @@ fn test_registration_vectors() {
             client_data_json: response["clientDataJSON"].as_str().unwrap().to_string(),
             expected_challenge: input["expectedChallenge"].as_str().unwrap().to_string(),
             expected_origin: input["expectedOrigin"].as_str().unwrap().to_string(),
+            additional_origins: None,
             rp_id: input["rpId"].as_str().unwrap().to_string(),
             require_user_verification: false,
         };
@@ -147,6 +148,7 @@ fn run_authentication_vector(v: &Vector) {
         signature: response["signature"].as_str().unwrap().to_string(),
         expected_challenge: input["expectedChallenge"].as_str().unwrap().to_string(),
         expected_origin: input["expectedOrigin"].as_str().unwrap().to_string(),
+        additional_origins: None,
         rp_id: input["rpId"].as_str().unwrap().to_string(),
         stored_public_key_cose: input["storedPublicKeyCose"].as_str().unwrap().to_string(),
         stored_sign_count: input["storedSignCount"].as_u64().unwrap() as u32,
