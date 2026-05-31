@@ -1,6 +1,6 @@
 [package]
 name = "open-passkey-axum"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Axum handlers for open-passkey WebAuthn/FIDO2 authentication"
 license = "MIT"

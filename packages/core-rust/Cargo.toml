@@ -1,6 +1,6 @@
 [package]
 name = "open-passkey-core"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "WebAuthn/FIDO2 core protocol verification library with post-quantum support"
 license = "MIT"
