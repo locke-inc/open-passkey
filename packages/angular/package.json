@@ -1,6 +1,6 @@
 {
   "name": "@open-passkey/angular",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Angular components for passkey (WebAuthn/FIDO2) authentication",
   "license": "MIT",
   "scripts": {
@@ -8,11 +8,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@open-passkey/sdk": "file:../sdk-js"
+    "@open-passkey/sdk": "^0.1.4"
   },
   "peerDependencies": {
-    "@angular/common": ">=19.0.0",
-    "@angular/core": ">=19.0.0",
+    "@angular/common": ">=18.0.0",
+    "@angular/core": ">=18.0.0",
     "rxjs": "^7.0.0"
   },
   "devDependencies": {

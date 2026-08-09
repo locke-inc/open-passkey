@@ -14,6 +14,6 @@ export default {
       },
     ],
   },
-  transformIgnorePatterns: ["node_modules/(?!.*\\.mjs$)"],
+  transformIgnorePatterns: ["node_modules/(?!@open-passkey/sdk/|.*\\.mjs$)"],
   moduleFileExtensions: ["ts", "js", "html"],
 };

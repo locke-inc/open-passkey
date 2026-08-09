@@ -102,6 +102,12 @@ type AuthenticationInput struct {
 	AuthenticatorData       string // base64url-encoded
 	Signature               string // base64url-encoded
 	RequireUserVerification bool   // If true, UV flag (bit 2) must be set. Default false.
+
+	// TODO: Add configurable SignCountPolicy (strict/relaxed/disabled).
+	// Currently strict (line ~655): rejects if new <= stored. Synced passkeys (iCloud Keychain,
+	// Google Password Manager) may lag sign count across devices temporarily.
+	// Relaxed mode (accept >=) is needed for launch; revert to strict after confirming
+	// iOS and Android reliably sync sign counts across devices.
 }
 
 type AuthenticationResult struct {
