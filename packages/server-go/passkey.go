@@ -20,6 +20,7 @@
 package passkey
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -48,9 +49,10 @@ type Config struct {
 	AdditionalOrigins []string // additional accepted origins (e.g. multiple app ports in dev)
 	ChallengeStore    ChallengeStore
 	CredentialStore   CredentialStore
-	ChallengeLength   int            // bytes of randomness; default 32
-	ChallengeTimeout  time.Duration  // how long a challenge is valid; default 5 minutes
-	Session           *SessionConfig // optional; enables stateless session cookies
+	ChallengeLength   int           // bytes of randomness; default 32
+	ChallengeTimeout  time.Duration // how long a challenge is valid; default 5 minutes
+	OnAuthenticated   AuthenticationSuccessHandler
+	OnRegistered      RegistrationSuccessHandler
 
 	// AllowMultipleCredentials controls whether a user can register more than one
 	// passkey. When false (default), BeginRegistration returns 409 Conflict if the
@@ -120,13 +122,43 @@ func New(config Config) (*Passkey, error) {
 	if err := config.validate(); err != nil {
 		return nil, err
 	}
-	if config.Session != nil {
-		config.Session.applyDefaults()
-		if err := config.Session.validate(); err != nil {
-			return nil, err
-		}
-	}
 	return &Passkey{config: config}, nil
+}
+
+type AuthenticatedPrincipal struct {
+	ID string `json:"id"`
+}
+
+type AuthenticationResult struct {
+	Principal    AuthenticatedPrincipal `json:"principal"`
+	CredentialID string                 `json:"credentialId"`
+	PRFSupported bool                   `json:"prfSupported,omitempty"`
+}
+
+type RegistrationResult struct {
+	Principal    AuthenticatedPrincipal `json:"principal"`
+	CredentialID string                 `json:"credentialId"`
+	PRFSupported bool                   `json:"prfSupported"`
+}
+
+type AuthenticationSuccessHandler interface {
+	OnAuthenticated(context.Context, AuthenticationResult) error
+}
+
+type RegistrationSuccessHandler interface {
+	OnRegistered(context.Context, RegistrationResult) error
+}
+
+type AuthenticationSuccessFunc func(context.Context, AuthenticationResult) error
+
+func (f AuthenticationSuccessFunc) OnAuthenticated(ctx context.Context, result AuthenticationResult) error {
+	return f(ctx, result)
+}
+
+type RegistrationSuccessFunc func(context.Context, RegistrationResult) error
+
+func (f RegistrationSuccessFunc) OnRegistered(ctx context.Context, result RegistrationResult) error {
+	return f(ctx, result)
 }
 
 // generateChallenge creates a cryptographically random challenge, base64url-encoded.
@@ -330,10 +362,12 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set session cookie if session is configured (auto-login after registration)
-	if p.config.Session != nil {
-		token := createSessionToken(req.UserID, p.config.Session)
-		w.Header().Set("Set-Cookie", buildSetCookieHeader(token, p.config.Session))
+	registrationResult := RegistrationResult{Principal: AuthenticatedPrincipal{ID: req.UserID}, CredentialID: base64.RawURLEncoding.EncodeToString(result.CredentialID), PRFSupported: prfEnabled}
+	if p.config.OnRegistered != nil {
+		if err := p.config.OnRegistered.OnRegistered(r.Context(), registrationResult); err != nil {
+			writeError(w, http.StatusInternalServerError, "registration success handler failed")
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -518,52 +552,15 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 		resp["prfSupported"] = true
 	}
 
-	// Set session cookie if session is configured
-	if p.config.Session != nil {
-		token := createSessionToken(stored.UserID, p.config.Session)
-		w.Header().Set("Set-Cookie", buildSetCookieHeader(token, p.config.Session))
+	authenticationResult := AuthenticationResult{Principal: AuthenticatedPrincipal{ID: stored.UserID}, CredentialID: base64.RawURLEncoding.EncodeToString(stored.CredentialID), PRFSupported: stored.PRFSupported}
+	if p.config.OnAuthenticated != nil {
+		if err := p.config.OnAuthenticated.OnAuthenticated(r.Context(), authenticationResult); err != nil {
+			writeError(w, http.StatusInternalServerError, "authentication success handler failed")
+			return
+		}
 	}
 
 	writeJSON(w, http.StatusOK, resp)
-}
-
-// GetSession validates a session cookie and returns the authenticated user.
-// Returns 200 with {userId, authenticated: true} or 401 on failure.
-func (p *Passkey) GetSession(w http.ResponseWriter, r *http.Request) {
-	if p.config.Session == nil {
-		writeError(w, http.StatusNotFound, "session not enabled")
-		return
-	}
-
-	cookieHeader := r.Header.Get("Cookie")
-	token := parseCookieToken(cookieHeader, p.config.Session)
-	if token == "" {
-		writeError(w, http.StatusUnauthorized, "no session")
-		return
-	}
-
-	data, err := validateSessionToken(token, p.config.Session)
-	if err != nil {
-		msg := "invalid session"
-		if errors.Is(err, ErrTokenExpired) {
-			msg = "session expired"
-		}
-		writeError(w, http.StatusUnauthorized, msg)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, map[string]any{
-		"userId":        data.UserID,
-		"authenticated": true,
-	})
-}
-
-// Logout clears the session cookie.
-func (p *Passkey) Logout(w http.ResponseWriter, r *http.Request) {
-	if p.config.Session != nil {
-		w.Header().Set("Set-Cookie", buildClearCookieHeader(p.config.Session))
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
 // Handler returns an http.Handler with all passkey routes registered.
@@ -574,10 +571,6 @@ func (p *Passkey) Handler() http.Handler {
 	mux.HandleFunc("POST /register/finish", p.FinishRegistration)
 	mux.HandleFunc("POST /login/begin", p.BeginAuthentication)
 	mux.HandleFunc("POST /login/finish", p.FinishAuthentication)
-	if p.config.Session != nil {
-		mux.HandleFunc("GET /session", p.GetSession)
-		mux.HandleFunc("POST /logout", p.Logout)
-	}
 	return mux
 }
 

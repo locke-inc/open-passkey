@@ -73,13 +73,6 @@ export class MyComponent {
     const result = await this.passkey.authenticate();
   }
 
-  async checkSession() {
-    const session = await this.passkey.getSession();
-  }
-
-  async logout() {
-    await this.passkey.logout();
-  }
 }
 ```
 
@@ -88,7 +81,7 @@ export class MyComponent {
 | Export | Type | Description |
 |--------|------|-------------|
 | `providePasskey(config)` | Provider | App-level configuration |
-| `PasskeyService` | Injectable | Programmatic passkey operations + session |
+| `PasskeyService` | Injectable | Programmatic passkey registration and authentication |
 | `PasskeyRegisterComponent` | Component | Headless registration UI |
 | `PasskeyLoginComponent` | Component | Headless login UI |
 

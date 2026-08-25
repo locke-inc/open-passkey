@@ -1,31 +1,23 @@
 <script>
   import { createPasskeyClient } from "@open-passkey/svelte";
 
-  const { registerStore, loginStore, sessionStore } = createPasskeyClient({ baseUrl: "/api/passkey" });
+  const { registerStore, loginStore } = createPasskeyClient({ baseUrl: "/api/passkey" });
 
   let email = $state("");
   let message = $state("");
   let messageType = $state("success");
 
-  // Check session on mount
-  sessionStore.checkSession();
-
   async function doRegister() {
     message = "";
     if (!email) { message = "Please enter an email"; messageType = "error"; return; }
     await registerStore.register(email, email);
-    await sessionStore.checkSession();
+    message = "Authentication completed; the host application now establishes any session.";
   }
 
   async function doLogin() {
     message = "";
     await loginStore.authenticate(email || undefined);
-    await sessionStore.checkSession();
-  }
-
-  async function doLogout() {
-    await sessionStore.logout();
-    message = "";
+    message = "Authentication completed; the host application now establishes any session.";
   }
 
   $effect(() => {
@@ -54,15 +46,6 @@
     <h1>open-passkey</h1>
     <p class="subtitle">SvelteKit Example</p>
 
-    {#if $sessionStore.loading}
-      <div class="loading">Loading...</div>
-    {:else if $sessionStore.session}
-      <div class="signed-in">
-        <div class="signed-in-badge">Authenticated</div>
-        <div class="signed-in-email">{$sessionStore.session.userId}</div>
-        <button class="btn-secondary" onclick={doLogout}>Sign Out</button>
-      </div>
-    {:else}
       <div class="field">
         <label for="email">Email</label>
         <input id="email" type="email" placeholder="you@example.com" bind:value={email} />
@@ -79,7 +62,6 @@
       {#if message}
         <div class="status {messageType}">{message}</div>
       {/if}
-    {/if}
   </div>
 </div>
 

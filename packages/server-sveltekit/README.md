@@ -51,22 +51,6 @@ import { passkey } from "$lib/server/passkey";
 export const POST = passkey.loginFinish;
 ```
 
-### With sessions
-
-```typescript
-export const passkey = createPasskeyHandlers({
-  rpId: "example.com",
-  rpName: "My App",
-  origin: "https://example.com",
-  challengeStore: new MemoryChallengeStore(),
-  credentialStore: new MemoryCredentialStore(),
-  session: {
-    secret: "your-32+-character-hmac-secret-here",
-    duration: 86400000,
-  },
-});
-```
-
 ## Related Packages
 
 | Package | Description |

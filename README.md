@@ -4,6 +4,8 @@ An open-source library for adding passkey authentication to any app. Built on [W
 
 > **Status:** Production-ready for ES256 passkeys. Post-quantum algorithms verified but awaiting browser support.
 
+open-passkey authenticates principals; it deliberately does not create, validate, rotate, or revoke application sessions. Compose its successful authentication result with your application session layer or the independent [open-bind](../open-bind) library. See [MIGRATION.md](MIGRATION.md) for the breaking session-removal migration.
+
 ## Hybrid Post-Quantum Support
 
 open-passkey implements **ML-DSA-65-ES256** hybrid composite signatures ([draft-ietf-jose-pq-composite-sigs](https://datatracker.ietf.org/doc/draft-ietf-jose-pq-composite-sigs/)), combining a NIST-standardized post-quantum algorithm with classical ECDSA in a single credential. Both signature components must verify independently. If either is broken, the other still protects you.
@@ -115,10 +117,6 @@ OpenPasskey.configure do |c|
   c.rp_id = "localhost"
   c.rp_display_name = "My App"
   c.origin = "http://localhost:3005"
-  c.session = OpenPasskey::SessionConfig.new(
-    secret: ENV["PASSKEY_SESSION_SECRET"],
-    secure: false,
-  )
 end
 ```
 
@@ -457,7 +455,7 @@ The derived CryptoKey is non-extractable — even JavaScript cannot read the raw
 | Method | Description |
 |--------|-------------|
 | `vault.persistKey()` | Store the derived CryptoKey in IndexedDB |
-| `Vault.restore(baseUrl, sessionToken?)` | Load a persisted vault (returns `null` if not found) |
+| `Vault.restore(baseUrl)` | Load a persisted vault (returns `null` if not found) |
 | `Vault.clear()` | Remove the persisted key (call on logout) |
 
 ## Testing

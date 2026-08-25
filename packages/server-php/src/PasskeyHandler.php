@@ -125,10 +125,6 @@ class PasskeyHandler
             'prfSupported' => $prfSupported,
         ];
 
-        if ($this->config->session !== null) {
-            $response['sessionToken'] = Session::createToken($userId, $this->config->session);
-        }
-
         return $response;
     }
 
@@ -220,19 +216,6 @@ class PasskeyHandler
             $resp['prfSupported'] = true;
         }
 
-        if ($this->config->session !== null) {
-            $resp['sessionToken'] = Session::createToken($stored->userId, $this->config->session);
-        }
-
         return $resp;
-    }
-
-    public function getSessionTokenData(string $token): SessionTokenData
-    {
-        if ($this->config->session === null) {
-            throw new PasskeyError('session is not configured', 500);
-        }
-
-        return Session::validateToken($token, $this->config->session);
     }
 }

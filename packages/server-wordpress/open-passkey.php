@@ -26,11 +26,6 @@ register_activation_hook(__FILE__, function () {
     OpenPasskey\WordPress\CredentialTable::create();
 
     $settings = get_option('open_passkey_settings', []);
-    if (empty($settings['session_secret'])) {
-        $settings['session_secret'] = bin2hex(random_bytes(32));
-        update_option('open_passkey_settings', $settings);
-    }
-
     $rpId = $settings['rp_id'] ?? wp_parse_url(home_url(), PHP_URL_HOST);
     if (in_array($rpId, ['localhost', '127.0.0.1', '::1'], true)) {
         set_transient('open_passkey_activation_notice', true, 300);

@@ -3,18 +3,7 @@
     <div class="card">
       <h1>open-passkey</h1>
       <p class="subtitle">Vue Example</p>
-
-      <div v-if="sessionLoading" class="loading">Loading...</div>
-
-      <template v-else-if="session">
-        <div class="signed-in">
-          <div class="signed-in-badge">Authenticated</div>
-          <div class="signed-in-email">{{ session.userId }}</div>
-          <button class="btn-secondary" @click="doLogout">Sign Out</button>
-        </div>
-      </template>
-
-      <template v-else>
+      <template>
         <div class="field">
           <label>Email</label>
           <input type="email" placeholder="you@example.com" v-model="email" />
@@ -35,8 +24,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
-import { usePasskeyRegister, usePasskeyLogin, usePasskeySession } from "@open-passkey/vue";
+import { ref, watch } from "vue";
+import { usePasskeyRegister, usePasskeyLogin } from "@open-passkey/vue";
 
 const email = ref("");
 const message = ref("");
@@ -44,26 +33,17 @@ const messageType = ref<"success" | "error">("success");
 
 const { register, status: regStatus, result: regResult, error: regError } = usePasskeyRegister();
 const { authenticate, status: authStatus, error: authError } = usePasskeyLogin();
-const { session, loading: sessionLoading, checkSession, logout } = usePasskeySession();
-
-onMounted(() => checkSession());
-
 async function doRegister() {
   message.value = "";
   if (!email.value) { message.value = "Please enter an email"; messageType.value = "error"; return; }
   await register(email.value, email.value);
-  await checkSession();
+  message.value = "Authentication completed; the host application now establishes any session.";
 }
 
 async function doLogin() {
   message.value = "";
   await authenticate(email.value || undefined);
-  await checkSession();
-}
-
-async function doLogout() {
-  await logout();
-  message.value = "";
+  message.value = "Authentication completed; the host application now establishes any session.";
 }
 
 watch(regStatus, (s) => {

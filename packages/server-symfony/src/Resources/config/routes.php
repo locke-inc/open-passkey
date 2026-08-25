@@ -20,11 +20,4 @@ return function (RoutingConfigurator $routes): void {
         ->controller([PasskeyController::class, 'finishAuthentication'])
         ->methods(['POST']);
 
-    $routes->add('passkey_session', '/passkey/session')
-        ->controller([PasskeyController::class, 'getSession'])
-        ->methods(['GET']);
-
-    $routes->add('passkey_logout', '/passkey/logout')
-        ->controller([PasskeyController::class, 'logout'])
-        ->methods(['POST']);
 };

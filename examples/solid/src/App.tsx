@@ -1,5 +1,5 @@
-import { createSignal, onMount, Show } from "solid-js";
-import { PasskeyProvider, createPasskeyRegister, createPasskeyLogin, createPasskeySession } from "@open-passkey/solid";
+import { createSignal, Show } from "solid-js";
+import { PasskeyProvider, createPasskeyRegister, createPasskeyLogin } from "@open-passkey/solid";
 
 function PasskeyDemo() {
   const [email, setEmail] = createSignal("");
@@ -8,9 +8,6 @@ function PasskeyDemo() {
 
   const { register, status: regStatus, error: regError } = createPasskeyRegister();
   const { authenticate, status: authStatus, error: authError } = createPasskeyLogin();
-  const { session, loading, checkSession, logout } = createPasskeySession();
-
-  onMount(() => checkSession());
 
   async function doRegister() {
     setMessage("");
@@ -20,7 +17,7 @@ function PasskeyDemo() {
       setMessage(regError()!.message);
       setMessageType("error");
     } else {
-      await checkSession();
+      setMessage("Authentication completed; the host application now establishes any session.");
     }
   }
 
@@ -31,13 +28,8 @@ function PasskeyDemo() {
       setMessage(authError()!.message);
       setMessageType("error");
     } else {
-      await checkSession();
+      setMessage("Authentication completed; the host application now establishes any session.");
     }
-  }
-
-  async function doLogout() {
-    await logout();
-    setMessage("");
   }
 
   return (
@@ -46,10 +38,7 @@ function PasskeyDemo() {
         <h1>open-passkey</h1>
         <p class="subtitle">SolidJS Example</p>
 
-        <Show when={!loading()} fallback={<div class="loading">Loading...</div>}>
-          <Show when={session()} fallback={
-            <>
-              <div class="field">
+        <div class="field">
                 <label>Email</label>
                 <input type="email" placeholder="you@example.com" value={email()} onInput={(e) => setEmail(e.currentTarget.value)} />
               </div>
@@ -61,18 +50,9 @@ function PasskeyDemo() {
                 <button class="btn-secondary" onClick={doLogin} disabled={authStatus() === "pending"}>
                   {authStatus() === "pending" ? "Signing in..." : "Sign in with Passkey"}
                 </button>
-              </div>
-              <Show when={message()}>
-                <div class={`status ${messageType()}`}>{message()}</div>
-              </Show>
-            </>
-          }>
-            <div class="signed-in">
-              <div class="signed-in-badge">Authenticated</div>
-              <div class="signed-in-email">{session()!.userId}</div>
-              <button class="btn-secondary" onClick={doLogout}>Sign Out</button>
-            </div>
-          </Show>
+        </div>
+        <Show when={message()}>
+          <div class={`status ${messageType()}`}>{message()}</div>
         </Show>
       </div>
     </div>

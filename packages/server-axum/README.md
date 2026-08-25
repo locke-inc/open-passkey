@@ -30,7 +30,6 @@ let config = PasskeyConfig {
     challenge_length: 32,
     challenge_timeout_seconds: 300,
     allow_multiple_credentials: false,
-    session: None,
 };
 
 let challenges = Arc::new(MemoryChallengeStore::new());
@@ -49,8 +48,6 @@ axum::serve(listener, app).await.unwrap();
 | POST | `/passkey/register/finish` | Complete registration |
 | POST | `/passkey/login/begin` | Start authentication ceremony |
 | POST | `/passkey/login/finish` | Complete authentication |
-| GET | `/passkey/session` | Validate session (when enabled) |
-| POST | `/passkey/logout` | Clear session (when enabled) |
 
 ## Pluggable Stores
 
@@ -80,7 +77,6 @@ pub trait CredentialStore: Send + Sync {
 | `origin` | -- | Expected origin URL (required) |
 | `challenge_length` | 32 | Challenge byte length |
 | `challenge_timeout_seconds` | 300 | Challenge expiry |
-| `session` | `None` | Optional `SessionConfig` |
 
 ## Dependencies
 

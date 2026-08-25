@@ -31,22 +31,6 @@ app.register(passkeyPlugin, {
 app.listen({ port: 3000 });
 ```
 
-### With sessions
-
-```typescript
-app.register(passkeyPlugin, {
-  rpId: "example.com",
-  rpName: "My App",
-  origin: "https://example.com",
-  challengeStore: new MemoryChallengeStore(),
-  credentialStore: new MemoryCredentialStore(),
-  session: {
-    secret: "your-32+-character-hmac-secret-here",
-    duration: 86400000,
-  },
-});
-```
-
 ## Routes
 
 | Method | Path | Description |
@@ -55,8 +39,6 @@ app.register(passkeyPlugin, {
 | POST | `/register/finish` | Complete registration |
 | POST | `/login/begin` | Start authentication ceremony |
 | POST | `/login/finish` | Complete authentication |
-| GET | `/session` | Validate session (when sessions enabled) |
-| POST | `/logout` | Clear session (when sessions enabled) |
 
 ## Related Packages
 

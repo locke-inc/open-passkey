@@ -27,11 +27,4 @@ export class PasskeyService {
     return from(this.client.authenticate(userId));
   }
 
-  getSession(): Observable<AuthenticationResult | null> {
-    return from(this.client.getSession());
-  }
-
-  logout(): Observable<void> {
-    return from(this.client.logout());
-  }
 }

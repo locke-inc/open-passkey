@@ -41,23 +41,6 @@ urlpatterns = [
 ]
 ```
 
-## With Sessions
-
-```python
-from open_passkey_server.session import SessionConfig
-
-configure(
-    rp_id="example.com",
-    rp_display_name="Example",
-    origin="https://example.com",
-    challenge_store=MemoryChallengeStore(),
-    credential_store=MemoryCredentialStore(),
-    session=SessionConfig(secret="your-32+-character-hmac-secret"),
-)
-```
-
-When `session` is configured, the session and logout endpoints become active and login/register responses set an HttpOnly session cookie automatically.
-
 ## Routes
 
 | Method | Path | Description |
@@ -66,13 +49,11 @@ When `session` is configured, the session and logout endpoints become active and
 | POST | `register/finish` | Complete registration |
 | POST | `login/begin` | Start authentication ceremony |
 | POST | `login/finish` | Complete authentication |
-| GET | `session` | Validate session cookie (session config required) |
-| POST | `logout` | Clear session cookie (session config required) |
 
 ## API
 
 - `configure(rp_id, rp_display_name, origin, challenge_store, credential_store, ...)` -- must be called before URL inclusion
-- URL patterns are defined in `open_passkey_django.urls` and use class-based views: `BeginRegistrationView`, `FinishRegistrationView`, `BeginAuthenticationView`, `FinishAuthenticationView`, `GetSessionView`, `LogoutView`
+- URL patterns are defined in `open_passkey_django.urls` and use class-based views for the four registration/authentication ceremony endpoints.
 
 ## Dependencies
 

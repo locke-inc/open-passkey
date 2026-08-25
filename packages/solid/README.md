@@ -78,37 +78,14 @@ function LoginButton() {
 }
 ```
 
-### Session
-
-```tsx
-import { createPasskeySession } from "@open-passkey/solid";
-import { onMount, Show } from "solid-js";
-
-function Dashboard() {
-  const { session, loading, checkSession, logout } = createPasskeySession();
-
-  onMount(() => checkSession());
-
-  return (
-    <Show when={!loading()} fallback={<p>Loading...</p>}>
-      <Show when={session()} fallback={<p>Not logged in</p>}>
-        <p>Logged in as {session()?.userId}</p>
-        <button onClick={logout}>Logout</button>
-      </Show>
-    </Show>
-  );
-}
-```
-
 ## Primitives
 
 | Primitive | Returns | Description |
 |-----------|---------|-------------|
 | `createPasskeyRegister()` | `{ register, status, result, error }` | Registration ceremony |
 | `createPasskeyLogin()` | `{ authenticate, status, result, error }` | Authentication ceremony |
-| `createPasskeySession()` | `{ session, loading, checkSession, logout }` | Session management |
 
-All return values (`status`, `result`, `error`, `session`, `loading`) are SolidJS signals (call as functions to read).
+All return values (`status`, `result`, and `error`) are SolidJS signals (call as functions to read).
 
 ## Related Packages
 

@@ -138,7 +138,11 @@ impl CredentialStore for MemoryCredentialStore {
 
     fn get_by_user(&self, user_id: &str) -> Result<Vec<StoredCredential>, PasskeyError> {
         let creds = self.creds.lock().unwrap();
-        Ok(creds.iter().filter(|c| c.user_id == user_id).cloned().collect())
+        Ok(creds
+            .iter()
+            .filter(|c| c.user_id == user_id)
+            .cloned()
+            .collect())
     }
 
     fn update(&self, cred: StoredCredential) -> Result<(), PasskeyError> {

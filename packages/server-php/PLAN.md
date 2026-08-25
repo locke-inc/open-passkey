@@ -1,5 +1,7 @@
 # PHP Packages — Remaining Tasks Plan
 
+> Historical design record. Session ownership described below was removed in the Open Bind extraction; see the repository `MIGRATION.md` for the current API.
+
 ## What's Done
 
 ### 1. core-php (`packages/core-php/`)

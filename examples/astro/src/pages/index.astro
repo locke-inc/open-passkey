@@ -42,11 +42,6 @@
     <script is:inline src="/passkey.js"></script>
     <script is:inline>
       const passkey = new OpenPasskey.PasskeyClient({ baseUrl: "/api/passkey" });
-
-      passkey.getSession()
-        .then(session => { if (session) showSignedIn(session.userId); })
-        .catch(() => {});
-
       function showStatus(msg, type) {
         const el = document.getElementById("status");
         el.textContent = msg;
@@ -63,25 +58,21 @@
         const email = document.getElementById("email").value;
         if (!email) { showStatus("Please enter an email", "error"); return; }
         passkey.register(email, email)
-          .then(() => passkey.getSession())
-          .then(session => { if (session) showSignedIn(session.userId); })
+          .then(() => showSignedIn(email))
           .catch(err => showStatus(err.message, "error"));
       });
 
       document.getElementById("loginBtn").addEventListener("click", () => {
         const email = document.getElementById("email").value;
         passkey.authenticate(email || undefined)
-          .then(() => passkey.getSession())
-          .then(session => { if (session) showSignedIn(session.userId); })
+          .then(() => showSignedIn(email))
           .catch(err => showStatus(err.message, "error"));
       });
 
       document.getElementById("logoutBtn").addEventListener("click", () => {
-        passkey.logout().then(() => {
-          document.getElementById("auth-form").style.display = "block";
+        document.getElementById("auth-form").style.display = "block";
           document.getElementById("signed-in").style.display = "none";
           document.getElementById("status").className = "status";
-        });
       });
     </script>
   </body>

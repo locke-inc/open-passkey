@@ -24,7 +24,6 @@ public class PasskeyService {
     private final Stores.ChallengeStore challengeStore;
     private final Stores.CredentialStore credentialStore;
     private final SecureRandom random = new SecureRandom();
-    private final Session.SessionConfig sessionConfig;
 
     public PasskeyService(PasskeyProperties props,
                           Stores.ChallengeStore challengeStore,
@@ -33,15 +32,6 @@ public class PasskeyService {
         this.props = props;
         this.challengeStore = challengeStore;
         this.credentialStore = credentialStore;
-        this.sessionConfig = props.isSessionEnabled() ? props.buildSessionConfig() : null;
-    }
-
-    public boolean isSessionEnabled() {
-        return sessionConfig != null;
-    }
-
-    public Session.SessionConfig getSessionConfig() {
-        return sessionConfig;
     }
 
     private String generateChallenge() {
@@ -151,10 +141,6 @@ public class PasskeyService {
         resp.put("credentialId", b64url(result.getCredentialId()));
         resp.put("registered", true);
         resp.put("prfSupported", prfEnabled);
-        if (sessionConfig != null) {
-            String token = Session.createToken(userId, sessionConfig);
-            resp.put("sessionToken", token);
-        }
         return resp;
     }
 
@@ -236,19 +222,7 @@ public class PasskeyService {
         resp.put("authenticated", true);
         if (stored.prfSupported()) resp.put("prfSupported", true);
 
-        if (sessionConfig != null) {
-            String token = Session.createToken(stored.userId(), sessionConfig);
-            resp.put("sessionToken", token);
-        }
-
         return resp;
-    }
-
-    public Session.SessionTokenData getSessionTokenData(String token) {
-        if (sessionConfig == null) {
-            throw new IllegalStateException("session is not configured");
-        }
-        return Session.validateToken(token, sessionConfig);
     }
 
     private static String extractJsonValue(String json, String key) {

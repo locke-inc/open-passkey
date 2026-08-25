@@ -51,17 +51,6 @@ const result = await passkey.authenticate("user-id-123");
 const result = await passkey.authenticate();
 ```
 
-### Sessions
-
-```typescript
-// Check current session (reads HttpOnly cookie)
-const session = await passkey.getSession();
-// { userId, authenticated } or null
-
-// Logout (clears session cookie)
-await passkey.logout();
-```
-
 ### Script tag (IIFE bundle)
 
 For server-rendered apps without a JS bundler:
@@ -79,8 +68,6 @@ For server-rendered apps without a JS bundler:
 |--------|---------|-------------|
 | `register(userId, username)` | `Promise<RegistrationResult>` | Create a new passkey |
 | `authenticate(userId?)` | `Promise<AuthenticationResult>` | Sign in with a passkey |
-| `getSession()` | `Promise<AuthenticationResult \| null>` | Validate current session |
-| `logout()` | `Promise<void>` | Clear session cookie |
 | `vault()` | `Vault` | Get E2E encrypted vault (requires PRF-capable authenticator) |
 
 ### Vault (E2E Encrypted Key-Value Store)
@@ -127,7 +114,7 @@ Key constraints: 1-256 printable ASCII characters (0x20-0x7E). Values are opaque
 - **Encryption**: AES-256-GCM with a random 12-byte IV per `setItem` call. The key is derived via HKDF-SHA-256 from the WebAuthn PRF output and stored as a non-extractable `CryptoKey` — JavaScript can use it for encrypt/decrypt but cannot read the raw key bytes.
 - **Post-quantum**: The entire vault key chain is symmetric (HMAC-SHA-256 PRF output → HKDF → AES-GCM). Grover's algorithm halves effective security to 128 bits, which remains safe. The WebAuthn credential itself (ES256) is not post-quantum, but the vault encryption is.
 - **IV collision risk**: AES-GCM's 96-bit random IV has a birthday bound of ~2^32 encryptions per key before nonce collision becomes probable. We evaluated XChaCha20-Poly1305 (192-bit nonce, ~2^96 bound) but rejected it: Web Crypto doesn't support it, so the key would have to live in a plain `ArrayBuffer` instead of the browser's non-extractable key store — trading XSS key-theft resistance for nonce space that isn't needed. Each `setItem` is an HTTP round-trip; at one write per second, hitting 2^32 takes 136 years. Synthetic (counter-based) IVs were also considered but add persistent state management complexity for no practical benefit at vault-scale write volumes.
-- **Logout**: `PasskeyClient.logout()` clears the session, nulls the PRF key, and calls `Vault.clear()` to wipe the IndexedDB-persisted encryption key.
+- **Host-owned logout**: Open Passkey no longer owns logout or session state. After the host application revokes its session, call `Vault.clear()` to wipe the IndexedDB-persisted encryption key.
 
 ## Related Packages
 

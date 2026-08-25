@@ -1,6 +1,6 @@
 # server-go
 
-HTTP handlers for passkey authentication in Go. Uses stdlib `net/http` -- no framework dependencies. Pluggable challenge and credential stores, optional stateless session cookies.
+HTTP handlers for passkey authentication in Go. Uses stdlib `net/http` with pluggable challenge and credential stores. Session lifecycle is intentionally outside this package.
 
 Wraps [core-go](../core-go) for all WebAuthn verification.
 
@@ -21,10 +21,10 @@ p, err := passkey.New(passkey.Config{
     Origin:          "https://example.com",
     ChallengeStore:  passkey.NewMemoryChallengeStore(),
     CredentialStore: passkey.NewMemoryCredentialStore(),
-    Session: &passkey.SessionConfig{ // optional
-        Secret:   "your-secret-at-least-32-characters-long",
-        Duration: 24 * time.Hour,
-    },
+    OnAuthenticated: passkey.AuthenticationSuccessFunc(func(ctx context.Context, result passkey.AuthenticationResult) error {
+        // Pass result.Principal to your session layer here.
+        return nil
+    }),
 })
 if err != nil {
     log.Fatal(err)
@@ -35,7 +35,7 @@ mux.Handle("/passkey/", http.StripPrefix("/passkey", p.Handler()))
 http.ListenAndServe(":8080", mux)
 ```
 
-When `Session` is set, finish handlers set an `HttpOnly` cookie automatically and two extra routes are registered (`GET /session`, `POST /logout`). Omit `Session` for bring-your-own session management.
+`FinishAuthentication` emits `AuthenticationResult` through `OnAuthenticated`; `FinishRegistration` can emit `RegistrationResult` through `OnRegistered`. Neither handler creates a session or sets a cookie.
 
 ## Routes
 
@@ -45,8 +45,6 @@ When `Session` is set, finish handlers set an `HttpOnly` cookie automatically an
 | POST | `/register/finish` | Verify registration response, store credential |
 | POST | `/login/begin` | Generate challenge + credential request options |
 | POST | `/login/finish` | Verify authentication response |
-| GET | `/session` | Validate session cookie (requires session config) |
-| POST | `/logout` | Clear session cookie (requires session config) |
 
 ## API
 
@@ -58,8 +56,6 @@ When `Session` is set, finish handlers set an `HttpOnly` cookie automatically an
 | `(*Passkey).FinishRegistration(w, r)` | `http.HandlerFunc` for registration finish |
 | `(*Passkey).BeginAuthentication(w, r)` | `http.HandlerFunc` for authentication start |
 | `(*Passkey).FinishAuthentication(w, r)` | `http.HandlerFunc` for authentication finish |
-| `(*Passkey).GetSession(w, r)` | `http.HandlerFunc` for session validation |
-| `(*Passkey).Logout(w, r)` | `http.HandlerFunc` for session logout |
 
 ### Config
 
@@ -70,7 +66,8 @@ When `Session` is set, finish handlers set an `HttpOnly` cookie automatically an
 | `Origin` | `string` | yes | -- | Full origin with scheme (e.g. `"https://example.com"`) |
 | `ChallengeStore` | `ChallengeStore` | yes | -- | Challenge persistence backend |
 | `CredentialStore` | `CredentialStore` | yes | -- | Credential persistence backend |
-| `Session` | `*SessionConfig` | no | `nil` | Enables stateless HMAC-SHA256 session cookies |
+| `OnAuthenticated` | `AuthenticationSuccessHandler` | no | `nil` | Receives a verified principal |
+| `OnRegistered` | `RegistrationSuccessHandler` | no | `nil` | Receives a newly registered principal |
 
 ### Store Interfaces
 
@@ -90,16 +87,6 @@ type CredentialStore interface {
 ```
 
 Built-in for dev/testing: `NewMemoryChallengeStore()` and `NewMemoryCredentialStore()` (in-memory, thread-safe).
-
-### SessionConfig
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `Secret` | `string` | -- | HMAC key, 32+ characters (required) |
-| `Duration` | `time.Duration` | `24h` | Session lifetime |
-| `CookieName` | `string` | `"op_session"` | Cookie name |
-| `Secure` | `*bool` | `true` | Set `Secure` flag on cookie |
-| `SameSite` | `string` | `"Lax"` | `SameSite` cookie attribute |
 
 ## Test
 

@@ -1,10 +1,8 @@
-"""FastAPI router exposing WebAuthn registration, authentication, and optional session routes."""
+"""FastAPI router exposing WebAuthn registration and authentication."""
 
-from fastapi import APIRouter, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException
 
 from open_passkey_server import PasskeyConfig, PasskeyError, PasskeyHandler
-from open_passkey_server.session import build_clear_cookie_header, build_set_cookie_header, parse_cookie_token
 
 from .models import (
     BeginAuthenticationRequest,
@@ -37,12 +35,6 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
         except PasskeyError as e:
             raise HTTPException(e.status_code, str(e))
 
-        if config.session is not None and "sessionToken" in result:
-            token = result.pop("sessionToken")
-            response = JSONResponse(content=result)
-            response.headers["Set-Cookie"] = build_set_cookie_header(token, config.session)
-            return response
-
         return result
 
     @router.post("/login/begin")
@@ -59,31 +51,6 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
         except PasskeyError as e:
             raise HTTPException(e.status_code, str(e))
 
-        if config.session is not None and "sessionToken" in result:
-            token = result.pop("sessionToken")
-            response = JSONResponse(content=result)
-            response.headers["Set-Cookie"] = build_set_cookie_header(token, config.session)
-            return response
-
         return result
-
-    if config.session is not None:
-        @router.get("/session")
-        async def get_session(request: Request):
-            cookie_header = request.headers.get("cookie")
-            token = parse_cookie_token(cookie_header, config.session)
-            if not token:
-                raise HTTPException(401, "no session cookie")
-            try:
-                data = handler.get_session_token_data(token)
-            except (PasskeyError, ValueError):
-                raise HTTPException(401, "invalid session")
-            return {"userId": data.user_id, "authenticated": True}
-
-        @router.post("/logout")
-        async def logout():
-            response = JSONResponse(content={"success": True})
-            response.headers["Set-Cookie"] = build_clear_cookie_header(config.session)
-            return response
 
     return router

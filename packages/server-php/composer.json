@@ -1,6 +1,6 @@
 {
     "name": "open-passkey/server",
-    "description": "WebAuthn/FIDO2 server library with passkey handler, stores, and session support",
+    "description": "WebAuthn/FIDO2 server library with passkey handlers and pluggable ceremony stores",
     "type": "library",
     "license": "MIT",
     "keywords": ["passkey", "webauthn", "fido2", "server", "authentication"],

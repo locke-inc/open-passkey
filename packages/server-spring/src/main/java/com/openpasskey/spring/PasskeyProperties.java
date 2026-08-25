@@ -25,15 +25,6 @@ public class PasskeyProperties {
     private long challengeTimeoutSeconds = 300;
     private boolean allowMultipleCredentials = false;
 
-    // Session properties
-    private String sessionSecret;
-    private long sessionDurationSeconds = 86400;
-    private String sessionCookieName = "op_session";
-    private String sessionCookiePath = "/";
-    private boolean sessionSecure = true;
-    private String sessionSameSite = "Lax";
-    private String sessionDomain;
-
     public String getRpId() { return rpId; }
     public void setRpId(String rpId) { this.rpId = rpId; }
 
@@ -54,38 +45,6 @@ public class PasskeyProperties {
 
     public boolean isAllowMultipleCredentials() { return allowMultipleCredentials; }
     public void setAllowMultipleCredentials(boolean allowMultipleCredentials) { this.allowMultipleCredentials = allowMultipleCredentials; }
-
-    public String getSessionSecret() { return sessionSecret; }
-    public void setSessionSecret(String sessionSecret) { this.sessionSecret = sessionSecret; }
-
-    public long getSessionDurationSeconds() { return sessionDurationSeconds; }
-    public void setSessionDurationSeconds(long sessionDurationSeconds) { this.sessionDurationSeconds = sessionDurationSeconds; }
-
-    public String getSessionCookieName() { return sessionCookieName; }
-    public void setSessionCookieName(String sessionCookieName) { this.sessionCookieName = sessionCookieName; }
-
-    public String getSessionCookiePath() { return sessionCookiePath; }
-    public void setSessionCookiePath(String sessionCookiePath) { this.sessionCookiePath = sessionCookiePath; }
-
-    public boolean isSessionSecure() { return sessionSecure; }
-    public void setSessionSecure(boolean sessionSecure) { this.sessionSecure = sessionSecure; }
-
-    public String getSessionSameSite() { return sessionSameSite; }
-    public void setSessionSameSite(String sessionSameSite) { this.sessionSameSite = sessionSameSite; }
-
-    public String getSessionDomain() { return sessionDomain; }
-    public void setSessionDomain(String sessionDomain) { this.sessionDomain = sessionDomain; }
-
-    public boolean isSessionEnabled() {
-        return sessionSecret != null && !sessionSecret.isBlank();
-    }
-
-    public Session.SessionConfig buildSessionConfig() {
-        return new Session.SessionConfig(
-            sessionSecret, sessionDurationSeconds, 10_000,
-            sessionCookieName, sessionCookiePath, sessionSecure, sessionSameSite, sessionDomain
-        );
-    }
 
     public void validate() {
         if (rpId == null || rpId.isBlank()) throw new IllegalArgumentException("rpId is required");

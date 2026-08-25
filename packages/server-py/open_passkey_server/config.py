@@ -3,18 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
 from .stores import (
     ChallengeStore,
     CredentialStore,
     MemoryChallengeStore,
     MemoryCredentialStore,
 )
-
-if TYPE_CHECKING:
-    from .session import SessionConfig
-
 
 @dataclass
 class PasskeyConfig:
@@ -27,7 +21,6 @@ class PasskeyConfig:
     challenge_timeout_seconds: float = 300.0
     allow_multiple_credentials: bool = False
     additional_origins: list[str] | None = None
-    session: SessionConfig | None = None
 
     def __post_init__(self):
         if not self.rp_id:
@@ -42,6 +35,3 @@ class PasskeyConfig:
             self.challenge_store = MemoryChallengeStore()
         if self.credential_store is None:
             self.credential_store = MemoryCredentialStore()
-        if self.session is not None:
-            from .session import validate_session_config
-            validate_session_config(self.session)

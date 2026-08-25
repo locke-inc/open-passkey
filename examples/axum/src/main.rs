@@ -1,22 +1,20 @@
-use open_passkey_axum::{passkey_router, MemoryChallengeStore, MemoryCredentialStore, PasskeyConfig};
+use open_passkey_axum::{
+    passkey_router, MemoryChallengeStore, MemoryCredentialStore, PasskeyConfig,
+};
 use std::sync::Arc;
 use tower_http::services::ServeDir;
 
 #[tokio::main]
 async fn main() {
+    let port = std::env::var("PORT").unwrap_or_else(|_| "3000".into());
     let config = PasskeyConfig {
         rp_id: "localhost".into(),
         rp_display_name: "Open Passkey Axum Example".into(),
-        origin: "http://localhost:3000".into(),
+        origin: format!("http://localhost:{port}"),
         additional_origins: None,
         challenge_length: 32,
         challenge_timeout_seconds: 300,
         allow_multiple_credentials: false,
-        session: Some(open_passkey_axum::SessionConfig {
-            secret: "axum-example-secret-must-be-32-charss!".into(),
-            secure: false,
-            ..Default::default()
-        }),
     };
 
     let challenge_store = Arc::new(MemoryChallengeStore::new());
@@ -28,7 +26,9 @@ async fn main() {
         .nest("/passkey", passkey)
         .fallback_service(ServeDir::new("static"));
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    println!("Axum example running on http://localhost:3000");
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}"))
+        .await
+        .unwrap();
+    println!("Axum example running on http://localhost:{port}");
     axum::serve(listener, app).await.unwrap();
 }

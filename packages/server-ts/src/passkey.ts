@@ -6,12 +6,6 @@ import {
   COSE_ALG_COMPOSITE_MLDSA65_ES256,
 } from "@open-passkey/core";
 import { base64urlEncode, base64urlDecode } from "./base64url.js";
-import type { SessionConfig, SessionTokenData } from "./session.js";
-import {
-  validateSessionConfig,
-  createSessionToken,
-  validateSessionToken,
-} from "./session.js";
 import type {
   PasskeyConfig,
   StoredCredential,
@@ -45,7 +39,6 @@ export class Passkey {
   private readonly credentialStore: PasskeyConfig["credentialStore"];
   private readonly allowMultipleCredentials: boolean;
   private readonly additionalOrigins?: string[];
-  private readonly sessionConfig?: SessionConfig;
   private readonly prfSalt?: Uint8Array;
 
   constructor(config: PasskeyConfig) {
@@ -61,11 +54,6 @@ export class Passkey {
     }
     if (config.prfSalt && config.prfSalt.length !== 32) {
       throw new PasskeyError(500, `prfSalt must be exactly 32 bytes (got ${config.prfSalt.length})`);
-    }
-
-    if (config.session) {
-      validateSessionConfig(config.session);
-      this.sessionConfig = config.session;
     }
 
     this.rpId = config.rpId;
@@ -181,9 +169,6 @@ export class Passkey {
       registered: true,
       prfSupported: prfEnabled,
     };
-    if (this.sessionConfig) {
-      resp.sessionToken = createSessionToken(req.userId, this.sessionConfig);
-    }
     return resp;
   }
 
@@ -282,20 +267,6 @@ export class Passkey {
     if (stored.prfSupported) {
       resp.prfSupported = true;
     }
-    if (this.sessionConfig) {
-      resp.sessionToken = createSessionToken(stored.userId, this.sessionConfig);
-    }
     return resp;
-  }
-
-  getSessionTokenData(token: string): SessionTokenData {
-    if (!this.sessionConfig) {
-      throw new PasskeyError(500, "session is not configured");
-    }
-    return validateSessionToken(token, this.sessionConfig);
-  }
-
-  getSessionConfig(): SessionConfig | undefined {
-    return this.sessionConfig;
   }
 }

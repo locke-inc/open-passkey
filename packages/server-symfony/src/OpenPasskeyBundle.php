@@ -7,7 +7,6 @@ namespace OpenPasskey\Symfony;
 use OpenPasskey\Server\CredentialStore;
 use OpenPasskey\Server\PasskeyConfig;
 use OpenPasskey\Server\PasskeyHandler;
-use OpenPasskey\Server\SessionConfig;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -26,13 +25,6 @@ class OpenPasskeyBundle extends AbstractBundle
                 ->scalarNode('route_prefix')->defaultValue('/passkey')->end()
                 ->integerNode('challenge_timeout')->defaultValue(300)->end()
                 ->booleanNode('allow_multiple_credentials')->defaultFalse()->end()
-                ->arrayNode('session')
-                    ->children()
-                        ->scalarNode('secret')->isRequired()->end()
-                        ->integerNode('duration')->defaultValue(86400)->end()
-                        ->booleanNode('secure')->defaultTrue()->end()
-                    ->end()
-                ->end()
             ->end();
     }
 
@@ -51,21 +43,13 @@ class OpenPasskeyBundle extends AbstractBundle
                     '$credentialStore' => new Reference(CredentialStore::class),
                     '$challengeTimeoutSeconds' => (float) $config['challenge_timeout'],
                     '$allowMultipleCredentials' => $config['allow_multiple_credentials'],
-                    '$session' => isset($config['session']) ? new SessionConfig(
-                        secret: $config['session']['secret'],
-                        durationSeconds: $config['session']['duration'],
-                        secure: $config['session']['secure'],
-                    ) : null,
                 ])
 
             ->set(PasskeyHandler::class)
                 ->args([new Reference(PasskeyConfig::class)])
 
             ->set(PasskeyController::class)
-                ->args([
-                    new Reference(PasskeyHandler::class),
-                    new Reference(PasskeyConfig::class),
-                ])
+                ->args([new Reference(PasskeyHandler::class)])
                 ->tag('controller.service_arguments');
     }
 

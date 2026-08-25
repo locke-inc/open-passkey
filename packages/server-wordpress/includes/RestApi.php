@@ -8,8 +8,6 @@ use OpenPasskey\Base64Url;
 use OpenPasskey\Server\PasskeyConfig;
 use OpenPasskey\Server\PasskeyError;
 use OpenPasskey\Server\PasskeyHandler;
-use OpenPasskey\Server\Session;
-use OpenPasskey\Server\SessionConfig;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -47,16 +45,6 @@ class RestApi
         register_rest_route($ns, '/login/finish', [
             'methods' => 'POST',
             'callback' => [$this, 'finishAuthentication'],
-            'permission_callback' => '__return_true',
-        ]);
-        register_rest_route($ns, '/session', [
-            'methods' => 'GET',
-            'callback' => [$this, 'getSession'],
-            'permission_callback' => '__return_true',
-        ]);
-        register_rest_route($ns, '/logout', [
-            'methods' => 'POST',
-            'callback' => [$this, 'logout'],
             'permission_callback' => '__return_true',
         ]);
         register_rest_route($ns, '/credentials/(?P<credential_id>[^/]+)/name', [
@@ -103,7 +91,7 @@ class RestApi
             return new WP_REST_Response(['error' => $e->getMessage()], $e->statusCode);
         }
 
-        return $this->withSessionCookie($result);
+        return new WP_REST_Response($result);
     }
 
     public function beginAuthentication(WP_REST_Request $request): WP_REST_Response
@@ -135,7 +123,7 @@ class RestApi
             $result['redirect'] = admin_url();
         }
 
-        return $this->withSessionCookie($result);
+        return new WP_REST_Response($result);
     }
 
     public function deleteCredential(WP_REST_Request $request): WP_REST_Response
@@ -187,47 +175,9 @@ class RestApi
         return new WP_REST_Response(['success' => true]);
     }
 
-    public function getSession(WP_REST_Request $request): WP_REST_Response
-    {
-        if ($this->config->session === null) {
-            return new WP_REST_Response(['error' => 'session is not configured'], 500);
-        }
-
-        $token = Session::parseCookieToken($_SERVER['HTTP_COOKIE'] ?? null, $this->config->session);
-        if ($token === null) {
-            return new WP_REST_Response(['error' => 'no session cookie'], 401);
-        }
-
-        try {
-            $data = $this->handler->getSessionTokenData($token);
-        } catch (PasskeyError|\ValueError $e) {
-            return new WP_REST_Response(['error' => 'invalid session'], 401);
-        }
-
-        return new WP_REST_Response(['userId' => $data->userId, 'authenticated' => true]);
-    }
-
-    public function logout(): WP_REST_Response
-    {
-        if ($this->config->session === null) {
-            return new WP_REST_Response(['error' => 'session is not configured'], 500);
-        }
-
-        header('Set-Cookie: ' . Session::buildClearCookieHeader($this->config->session), false);
-        return new WP_REST_Response(['success' => true]);
-    }
-
     private function buildConfig(): PasskeyConfig
     {
         $settings = get_option('open_passkey_settings', []);
-
-        $sessionConfig = null;
-        if (!empty($settings['session_secret'])) {
-            $sessionConfig = new SessionConfig(
-                secret: $settings['session_secret'],
-                secure: is_ssl(),
-            );
-        }
 
         return new PasskeyConfig(
             rpId: $settings['rp_id'] ?? wp_parse_url(home_url(), PHP_URL_HOST),
@@ -236,18 +186,6 @@ class RestApi
             challengeStore: new WpTransientChallengeStore(),
             credentialStore: new WpCredentialStore(),
             allowMultipleCredentials: true,
-            session: $sessionConfig,
         );
-    }
-
-    private function withSessionCookie(array $result): WP_REST_Response
-    {
-        if ($this->config->session !== null && isset($result['sessionToken'])) {
-            $token = $result['sessionToken'];
-            unset($result['sessionToken']);
-            header('Set-Cookie: ' . Session::buildSetCookieHeader($token, $this->config->session), false);
-        }
-
-        return new WP_REST_Response($result);
     }
 }

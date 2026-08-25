@@ -1,9 +1,4 @@
-use axum::{
-    extract::State,
-    http::{header, HeaderMap, StatusCode},
-    response::IntoResponse,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::RngCore;
 use serde_json::{json, Value};
@@ -11,10 +6,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use open_passkey_core::{
-    AuthenticationInput, RegistrationInput, verify_authentication, verify_registration,
+    verify_authentication, verify_registration, AuthenticationInput, RegistrationInput,
 };
 
-use crate::session;
 use crate::stores::{PasskeyError, StoredCredential};
 use crate::types::*;
 use crate::PasskeyState;
@@ -47,7 +41,10 @@ pub async fn begin_registration(
         return error_response(StatusCode::BAD_REQUEST, "userId is required").into_response();
     }
 
-    let existing = state.credential_store.get_by_user(&req.user_id).unwrap_or_default();
+    let existing = state
+        .credential_store
+        .get_by_user(&req.user_id)
+        .unwrap_or_default();
 
     if !state.config.allow_multiple_credentials && !existing.is_empty() {
         return error_response(StatusCode::CONFLICT, "user already registered").into_response();
@@ -64,8 +61,15 @@ pub async fn begin_registration(
     .to_string();
 
     let timeout = Duration::from_secs(state.config.challenge_timeout_seconds);
-    if let Err(_) = state.challenge_store.store(&req.user_id, &challenge_data, timeout) {
-        return error_response(StatusCode::INTERNAL_SERVER_ERROR, "failed to store challenge").into_response();
+    if let Err(_) = state
+        .challenge_store
+        .store(&req.user_id, &challenge_data, timeout)
+    {
+        return error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "failed to store challenge",
+        )
+        .into_response();
     }
 
     let mut options = json!({
@@ -114,7 +118,10 @@ pub async fn finish_registration(
 ) -> impl IntoResponse {
     let challenge_data_str = match state.challenge_store.consume(&req.user_id) {
         Ok(c) => c,
-        Err(_) => return error_response(StatusCode::BAD_REQUEST, "challenge not found or expired").into_response(),
+        Err(_) => {
+            return error_response(StatusCode::BAD_REQUEST, "challenge not found or expired")
+                .into_response()
+        }
     };
 
     let challenge_data: Value = serde_json::from_str(&challenge_data_str).unwrap();
@@ -133,7 +140,8 @@ pub async fn finish_registration(
         Ok(r) => r,
         Err(e) => {
             tracing::warn!("registration verification failed: {}", e);
-            return error_response(StatusCode::BAD_REQUEST, "registration verification failed").into_response();
+            return error_response(StatusCode::BAD_REQUEST, "registration verification failed")
+                .into_response();
         }
     };
 
@@ -154,7 +162,11 @@ pub async fn finish_registration(
     }
 
     if let Err(_) = state.credential_store.store(cred) {
-        return error_response(StatusCode::INTERNAL_SERVER_ERROR, "failed to store credential").into_response();
+        return error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "failed to store credential",
+        )
+        .into_response();
     }
 
     let resp = json!({
@@ -163,15 +175,7 @@ pub async fn finish_registration(
         "prfSupported": prf_enabled,
     });
 
-    if let Some(ref session_config) = state.session {
-        let token = session::create_token(&req.user_id, session_config);
-        let cookie_header = session::build_set_cookie_header(&token, session_config);
-        let mut headers = HeaderMap::new();
-        headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
-        (headers, Json(resp)).into_response()
-    } else {
-        Json(resp).into_response()
-    }
+    Json(resp).into_response()
 }
 
 pub async fn begin_authentication(
@@ -181,11 +185,21 @@ pub async fn begin_authentication(
     let user_id = body.and_then(|b| b.0.user_id);
 
     let challenge = generate_challenge(state.config.challenge_length);
-    let challenge_key = user_id.as_deref().filter(|s| !s.is_empty()).unwrap_or(&challenge);
+    let challenge_key = user_id
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(&challenge);
     let timeout = Duration::from_secs(state.config.challenge_timeout_seconds);
 
-    if let Err(_) = state.challenge_store.store(challenge_key, &challenge, timeout) {
-        return error_response(StatusCode::INTERNAL_SERVER_ERROR, "failed to store challenge").into_response();
+    if let Err(_) = state
+        .challenge_store
+        .store(challenge_key, &challenge, timeout)
+    {
+        return error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "failed to store challenge",
+        )
+        .into_response();
     }
 
     let mut options = json!({
@@ -207,10 +221,8 @@ pub async fn begin_authentication(
                     allow_credentials.push(json!({"type": "public-key", "id": cred_id_encoded}));
                     if c.prf_supported {
                         if let Some(ref salt) = c.prf_salt {
-                            eval_by_credential.insert(
-                                cred_id_encoded,
-                                json!({"first": b64url_encode(salt)}),
-                            );
+                            eval_by_credential
+                                .insert(cred_id_encoded, json!({"first": b64url_encode(salt)}));
                             has_prf = true;
                         }
                     }
@@ -232,17 +244,25 @@ pub async fn finish_authentication(
 ) -> impl IntoResponse {
     let challenge = match state.challenge_store.consume(&req.user_id) {
         Ok(c) => c,
-        Err(_) => return error_response(StatusCode::BAD_REQUEST, "challenge not found or expired").into_response(),
+        Err(_) => {
+            return error_response(StatusCode::BAD_REQUEST, "challenge not found or expired")
+                .into_response()
+        }
     };
 
     let cred_id_bytes = match b64url_decode(&req.credential.id) {
         Ok(b) => b,
-        Err(_) => return error_response(StatusCode::BAD_REQUEST, "invalid credential ID encoding").into_response(),
+        Err(_) => {
+            return error_response(StatusCode::BAD_REQUEST, "invalid credential ID encoding")
+                .into_response()
+        }
     };
 
     let stored = match state.credential_store.get(&cred_id_bytes) {
         Ok(c) => c,
-        Err(_) => return error_response(StatusCode::BAD_REQUEST, "credential not found").into_response(),
+        Err(_) => {
+            return error_response(StatusCode::BAD_REQUEST, "credential not found").into_response()
+        }
     };
 
     if let Some(ref user_handle) = req.credential.response.user_handle {
@@ -250,8 +270,11 @@ pub async fn finish_authentication(
             if let Ok(decoded) = b64url_decode(user_handle) {
                 let decoded_str = String::from_utf8_lossy(&decoded);
                 if decoded_str != stored.user_id {
-                    return error_response(StatusCode::BAD_REQUEST, "userHandle does not match credential owner")
-                        .into_response();
+                    return error_response(
+                        StatusCode::BAD_REQUEST,
+                        "userHandle does not match credential owner",
+                    )
+                    .into_response();
                 }
             }
         }
@@ -272,14 +295,22 @@ pub async fn finish_authentication(
         Ok(r) => r,
         Err(e) => {
             tracing::warn!("authentication verification failed: {}", e);
-            return error_response(StatusCode::BAD_REQUEST, "authentication verification failed").into_response();
+            return error_response(
+                StatusCode::BAD_REQUEST,
+                "authentication verification failed",
+            )
+            .into_response();
         }
     };
 
     let mut updated = stored.clone();
     updated.sign_count = result.sign_count;
     if let Err(_) = state.credential_store.update(updated) {
-        return error_response(StatusCode::INTERNAL_SERVER_ERROR, "failed to update credential").into_response();
+        return error_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "failed to update credential",
+        )
+        .into_response();
     }
 
     let mut resp = json!({
@@ -291,62 +322,16 @@ pub async fn finish_authentication(
         resp["prfSupported"] = json!(true);
     }
 
-    if let Some(ref session_config) = state.session {
-        let token = session::create_token(&stored.user_id, session_config);
-        let cookie_header = session::build_set_cookie_header(&token, session_config);
-        let mut headers = HeaderMap::new();
-        headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
-        (headers, Json(resp)).into_response()
-    } else {
-        Json(resp).into_response()
-    }
-}
-
-pub async fn get_session(
-    State(state): State<Arc<PasskeyState>>,
-    headers: HeaderMap,
-) -> impl IntoResponse {
-    let session_config = match &state.session {
-        Some(c) => c,
-        None => return error_response(StatusCode::INTERNAL_SERVER_ERROR, "sessions not configured").into_response(),
-    };
-
-    let cookie_header = headers
-        .get(header::COOKIE)
-        .and_then(|v| v.to_str().ok());
-
-    let token = match session::parse_cookie_token(cookie_header, session_config) {
-        Some(t) => t,
-        None => return error_response(StatusCode::UNAUTHORIZED, "no session token").into_response(),
-    };
-
-    match session::validate_token(&token, session_config) {
-        Ok(data) => Json(json!({
-            "userId": data.user_id,
-            "authenticated": true,
-        })).into_response(),
-        Err(_) => error_response(StatusCode::UNAUTHORIZED, "invalid or expired session").into_response(),
-    }
-}
-
-pub async fn logout(
-    State(state): State<Arc<PasskeyState>>,
-) -> impl IntoResponse {
-    let session_config = match &state.session {
-        Some(c) => c,
-        None => return error_response(StatusCode::INTERNAL_SERVER_ERROR, "sessions not configured").into_response(),
-    };
-
-    let cookie_header = session::build_clear_cookie_header(session_config);
-    let mut headers = HeaderMap::new();
-    headers.insert(header::SET_COOKIE, cookie_header.parse().unwrap());
-    (headers, Json(json!({"success": true}))).into_response()
+    Json(resp).into_response()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ChallengeStore, CredentialStore, MemoryChallengeStore, MemoryCredentialStore, PasskeyConfig, PasskeyState};
+    use crate::{
+        ChallengeStore, CredentialStore, MemoryChallengeStore, MemoryCredentialStore,
+        PasskeyConfig, PasskeyState,
+    };
 
     fn test_config(allow_multiple: bool) -> PasskeyConfig {
         PasskeyConfig {
@@ -357,7 +342,6 @@ mod tests {
             challenge_length: 32,
             challenge_timeout_seconds: 300,
             allow_multiple_credentials: allow_multiple,
-            session: None,
         }
     }
 
@@ -381,7 +365,6 @@ mod tests {
             config,
             challenge_store: challenge_store as Arc<dyn crate::ChallengeStore>,
             credential_store: cred_store as Arc<dyn crate::CredentialStore>,
-            session: None,
         })
     }
 
@@ -395,7 +378,9 @@ mod tests {
             user_id: "user-1".into(),
             username: "alice".into(),
         };
-        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        let resp = begin_registration(State(state), Json(req))
+            .await
+            .into_response();
         assert_eq!(resp.status(), StatusCode::CONFLICT);
     }
 
@@ -409,7 +394,9 @@ mod tests {
             user_id: "user-1".into(),
             username: "alice".into(),
         };
-        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        let resp = begin_registration(State(state), Json(req))
+            .await
+            .into_response();
         assert_eq!(resp.status(), StatusCode::OK);
     }
 
@@ -424,10 +411,14 @@ mod tests {
             user_id: "user-1".into(),
             username: "alice".into(),
         };
-        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        let resp = begin_registration(State(state), Json(req))
+            .await
+            .into_response();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let json: Value = serde_json::from_slice(&body).unwrap();
         let exclude = json["excludeCredentials"].as_array().unwrap();
         assert_eq!(exclude.len(), 2);
@@ -444,10 +435,14 @@ mod tests {
             user_id: "new-user".into(),
             username: "bob".into(),
         };
-        let resp = begin_registration(State(state), Json(req)).await.into_response();
+        let resp = begin_registration(State(state), Json(req))
+            .await
+            .into_response();
         assert_eq!(resp.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let json: Value = serde_json::from_slice(&body).unwrap();
         assert!(json.get("excludeCredentials").is_none());
     }

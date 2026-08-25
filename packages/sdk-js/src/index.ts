@@ -71,7 +71,6 @@ export interface RegistrationResult {
   registered: boolean;
   prfSupported: boolean;
   prfOutput?: ArrayBuffer;
-  sessionToken?: string;
 }
 
 export interface AuthenticationResult {
@@ -79,20 +78,9 @@ export interface AuthenticationResult {
   authenticated: boolean;
   prfSupported?: boolean;
   prfOutput?: ArrayBuffer;
-  sessionToken?: string;
 }
 
-// Authenticated fetch: prefers Bearer token when available, falls back to cookie.
-function authFetch(
-  url: string,
-  sessionToken: string | null,
-  init?: RequestInit,
-): Promise<Response> {
-  if (sessionToken) {
-    const headers = new Headers(init?.headers);
-    headers.set("Authorization", `Bearer ${sessionToken}`);
-    return fetch(url, { ...init, headers });
-  }
+function authFetch(url: string, init?: RequestInit): Promise<Response> {
   return fetch(url, { ...init, credentials: "include" });
 }
 
@@ -101,7 +89,6 @@ export class PasskeyClient {
   private readonly rpId?: string;
   private readonly getToken?: () => string | null | undefined | Promise<string | null | undefined>;
   private prfKey: ArrayBuffer | null = null;
-  private sessionToken: string | null = null;
 
   constructor(config: PasskeyClientConfig) {
     if (config.baseUrl && config.provider) {
@@ -132,7 +119,7 @@ export class PasskeyClient {
   }
 
   private async fetchWithAuth(url: string, init?: RequestInit): Promise<Response> {
-    const token = this.getToken ? await this.getToken() : (this.sessionToken || null);
+    const token = this.getToken ? await this.getToken() : null;
     if (token) {
       const headers = new Headers(init?.headers);
       headers.set("Authorization", `Bearer ${token}`);
@@ -236,9 +223,6 @@ export class PasskeyClient {
     }
 
     const result: RegistrationResult = await finishRes.json();
-    if (result.sessionToken) {
-      this.sessionToken = result.sessionToken;
-    }
     if (prfOutput) {
       result.prfOutput = prfOutput;
     }
@@ -352,28 +336,11 @@ export class PasskeyClient {
     }
 
     const result: AuthenticationResult = await finishRes.json();
-    if (result.sessionToken) {
-      this.sessionToken = result.sessionToken;
-    }
     if (prfOutput) {
       this.prfKey = prfOutput;
       result.prfOutput = prfOutput;
     }
     return result;
-  }
-
-  async getSession(): Promise<AuthenticationResult | null> {
-    const res = await this.fetchWithAuth(`${this.baseUrl}/session`);
-    if (res.status === 401) return null;
-    if (!res.ok) throw new Error("Failed to get session");
-    return res.json();
-  }
-
-  async logout(): Promise<void> {
-    await this.fetchWithAuth(`${this.baseUrl}/logout`, { method: "POST" });
-    this.sessionToken = null;
-    this.prfKey = null;
-    await Vault.clear();
   }
 
   /**
@@ -391,7 +358,7 @@ export class PasskeyClient {
         "Vault requires PRF support. Call authenticate() first with a PRF-capable authenticator."
       );
     }
-    return new Vault(this.prfKey, this.baseUrl, this.sessionToken);
+    return new Vault(this.prfKey, this.baseUrl);
   }
 }
 
@@ -404,11 +371,9 @@ export class Vault {
   private encryptionKey: Promise<CryptoKey>;
   private hmacKey: Promise<CryptoKey>;
   private baseUrl: string;
-  private sessionToken: string | null;
 
-  constructor(prfOutput: ArrayBuffer, baseUrl: string, sessionToken?: string | null) {
+  constructor(prfOutput: ArrayBuffer, baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.sessionToken = sessionToken ?? null;
     const keys = this.deriveKeys(prfOutput);
     this.encryptionKey = keys.then((k) => k.encryption);
     this.hmacKey = keys.then((k) => k.hmac);
@@ -419,11 +384,9 @@ export class Vault {
     encryptionKey: CryptoKey,
     hmacKey: CryptoKey,
     baseUrl: string,
-    sessionToken?: string | null,
   ): Vault {
     const v = Object.create(Vault.prototype) as Vault;
     v.baseUrl = baseUrl;
-    v.sessionToken = sessionToken ?? null;
     v.encryptionKey = Promise.resolve(encryptionKey);
     v.hmacKey = Promise.resolve(hmacKey);
     return v;
@@ -448,7 +411,7 @@ export class Vault {
   }
 
   /** Restore a Vault from previously persisted CryptoKeys in IndexedDB. Returns null if not found. */
-  static async restore(baseUrl: string, sessionToken?: string | null): Promise<Vault | null> {
+  static async restore(baseUrl: string): Promise<Vault | null> {
     try {
       const db = await Vault.openDB();
       try {
@@ -465,7 +428,7 @@ export class Vault {
           req.onerror = () => reject(req.error);
         });
         if (!encKey || !hmKey) return null;
-        return Vault.fromCryptoKeys(encKey, hmKey, baseUrl, sessionToken);
+        return Vault.fromCryptoKeys(encKey, hmKey, baseUrl);
       } finally {
         db.close();
       }
@@ -560,7 +523,6 @@ export class Vault {
 
     const res = await authFetch(
       `${this.baseUrl}/vault/${hashedKey}`,
-      this.sessionToken,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -575,10 +537,7 @@ export class Vault {
 
   async getItem(key: string): Promise<string | null> {
     const hashedKey = await this.hashKey(key);
-    const res = await authFetch(
-      `${this.baseUrl}/vault/${hashedKey}`,
-      this.sessionToken,
-    );
+    const res = await authFetch(`${this.baseUrl}/vault/${hashedKey}`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error("Failed to get vault item");
 
@@ -598,10 +557,6 @@ export class Vault {
 
   async removeItem(key: string): Promise<void> {
     const hashedKey = await this.hashKey(key);
-    await authFetch(
-      `${this.baseUrl}/vault/${hashedKey}`,
-      this.sessionToken,
-      { method: "DELETE" },
-    );
+    await authFetch(`${this.baseUrl}/vault/${hashedKey}`, { method: "DELETE" });
   }
 }

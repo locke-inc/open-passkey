@@ -21,9 +21,6 @@ open-passkey:
   rp-id: example.com
   rp-display-name: Example
   origin: https://example.com
-  # Optional session support (disabled by default)
-  session-secret: "your-32-char-minimum-hmac-secret"
-  session-duration-seconds: 86400
 ```
 
 All properties are bound via `PasskeyProperties` under the `open-passkey` prefix.
@@ -38,8 +35,6 @@ The auto-configured controller exposes these endpoints (default prefix `/passkey
 | POST | `/passkey/register/finish` | Complete registration |
 | POST | `/passkey/login/begin` | Start authentication ceremony |
 | POST | `/passkey/login/finish` | Complete authentication |
-| GET | `/passkey/session` | Validate session (when enabled) |
-| POST | `/passkey/logout` | Clear session (when enabled) |
 
 ## Pluggable Stores
 
@@ -66,8 +61,6 @@ public CredentialStore credentialStore() {
 | `open-passkey.origin` | -- | Expected origin URL (required) |
 | `open-passkey.challenge-length` | 32 | Challenge byte length |
 | `open-passkey.challenge-timeout-seconds` | 300 | Challenge expiry |
-| `open-passkey.session-secret` | -- | HMAC secret (enables sessions) |
-| `open-passkey.session-duration-seconds` | 86400 | Session TTL |
 
 ## Dependencies
 

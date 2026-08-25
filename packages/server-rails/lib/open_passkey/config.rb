@@ -4,7 +4,7 @@ module OpenPasskey
   class Config
     attr_accessor :rp_id, :rp_display_name, :origin,
                   :challenge_store, :credential_store,
-                  :session, :allow_multiple_credentials,
+                  :allow_multiple_credentials,
                   :challenge_length, :challenge_timeout_seconds
 
     def initialize
@@ -23,8 +23,6 @@ module OpenPasskey
       if origin.nil? || (!origin.start_with?("https://") && !origin.start_with?("http://"))
         raise ArgumentError, "origin must start with https:// or http://"
       end
-
-      Session.validate_config(session) if session
     end
   end
 end

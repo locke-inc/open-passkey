@@ -24,8 +24,6 @@ export interface StoredCredential {
 
 // --- Config ---
 
-import type { SessionConfig } from "./session.js";
-
 export interface PasskeyConfig {
   rpId: string;
   rpDisplayName: string;
@@ -36,7 +34,6 @@ export interface PasskeyConfig {
   challengeLength?: number; // bytes, default 32
   challengeTimeout?: number; // milliseconds, default 300000 (5 min)
   allowMultipleCredentials?: boolean; // default false
-  session?: SessionConfig;
 
   /**
    * Optional static 32-byte PRF salt used for all credentials.
@@ -112,7 +109,6 @@ export interface FinishRegistrationResponse {
   credentialId: string;
   registered: true;
   prfSupported: boolean;
-  sessionToken?: string;
 }
 
 export interface BeginAuthenticationResponse {
@@ -129,5 +125,4 @@ export interface FinishAuthenticationResponse {
   credentialId: string;
   authenticated: true;
   prfSupported?: boolean;
-  sessionToken?: string;
 }

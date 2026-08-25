@@ -21,12 +21,6 @@ app.MapPasskeyEndpoints(new PasskeyConfig
     RpId = "example.com",
     RpDisplayName = "Example",
     Origin = "https://example.com",
-    // Optional: enable stateless sessions
-    Session = new SessionConfig
-    {
-        Secret = "your-32-char-minimum-hmac-secret",
-        DurationSeconds = 86400
-    }
 });
 
 app.Run();
@@ -40,8 +34,6 @@ app.Run();
 | POST | `/passkey/register/finish` | Complete registration |
 | POST | `/passkey/login/begin` | Start authentication ceremony |
 | POST | `/passkey/login/finish` | Complete authentication |
-| GET | `/passkey/session` | Validate session (when enabled) |
-| POST | `/passkey/logout` | Clear session (when enabled) |
 
 ## Pluggable Stores
 

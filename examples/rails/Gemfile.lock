@@ -246,4 +246,4 @@ DEPENDENCIES
   rails (~> 8.0)
 
 BUNDLED WITH
-   2.6.9
+  4.0.19

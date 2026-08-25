@@ -79,36 +79,12 @@ function LoginButton() {
 }
 ```
 
-### Session
-
-```tsx
-import { usePasskeySession } from "@open-passkey/react";
-import { useEffect } from "react";
-
-function Dashboard() {
-  const { session, loading, checkSession, logout } = usePasskeySession();
-
-  useEffect(() => { checkSession(); }, []);
-
-  if (loading) return <p>Loading...</p>;
-  if (!session) return <p>Not logged in</p>;
-
-  return (
-    <div>
-      <p>Logged in as {session.userId}</p>
-      <button onClick={logout}>Logout</button>
-    </div>
-  );
-}
-```
-
 ## Hooks
 
 | Hook | Returns | Description |
 |------|---------|-------------|
 | `usePasskeyRegister()` | `{ register, status, result, error }` | Registration ceremony |
 | `usePasskeyLogin()` | `{ authenticate, status, result, error }` | Authentication ceremony |
-| `usePasskeySession()` | `{ session, loading, checkSession, logout }` | Session management |
 
 ## Related Packages
 

@@ -1,6 +1,6 @@
 # open-passkey-server
 
-Framework-agnostic server logic for passkey authentication. Handles challenge generation, credential storage, ceremony orchestration, and optional stateless sessions. Used internally by the Flask, FastAPI, and Django bindings.
+Framework-agnostic server logic for passkey authentication. Handles challenge generation, credential storage, and ceremony orchestration. Session establishment belongs to the host application.
 
 ## Install
 
@@ -51,7 +51,6 @@ result = handler.finish_authentication(user_id="user_123", credential={...})
 - `origin` -- expected origin (e.g. `"https://example.com"`)
 - `challenge_store` -- implements `ChallengeStore` (default: `MemoryChallengeStore`)
 - `credential_store` -- implements `CredentialStore` (default: `MemoryCredentialStore`)
-- `session` -- optional `SessionConfig` for stateless HMAC-SHA256 session cookies
 
 **Store Protocols**
 
@@ -59,21 +58,6 @@ result = handler.finish_authentication(user_id="user_123", credential={...})
 - `CredentialStore` (ABC) -- `store(cred)`, `get(credential_id)`, `get_by_user(user_id)`, `update(cred)`, `delete(credential_id)`
 
 Built-in implementations: `MemoryChallengeStore`, `MemoryCredentialStore` (thread-safe, in-memory, for development).
-
-**Session** (opt-in)
-
-```python
-from open_passkey_server.session import SessionConfig
-
-config = PasskeyConfig(
-    rp_id="example.com",
-    rp_display_name="Example",
-    origin="https://example.com",
-    session=SessionConfig(secret="your-32+-character-hmac-secret"),
-)
-```
-
-When configured, `finish_registration` and `finish_authentication` include a `sessionToken` in the result dict. Framework bindings set this as an HttpOnly cookie automatically.
 
 ## Dependencies
 

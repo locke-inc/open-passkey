@@ -1,5 +1,5 @@
 "use client";
-import { PasskeyProvider, usePasskeyRegister, usePasskeyLogin, usePasskeySession } from "@open-passkey/react";
+import { PasskeyProvider, usePasskeyRegister, usePasskeyLogin } from "@open-passkey/react";
 import { useEffect, useState } from "react";
 
 function PasskeyDemo() {
@@ -8,28 +8,18 @@ function PasskeyDemo() {
   const [messageType, setMessageType] = useState<"success" | "error">("success");
   const { register, status: regStatus, error: regError } = usePasskeyRegister();
   const { authenticate, status: authStatus, error: authError } = usePasskeyLogin();
-  const { session, loading, checkSession, logout } = usePasskeySession();
-
-  useEffect(() => { checkSession(); }, [checkSession]);
-
   async function doRegister() {
     setMessage("");
     if (!email) { setMessage("Please enter an email"); setMessageType("error"); return; }
     await register(email, email);
-    await checkSession();
+    setMessage("Authentication completed; the host application now establishes any session.");
   }
 
   async function doLogin() {
     setMessage("");
     await authenticate(email || undefined);
-    await checkSession();
+    setMessage("Authentication completed; the host application now establishes any session.");
   }
-
-  async function doLogout() {
-    await logout();
-    setMessage("");
-  }
-
   useEffect(() => {
     if (regStatus === "success") { setMessage(""); }
     if (regError) { setMessage(regError.message); setMessageType("error"); }
@@ -38,24 +28,6 @@ function PasskeyDemo() {
   useEffect(() => {
     if (authError) { setMessage(authError.message); setMessageType("error"); }
   }, [authError]);
-
-  if (loading) return <div className="page"><div className="card"><div className="loading">Loading...</div></div></div>;
-
-  if (session) {
-    return (
-      <div className="page">
-        <div className="card">
-          <h1>open-passkey</h1>
-          <p className="subtitle">Next.js Example</p>
-          <div className="signed-in">
-            <div className="signed-in-badge">Authenticated</div>
-            <div className="signed-in-email">{session.userId}</div>
-            <button className="btn-secondary" onClick={doLogout}>Sign Out</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="page">

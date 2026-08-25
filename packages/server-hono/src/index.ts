@@ -5,9 +5,6 @@ import {
   type PasskeyConfig,
   MemoryChallengeStore,
   MemoryCredentialStore,
-  buildSetCookieHeader,
-  buildClearCookieHeader,
-  parseCookieToken,
 } from "@open-passkey/server";
 
 export { MemoryChallengeStore, MemoryCredentialStore };
@@ -34,12 +31,6 @@ export function createPasskeyApp(config: PasskeyConfig): Hono {
     try {
       const body = await c.req.json();
       const result = await passkey.finishRegistration(body);
-      const sessionConfig = passkey.getSessionConfig();
-      if (sessionConfig && result.sessionToken) {
-        c.header("Set-Cookie", buildSetCookieHeader(result.sessionToken, sessionConfig));
-        const { sessionToken, ...rest } = result;
-        return c.json(rest);
-      }
       return c.json(result);
     } catch (err) {
       if (err instanceof PasskeyError) {
@@ -66,12 +57,6 @@ export function createPasskeyApp(config: PasskeyConfig): Hono {
     try {
       const body = await c.req.json();
       const result = await passkey.finishAuthentication(body);
-      const sessionConfig = passkey.getSessionConfig();
-      if (sessionConfig && result.sessionToken) {
-        c.header("Set-Cookie", buildSetCookieHeader(result.sessionToken, sessionConfig));
-        const { sessionToken, ...rest } = result;
-        return c.json(rest);
-      }
       return c.json(result);
     } catch (err) {
       if (err instanceof PasskeyError) {
@@ -80,27 +65,6 @@ export function createPasskeyApp(config: PasskeyConfig): Hono {
       return c.json({ error: "internal server error" }, 500);
     }
   });
-
-  const sessionConfig = passkey.getSessionConfig();
-  if (sessionConfig) {
-    app.get("/session", (c) => {
-      try {
-        const token = parseCookieToken(c.req.header("Cookie"), sessionConfig);
-        if (!token) {
-          return c.json({ error: "no session" }, 401);
-        }
-        const data = passkey.getSessionTokenData(token);
-        return c.json({ userId: data.userId, authenticated: true });
-      } catch {
-        return c.json({ error: "invalid session" }, 401);
-      }
-    });
-
-    app.post("/logout", (c) => {
-      c.header("Set-Cookie", buildClearCookieHeader(sessionConfig));
-      return c.json({ success: true });
-    });
-  }
 
   return app;
 }

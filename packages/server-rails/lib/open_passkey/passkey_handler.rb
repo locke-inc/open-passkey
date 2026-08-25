@@ -111,10 +111,6 @@ module OpenPasskey
         prfSupported: prf_supported
       }
 
-      if @config.session
-        resp[:sessionToken] = Session.create_token(user_id, @config.session)
-      end
-
       resp
     end
 
@@ -194,19 +190,7 @@ module OpenPasskey
 
       resp[:prfSupported] = true if stored.prf_supported
 
-      if @config.session
-        resp[:sessionToken] = Session.create_token(stored.user_id, @config.session)
-      end
-
       resp
-    end
-
-    def get_session_token_data(token)
-      unless @config.session
-        raise PasskeyError.new("session is not configured", 500)
-      end
-
-      Session.validate_token(token, @config.session)
     end
   end
 end

@@ -2,7 +2,7 @@
 
 Framework-agnostic WebAuthn server handler logic with post-quantum cryptography support.
 
-This package contains the shared `Passkey` class, credential/challenge stores, session management, and all ceremony orchestration. Framework-specific packages (Express, Fastify, Next.js, etc.) are thin wrappers around this. Use this directly if you need full control or are integrating with an unsupported framework.
+This package contains the shared `Passkey` class, credential/challenge stores, and ceremony orchestration. Framework-specific packages are thin wrappers around it. Session establishment is the host application's responsibility.
 
 ## Install
 
@@ -35,24 +35,6 @@ const regResult = await passkey.finishRegistration({ userId, credential });
 const authOptions = await passkey.beginAuthentication({ userId });
 const authResult = await passkey.finishAuthentication({ userId, credential });
 ```
-
-### With sessions
-
-```typescript
-const passkey = new Passkey({
-  rpId: "example.com",
-  rpName: "My App",
-  origin: "https://example.com",
-  challengeStore: new MemoryChallengeStore(),
-  credentialStore: new MemoryCredentialStore(),
-  session: {
-    secret: "your-32+-character-hmac-secret-here",
-    duration: 86400000, // 24h in ms
-  },
-});
-```
-
-Session tokens are HMAC-SHA256 signed, stateless cookies. The `finishAuthentication` result will include a `sessionToken` string when sessions are configured.
 
 ### Custom stores
 

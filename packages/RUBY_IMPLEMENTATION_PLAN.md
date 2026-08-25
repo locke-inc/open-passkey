@@ -1,5 +1,7 @@
 # Ruby Implementation Plan: core-ruby + server-rails
 
+> Historical design record. Session ownership described below was removed in the Open Bind extraction; see the repository `MIGRATION.md` for the current API.
+
 ## Overview
 
 Two new packages following the same architecture as all other languages:

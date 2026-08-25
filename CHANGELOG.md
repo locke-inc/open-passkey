@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+- Removed Open Passkey-owned session tokens, cookies, configuration, validation/logout routes, and client session helpers from all server and frontend packages.
+- Go callers now compose verified principals through `OnAuthenticated` and optional explicit registration login through `OnRegistered`.
+
 All notable changes to this project will be documented in this file.
 
 ## [0.1.3] - 2026-04-14

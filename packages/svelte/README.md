@@ -15,7 +15,7 @@ Add passkeys to your Svelte app **without running your own backend**. [Locke Gat
 ```typescript
 import { createPasskeyClient } from "@open-passkey/svelte";
 
-const { registerStore, loginStore, sessionStore } = createPasskeyClient({
+const { registerStore, loginStore } = createPasskeyClient({
   provider: "locke-gateway",
   rpId: "example.com",
 });
@@ -26,7 +26,7 @@ const { registerStore, loginStore, sessionStore } = createPasskeyClient({
 If you're running your own passkey server:
 
 ```typescript
-const { registerStore, loginStore, sessionStore } = createPasskeyClient({
+const { registerStore, loginStore } = createPasskeyClient({
   baseUrl: "/passkey",
 });
 ```
@@ -73,26 +73,6 @@ const { registerStore, loginStore, sessionStore } = createPasskeyClient({
 {/if}
 ```
 
-### Session
-
-```svelte
-<script>
-  import { onMount } from "svelte";
-  import { sessionStore } from "$lib/passkey";
-
-  onMount(() => sessionStore.checkSession());
-</script>
-
-{#if $sessionStore.loading}
-  <p>Loading...</p>
-{:else if $sessionStore.session}
-  <p>Logged in as {$sessionStore.session.userId}</p>
-  <button on:click={() => sessionStore.logout()}>Logout</button>
-{:else}
-  <p>Not logged in</p>
-{/if}
-```
-
 ## Stores
 
 `createPasskeyClient(config)` returns:
@@ -101,7 +81,6 @@ const { registerStore, loginStore, sessionStore } = createPasskeyClient({
 |-------|---------|-------|
 | `registerStore` | `register(userId, username)` | `{ status, result, error }` |
 | `loginStore` | `authenticate(userId?)` | `{ status, result, error }` |
-| `sessionStore` | `checkSession()`, `logout()` | `{ session, loading }` |
 
 ## Related Packages
 

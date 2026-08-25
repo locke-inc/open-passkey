@@ -32,21 +32,6 @@ passkey_router = create_passkey_router(PasskeyConfig(
 app.include_router(passkey_router, prefix="/passkey")
 ```
 
-## With Sessions
-
-```python
-from open_passkey_server.session import SessionConfig
-
-passkey_router = create_passkey_router(PasskeyConfig(
-    rp_id="example.com",
-    rp_display_name="Example",
-    origin="https://example.com",
-    session=SessionConfig(secret="your-32+-character-hmac-secret"),
-))
-```
-
-When `session` is configured, two additional routes are registered and login/register responses set an HttpOnly session cookie automatically.
-
 ## Routes
 
 | Method | Path | Description |
@@ -55,8 +40,6 @@ When `session` is configured, two additional routes are registered and login/reg
 | POST | `/register/finish` | Complete registration |
 | POST | `/login/begin` | Start authentication ceremony |
 | POST | `/login/finish` | Complete authentication |
-| GET | `/session` | Validate session cookie (session config required) |
-| POST | `/logout` | Clear session cookie (session config required) |
 
 ## API
 

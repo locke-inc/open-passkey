@@ -11,7 +11,6 @@ use OpenPasskey\Server\ChallengeStore;
 use OpenPasskey\Server\CredentialStore;
 use OpenPasskey\Server\StoredCredential;
 use OpenPasskey\Server\Session;
-use OpenPasskey\Server\SessionConfig;
 
 // PHP's built-in server re-executes this script per request, so in-memory
 // stores lose state. These thin wrappers use $_SESSION and a /tmp JSON file.
@@ -142,10 +141,6 @@ $config = new PasskeyConfig(
     origin: 'http://localhost:6001',
     challengeStore: new SessionChallengeStore(),
     credentialStore: new TmpCredentialStore(),
-    session: new SessionConfig(
-        secret: 'php-example-secret-must-be-32-charss!',
-        secure: false,
-    ),
 );
 
 $handler = new PasskeyHandler($config);
@@ -194,20 +189,13 @@ try {
             ));
         })(),
 
-        $method === 'POST' && $uri === '/passkey/register/finish' => (function () use ($handler, $config) {
+        $method === 'POST' && $uri === '/passkey/register/finish' => (function () use ($handler) {
             $body = jsonBody();
             $result = $handler->finishRegistration(
                 $body['userId'] ?? '',
                 $body['credential'] ?? [],
                 $body['prfSupported'] ?? false,
             );
-
-            if ($config->session !== null && isset($result['sessionToken'])) {
-                $token = $result['sessionToken'];
-                unset($result['sessionToken']);
-                header('Set-Cookie: ' . Session::buildSetCookieHeader($token, $config->session));
-            }
-
             jsonResponse($result);
         })(),
 
@@ -216,41 +204,13 @@ try {
             jsonResponse($handler->beginAuthentication($body['userId'] ?? ''));
         })(),
 
-        $method === 'POST' && $uri === '/passkey/login/finish' => (function () use ($handler, $config) {
+        $method === 'POST' && $uri === '/passkey/login/finish' => (function () use ($handler) {
             $body = jsonBody();
             $result = $handler->finishAuthentication(
                 $body['userId'] ?? '',
                 $body['credential'] ?? [],
             );
-
-            if ($config->session !== null && isset($result['sessionToken'])) {
-                $token = $result['sessionToken'];
-                unset($result['sessionToken']);
-                header('Set-Cookie: ' . Session::buildSetCookieHeader($token, $config->session));
-            }
-
             jsonResponse($result);
-        })(),
-
-        $method === 'GET' && $uri === '/passkey/session' => (function () use ($handler, $config) {
-            $cookieHeader = $_SERVER['HTTP_COOKIE'] ?? null;
-            $token = Session::parseCookieToken($cookieHeader, $config->session);
-            if ($token === null) {
-                jsonResponse(['error' => 'no session cookie'], 401);
-                return;
-            }
-            try {
-                $data = $handler->getSessionTokenData($token);
-            } catch (PasskeyError|\ValueError $e) {
-                jsonResponse(['error' => 'invalid session'], 401);
-                return;
-            }
-            jsonResponse(['userId' => $data->userId, 'authenticated' => true]);
-        })(),
-
-        $method === 'POST' && $uri === '/passkey/logout' => (function () use ($config) {
-            header('Set-Cookie: ' . Session::buildClearCookieHeader($config->session));
-            jsonResponse(['success' => true]);
         })(),
 
         default => jsonResponse(['error' => 'not found'], 404),

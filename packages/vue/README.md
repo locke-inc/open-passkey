@@ -66,34 +66,12 @@ const { authenticate, status, result, error } = usePasskeyLogin();
 </template>
 ```
 
-### Session
-
-```vue
-<script setup>
-import { onMounted } from "vue";
-import { usePasskeySession } from "@open-passkey/vue";
-
-const { session, loading, checkSession, logout } = usePasskeySession();
-onMounted(() => checkSession());
-</script>
-
-<template>
-  <p v-if="loading">Loading...</p>
-  <div v-else-if="session">
-    <p>Logged in as {{ session.userId }}</p>
-    <button @click="logout">Logout</button>
-  </div>
-  <p v-else>Not logged in</p>
-</template>
-```
-
 ## Composables
 
 | Composable | Returns | Description |
 |------------|---------|-------------|
 | `usePasskeyRegister()` | `{ register, status, result, error }` | Registration ceremony |
 | `usePasskeyLogin()` | `{ authenticate, status, result, error }` | Authentication ceremony |
-| `usePasskeySession()` | `{ session, loading, checkSession, logout }` | Session management |
 
 ## Related Packages
 

@@ -7,9 +7,4 @@ return [
     'route_prefix' => 'passkey',
     'challenge_timeout' => 300,
     'allow_multiple_credentials' => false,
-    'session' => [
-        'secret' => env('PASSKEY_SESSION_SECRET'),
-        'duration' => 86400,
-        'secure' => env('PASSKEY_SESSION_SECURE', true),
-    ],
 ];

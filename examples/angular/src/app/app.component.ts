@@ -1,8 +1,7 @@
-import { Component, inject, OnInit, signal } from "@angular/core";
+import { Component, signal } from "@angular/core";
 import {
   PasskeyRegisterComponent,
   PasskeyLoginComponent,
-  PasskeyService,
   type PasskeyRegistrationResult,
   type PasskeyAuthenticationResult,
 } from "@open-passkey/angular";
@@ -17,15 +16,6 @@ import {
         <h1>open-passkey</h1>
         <p class="subtitle">Angular Example</p>
 
-        @if (loading()) {
-          <div class="loading">Loading...</div>
-        } @else if (sessionUserId()) {
-          <div class="signed-in">
-            <div class="signed-in-badge">Authenticated</div>
-            <div class="signed-in-email">{{ sessionUserId() }}</div>
-            <button class="btn-secondary" (click)="doLogout()">Sign Out</button>
-          </div>
-        } @else {
           <div class="field">
             <label for="email">Email</label>
             <input
@@ -73,7 +63,6 @@ import {
           @if (message()) {
             <div [class]="'status ' + messageType()">{{ message() }}</div>
           }
-        }
       </div>
     </div>
   `,
@@ -340,46 +329,20 @@ import {
     }
   `],
 })
-export class AppComponent implements OnInit {
-  private passkey = inject(PasskeyService);
-
+export class AppComponent {
   email = signal("");
   message = signal("");
   messageType = signal<"success" | "error">("success");
-  sessionUserId = signal<string | null>(null);
-  loading = signal(true);
-
-  ngOnInit() {
-    this.passkey.getSession().subscribe({
-      next: (session) => {
-        this.sessionUserId.set(session?.userId ?? null);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false),
-    });
-  }
-
   onRegistered(result: PasskeyRegistrationResult) {
-    this.passkey.getSession().subscribe((session) => {
-      this.sessionUserId.set(session?.userId ?? null);
-    });
+    this.message.set(`Passkey registered: ${result.credentialId}`);
   }
 
   onAuthenticated(result: PasskeyAuthenticationResult) {
-    this.passkey.getSession().subscribe((session) => {
-      this.sessionUserId.set(session?.userId ?? null);
-    });
+    this.message.set(`Authenticated principal: ${result.userId}`);
   }
 
   onError(err: Error) {
     this.message.set(err.message || "Something went wrong");
     this.messageType.set("error");
-  }
-
-  doLogout() {
-    this.passkey.logout().subscribe(() => {
-      this.sessionUserId.set(null);
-      this.message.set("");
-    });
   }
 }
