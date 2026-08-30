@@ -2,10 +2,22 @@ import * as cborg from "cborg";
 import { encodeES256PublicKey, ALG_ES256 } from "./cose.js";
 import { sha256, base64urlEncode, randomBytes, concatBytes, uint32BE, uint16BE } from "./util.js";
 import type { CreateCredentialInput, CreateCredentialResult, StoredCredential } from "./types.js";
+import {
+  authenticatorFlags,
+  negotiateCreateExtensions,
+  requireCeremonyFacts,
+  requireRequestedUserVerification,
+} from "./ceremony.js";
+import { encodeCollectedClientData, validateCeremonyContext } from "./origin.js";
 
 const AAGUID = new Uint8Array(16); // 16 zero bytes for software authenticator
 
 export async function createCredential(input: CreateCredentialInput): Promise<CreateCredentialResult> {
+  validateCeremonyContext(input.rpId, input.origin, input.topOrigin, input.crossOrigin);
+  const ceremony = requireCeremonyFacts(input.ceremony);
+  requireRequestedUserVerification(input.userVerification, ceremony);
+  const extensions = negotiateCreateExtensions(input.extensions);
+
   // Only ES256 (-7) is supported
   if (!input.algorithms.includes(ALG_ES256)) {
     throw new Error("No supported algorithm found. Only ES256 (-7) is supported.");
@@ -36,10 +48,10 @@ export async function createCredential(input: CreateCredentialInput): Promise<Cr
   // Generate random credential ID (32 bytes)
   const credentialId = randomBytes(32);
 
-  // Build authenticatorData for registration
-  // flags: 0x5D = UP(0x01) | UV(0x04) | BE(0x08) | BS(0x10) | AT(0x40)
+  // Build authenticatorData for registration from verified ceremony facts.
   const rpIdHash = await sha256(new TextEncoder().encode(input.rpId));
-  const flags = new Uint8Array([0x5d]);
+  const flagsByte = authenticatorFlags(ceremony, true);
+  const flags = new Uint8Array([flagsByte]);
   const signCount = uint32BE(0);
 
   // Attested credential data: AAGUID(16) || credIdLen(2) || credId || COSEkey
@@ -48,13 +60,13 @@ export async function createCredential(input: CreateCredentialInput): Promise<Cr
   const authData = concatBytes(rpIdHash, flags, signCount, attestedCredData);
 
   // Build clientDataJSON
-  const clientDataJSON = JSON.stringify({
-    type: "webauthn.create",
-    challenge: base64urlEncode(input.challenge),
-    origin: input.origin,
-    crossOrigin: false,
-  });
-  const clientDataJSONBytes = new TextEncoder().encode(clientDataJSON);
+  const clientDataJSONBytes = encodeCollectedClientData(
+    "webauthn.create",
+    base64urlEncode(input.challenge),
+    input.origin,
+    input.topOrigin,
+    input.crossOrigin,
+  );
 
   // Build attestationObject (fmt: "none")
   const attestationObject = cborg.encode(new Map<string, unknown>([
@@ -76,8 +88,8 @@ export async function createCredential(input: CreateCredentialInput): Promise<Cr
     signCount: 0,
     createdAt: now,
     lastUsedAt: now,
-    backupEligible: true,
-    backupState: true,
+    backupEligible: ceremony.backupEligible,
+    backupState: ceremony.backupState,
   };
 
   return {
@@ -88,6 +100,7 @@ export async function createCredential(input: CreateCredentialInput): Promise<Cr
     },
     credentialId: base64urlEncode(credentialId),
     publicKeyCose,
+    clientExtensionResults: extensions.clientExtensionResults,
   };
 }
 

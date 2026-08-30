@@ -34,7 +34,7 @@ module OpenPasskey
           raise WebAuthnError.new("authenticator_data_too_short")
         end
         instance.instance_variable_set(:@credential_id, rest.byteslice(0, cred_id_len))
-        instance.instance_variable_set(:@credential_key, rest.byteslice(cred_id_len..))
+        instance.instance_variable_set(:@credential_key, extract_credential_key(rest.byteslice(cred_id_len..)))
       else
         instance.instance_variable_set(:@credential_id, nil)
         instance.instance_variable_set(:@credential_key, nil)
@@ -63,6 +63,13 @@ module OpenPasskey
     end
 
     private_class_method :new
+
+    def self.extract_credential_key(credential_data)
+      _, credential_key_end = CborDecoder.decode_in_place(credential_data, 0)
+      credential_data.byteslice(0, credential_key_end)
+    end
+
+    private_class_method :extract_credential_key
 
     def self.secure_compare(a, b)
       return false unless a.bytesize == b.bytesize

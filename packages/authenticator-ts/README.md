@@ -24,12 +24,20 @@ const result = await createCredential({
   userName: "alice@example.com",
   challenge: challengeBytes, // Uint8Array
   origin: "https://example.com",
-  alg: -7, // ES256
+  algorithms: [-7], // ES256
+  extensions: { credProps: true },
+  ceremony: {
+    userPresent: true,
+    userVerified: true, // only after genuine verification
+    backupEligible: true,
+    backupState: true,
+  },
 });
 
 // result: {
 //   credentialId, rawId, clientDataJSON, attestationObject,
-//   publicKey, publicKeyCose, storedCredential
+//   publicKey, publicKeyCose, storedCredential,
+//   clientExtensionResults: { credProps: { rk: true } }
 // }
 ```
 
@@ -43,6 +51,12 @@ const result = await getAssertion({
   challenge: challengeBytes,
   origin: "https://example.com",
   credential: storedCredential, // from createCredential
+  ceremony: {
+    userPresent: true,
+    userVerified: false,
+    backupEligible: true,
+    backupState: true,
+  },
 });
 
 // result: {
@@ -57,6 +71,15 @@ const result = await getAssertion({
 |----------|-------------|
 | `createCredential(input)` | Simulates `navigator.credentials.create()` |
 | `getAssertion(input)` | Simulates `navigator.credentials.get()` |
+
+Both functions require explicit `ceremony` facts. The authenticator never
+infers user verification or backup flags from a WebAuthn preference. A
+`userVerification: "required"` request fails unless `userVerified` is true.
+Synced credential assertions always use `signCount: 0`. Cross-origin callers
+must also provide `crossOrigin: true` and a distinct, trustworthy `topOrigin`.
+RP IDs are checked against bundled ICANN and private Public Suffix List rules
+without a ceremony-time network request. `credProps` is negotiated as a
+client-only extension and therefore does not set the authenticator-data ED bit.
 
 ## Related Packages
 

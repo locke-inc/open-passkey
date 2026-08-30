@@ -2,8 +2,11 @@
 
 import hashlib
 import hmac
+import io
 import struct
 from dataclasses import dataclass
+
+import cbor2
 
 from .errors import RPIDMismatchError
 
@@ -54,7 +57,11 @@ def parse_authenticator_data(auth_data: bytes, expect_cred_data: bool) -> Parsed
 
         result.credential_id = auth_data[offset:offset + cred_id_len]
         offset += cred_id_len
-        result.credential_key = auth_data[offset:]
+
+        credential_key_stream = io.BytesIO(auth_data[offset:])
+        cbor2.CBORDecoder(credential_key_stream).decode()
+        credential_key_len = credential_key_stream.tell()
+        result.credential_key = auth_data[offset:offset + credential_key_len]
 
     return result
 

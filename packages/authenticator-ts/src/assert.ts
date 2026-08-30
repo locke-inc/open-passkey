@@ -1,28 +1,37 @@
 import { p1363ToDer } from "./der.js";
 import { sha256, base64urlEncode, concatBytes, uint32BE, toArrayBuffer } from "./util.js";
 import type { GetAssertionInput, GetAssertionResult, StoredCredential } from "./types.js";
+import {
+  authenticatorFlags,
+  requireCeremonyFacts,
+  requireRequestedUserVerification,
+} from "./ceremony.js";
+import { encodeCollectedClientData, validateCeremonyContext } from "./origin.js";
 
 export async function getAssertion(input: GetAssertionInput): Promise<GetAssertionResult> {
+  validateCeremonyContext(input.rpId, input.origin, input.topOrigin, input.crossOrigin);
   const credential = input.credential;
-  const newSignCount = credential.signCount + 1;
+  if (credential.rpId !== input.rpId) {
+    throw new Error("Credential RP ID does not match request");
+  }
+  const ceremony = requireCeremonyFacts(input.ceremony);
+  requireRequestedUserVerification(input.userVerification, ceremony);
 
   // Build authenticatorData for assertion
-  // flags: 0x05 = UP(0x01) | UV(0x04)
-  // Backup flags: BE(0x08) | BS(0x10)
   const rpIdHash = await sha256(new TextEncoder().encode(input.rpId));
-  const flagsByte = 0x01 | 0x04 | 0x08 | 0x10; // UP + UV + BE + BS
+  const flagsByte = authenticatorFlags(ceremony, false);
   const flags = new Uint8Array([flagsByte]);
-  const signCountBytes = uint32BE(newSignCount);
+  const signCountBytes = uint32BE(0);
   const authData = concatBytes(rpIdHash, flags, signCountBytes);
 
   // Build clientDataJSON
-  const clientDataJSON = JSON.stringify({
-    type: "webauthn.get",
-    challenge: base64urlEncode(input.challenge),
-    origin: input.origin,
-    crossOrigin: false,
-  });
-  const clientDataJSONBytes = new TextEncoder().encode(clientDataJSON);
+  const clientDataJSONBytes = encodeCollectedClientData(
+    "webauthn.get",
+    base64urlEncode(input.challenge),
+    input.origin,
+    input.topOrigin,
+    input.crossOrigin,
+  );
 
   // Sign: authData || SHA-256(clientDataJSON)
   const clientDataHash = await sha256(clientDataJSONBytes);
@@ -51,7 +60,9 @@ export async function getAssertion(input: GetAssertionInput): Promise<GetAsserti
   const now = new Date().toISOString();
   const updatedCredential: StoredCredential = {
     ...credential,
-    signCount: newSignCount,
+    signCount: 0,
+    backupEligible: ceremony.backupEligible,
+    backupState: ceremony.backupState,
     lastUsedAt: now,
   };
 
@@ -60,7 +71,7 @@ export async function getAssertion(input: GetAssertionInput): Promise<GetAsserti
       authenticatorData: base64urlEncode(authData),
       clientDataJSON: base64urlEncode(clientDataJSONBytes),
       signature: base64urlEncode(derSig),
-      userHandle: base64urlEncode(credential.userId),
+      userHandle: credential.userId === null ? null : base64urlEncode(credential.userId),
     },
     updatedCredential,
   };

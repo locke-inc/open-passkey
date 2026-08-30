@@ -1,6 +1,13 @@
 import { createCredential, getAssertion } from "@open-passkey/authenticator";
 import { expect } from "vitest";
 
+const VERIFIED_SYNCED_CEREMONY = {
+  userPresent: true,
+  userVerified: true,
+  backupEligible: true,
+  backupState: true,
+} as const;
+
 function base64urlDecode(str: string): Uint8Array {
   let padded = str.replace(/-/g, "+").replace(/_/g, "/");
   while (padded.length % 4 !== 0) padded += "=";
@@ -64,6 +71,7 @@ export async function runFullCeremony(baseUrl: string, origin: string) {
     challenge: base64urlDecode(regOptions.challenge),
     origin,
     algorithms,
+    ceremony: VERIFIED_SYNCED_CEREMONY,
   });
 
   // Step 3: Finish registration
@@ -102,6 +110,7 @@ export async function runFullCeremony(baseUrl: string, origin: string) {
     challenge: base64urlDecode(authOptions.challenge),
     origin,
     credential: createResult.credential,
+    ceremony: VERIFIED_SYNCED_CEREMONY,
   });
 
   // Step 6: Finish authentication
@@ -150,6 +159,7 @@ export async function runInvalidAuthTest(baseUrl: string, origin: string) {
     challenge: base64urlDecode(regOptions.challenge),
     origin,
     algorithms,
+    ceremony: VERIFIED_SYNCED_CEREMONY,
   });
 
   await post(baseUrl, "/passkey/register/finish", {
@@ -172,6 +182,7 @@ export async function runInvalidAuthTest(baseUrl: string, origin: string) {
     challenge: base64urlDecode(authOptions.challenge),
     origin,
     credential: createResult.credential,
+    ceremony: VERIFIED_SYNCED_CEREMONY,
   });
 
   // Tamper with the signature (flip a byte)

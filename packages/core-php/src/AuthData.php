@@ -41,7 +41,9 @@ class AuthData
                 throw new WebAuthnException('authenticator_data_too_short');
             }
             $instance->credentialId = substr($rest, 0, $credIdLen);
-            $instance->credentialKey = substr($rest, $credIdLen);
+            $credentialData = substr($rest, $credIdLen);
+            CborDecoder::decodeInPlace($credentialData, 0, $credentialKeyEnd);
+            $instance->credentialKey = substr($credentialData, 0, $credentialKeyEnd);
         } else {
             $instance->credentialId = null;
             $instance->credentialKey = null;
