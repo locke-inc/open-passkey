@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "test:reference": "vitest run reference-rp.test.ts",
     "test:express": "vitest run -t 'express'",
     "test:go": "vitest run -t 'go-nethttp'",
     "test:fastapi": "vitest run -t 'fastapi'"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "vitest": "^4.0.18",
     "typescript": "^5.9.3",
-    "@open-passkey/authenticator": "file:../../packages/authenticator-ts"
+    "@open-passkey/authenticator": "file:../../packages/authenticator-ts",
+    "@open-passkey/core": "file:../../packages/core-ts"
   }
 }
