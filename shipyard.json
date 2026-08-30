@@ -21,6 +21,7 @@
   },
   "features": [
     { "id": "lookout-passkeys", "files": ["packages/authenticator-ts/"], "status": "done" },
+    { "id": "external-passkey-authentication", "files": ["packages/authenticator-ts/", "spec/vectors/registration_ed_uvm.json"], "status": "partial" },
     { "id": "session-support", "files": ["packages/server-ts/src/session.ts", "packages/server-go/session.go", "packages/server-py/open_passkey_server/session.py", "packages/sdk-js/src/index.ts"], "status": "done" }
   ],
   "health": {
