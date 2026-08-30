@@ -12,6 +12,7 @@
 package webauthn
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
@@ -35,8 +36,8 @@ var cborDecMode, _ = cbor.DecOptions{
 
 // COSE algorithm identifiers.
 const (
-	AlgES256              = -7  // ECDSA w/ SHA-256 on P-256
-	AlgMLDSA65            = -49 // ML-DSA-65 (Dilithium3, FIPS 204)
+	AlgES256                 = -7  // ECDSA w/ SHA-256 on P-256
+	AlgMLDSA65               = -49 // ML-DSA-65 (Dilithium3, FIPS 204)
 	AlgCompositeMLDSA65ES256 = -52 // ML-DSA-65-ES256 composite (draft-ietf-jose-pq-composite-sigs)
 )
 
@@ -50,21 +51,21 @@ const (
 // Sentinel errors returned by verification functions.
 // Error names match the "error" field in spec/vectors/ JSON.
 var (
-	ErrTypeMismatch      = errors.New("type_mismatch")
-	ErrChallengeMismatch = errors.New("challenge_mismatch")
-	ErrOriginMismatch    = errors.New("origin_mismatch")
-	ErrRPIDMismatch      = errors.New("rp_id_mismatch")
-	ErrSignatureInvalid  = errors.New("signature_invalid")
-	ErrAuthDataTooShort  = errors.New("authenticator_data_too_short")
-	ErrNoCredentialData  = errors.New("no_attested_credential_data")
-	ErrUnsupportedAlg    = errors.New("unsupported_cose_algorithm")
+	ErrTypeMismatch                 = errors.New("type_mismatch")
+	ErrChallengeMismatch            = errors.New("challenge_mismatch")
+	ErrOriginMismatch               = errors.New("origin_mismatch")
+	ErrRPIDMismatch                 = errors.New("rp_id_mismatch")
+	ErrSignatureInvalid             = errors.New("signature_invalid")
+	ErrAuthDataTooShort             = errors.New("authenticator_data_too_short")
+	ErrNoCredentialData             = errors.New("no_attested_credential_data")
+	ErrUnsupportedAlg               = errors.New("unsupported_cose_algorithm")
 	ErrSignCountRollback            = errors.New("sign_count_rollback")
 	ErrUserPresenceRequired         = errors.New("user_presence_required")
 	ErrUserVerificationRequired     = errors.New("user_verification_required")
-	ErrUnsupportedAttestationFormat    = errors.New("unsupported_attestation_format")
-	ErrTokenBindingUnsupported         = errors.New("token_binding_unsupported")
-	ErrInvalidBackupState              = errors.New("invalid_backup_state")
-	ErrInvalidAttestationStatement     = errors.New("invalid_attestation_statement")
+	ErrUnsupportedAttestationFormat = errors.New("unsupported_attestation_format")
+	ErrTokenBindingUnsupported      = errors.New("token_binding_unsupported")
+	ErrInvalidBackupState           = errors.New("invalid_backup_state")
+	ErrInvalidAttestationStatement  = errors.New("invalid_attestation_statement")
 )
 
 // --- Public input/output types ---
@@ -211,7 +212,24 @@ func parseAuthenticatorData(authData []byte, expectCredData bool) (*parsedAuthDa
 			return nil, ErrAuthDataTooShort
 		}
 		pad.CredentialID = rest[:credIDLen]
-		pad.CredentialKey = rest[credIDLen:]
+		credentialAndExtensions := rest[credIDLen:]
+		decoder := cborDecMode.NewDecoder(bytes.NewReader(credentialAndExtensions))
+		var credentialKey cbor.RawMessage
+		if err := decoder.Decode(&credentialKey); err != nil {
+			return nil, fmt.Errorf("invalid credential public key: %w", err)
+		}
+		pad.CredentialKey = append([]byte(nil), credentialKey...)
+
+		hasExtensionData := pad.Flags&0x80 != 0
+		if hasExtensionData {
+			var extensions map[string]cbor.RawMessage
+			if err := decoder.Decode(&extensions); err != nil {
+				return nil, fmt.Errorf("invalid authenticator extension data: %w", err)
+			}
+		}
+		if decoder.NumBytesRead() != len(credentialAndExtensions) {
+			return nil, errors.New("invalid authenticator data trailing bytes")
+		}
 	}
 
 	return pad, nil

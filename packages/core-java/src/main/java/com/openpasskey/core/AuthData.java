@@ -1,5 +1,10 @@
 package com.openpasskey.core;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +15,8 @@ import java.util.Arrays;
  */
 public final class AuthData {
     private AuthData() {}
+
+    private static final ObjectMapper CBOR_MAPPER = new ObjectMapper(new CBORFactory());
 
     /** Parsed authenticator data fields. */
     public static class Parsed {
@@ -60,10 +67,26 @@ public final class AuthData {
                         "Authenticator data too short for credential ID");
             }
             credentialId = Arrays.copyOfRange(authData, 55, credIdEnd);
-            coseKeyBytes = Arrays.copyOfRange(authData, credIdEnd, authData.length);
+            coseKeyBytes = readFirstCborItem(authData, credIdEnd);
         }
 
         return new Parsed(rpIdHash, flags, signCount, credentialId, coseKeyBytes);
+    }
+
+    private static byte[] readFirstCborItem(byte[] authData, int offset) throws WebAuthnException {
+        byte[] remaining = Arrays.copyOfRange(authData, offset, authData.length);
+        try (JsonParser parser = CBOR_MAPPER.getFactory().createParser(remaining)) {
+            CBOR_MAPPER.readValue(parser, Object.class);
+            long bytesRead = parser.currentLocation().getByteOffset();
+            if (bytesRead <= 0 || bytesRead > remaining.length) {
+                throw new WebAuthnException("invalid_authenticator_data",
+                        "Invalid credential public key length");
+            }
+            return Arrays.copyOf(remaining, (int) bytesRead);
+        } catch (IOException e) {
+            throw new WebAuthnException("invalid_authenticator_data",
+                    "Failed to decode credential public key CBOR");
+        }
     }
 
     /**

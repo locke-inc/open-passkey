@@ -27,6 +27,31 @@
       }
     },
     {
+      "name": "valid_registration_with_extension_data",
+      "description": "A valid registration containing UVM authenticator extension output after the COSE credential key.",
+      "input": {
+        "credential": {
+          "id": "Jykz23EA5kBU2K5lweV1DA4kaYZ0lAmYgRePQDhoNhA",
+          "rawId": "Jykz23EA5kBU2K5lweV1DA4kaYZ0lAmYgRePQDhoNhA",
+          "response": {
+            "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViuo3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUfFAAAAAAAAAAAAAAAAAAAAAAAAAAAAICcpM9txAOZAVNiuZcHldQwOJGmGdJQJmIEXj0A4aDYQpQECAyYgASFYIMg-WrZVPrhtYpZf81AX_C0Xq260WKmEz0DUS5NRV8CDIlggPNjJE9Os2fhmuUU0EpeD3Vy7tSDbfdLHnr5zsMWkh7GhY3V2bYGDAgIC",
+            "clientDataJSON": "eyJjaGFsbGVuZ2UiOiJjbVZuYVhOMGNtRjBhVzl1TFdOb1lXeHNaVzVuWlMwd01USXpORFUyTnpnNSIsIm9yaWdpbiI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIn0"
+          },
+          "type": "public-key"
+        },
+        "expectedChallenge": "cmVnaXN0cmF0aW9uLWNoYWxsZW5nZS0wMTIzNDU2Nzg5",
+        "expectedOrigin": "https://example.com",
+        "rpId": "example.com"
+      },
+      "expected": {
+        "success": true,
+        "credentialId": "Jykz23EA5kBU2K5lweV1DA4kaYZ0lAmYgRePQDhoNhA",
+        "publicKeyCose": "pQECAyYgASFYIMg-WrZVPrhtYpZf81AX_C0Xq260WKmEz0DUS5NRV8CDIlggPNjJE9Os2fhmuUU0EpeD3Vy7tSDbfdLHnr5zsMWkh7E",
+        "signCount": 0,
+        "rpIdHash": "o3mm9u6vuaVeN4wRgDTidR5oL6ufLTCrE9ISVYbOGUc"
+      }
+    },
+    {
       "name": "invalid_rp_id_mismatch",
       "description": "Registration where the relying party passes a different rpId than what the authenticator signed.",
       "input": {

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using PeterO.Cbor;
 
 namespace OpenPasskey.Core;
 
@@ -62,8 +63,13 @@ internal static class AuthData
             Array.Copy(authData, offset, result.CredentialId, 0, credIdLen);
             offset += credIdLen;
 
-            result.CredentialKey = new byte[authData.Length - offset];
-            Array.Copy(authData, offset, result.CredentialKey, 0, authData.Length - offset);
+            byte[] remaining = new byte[authData.Length - offset];
+            Array.Copy(authData, offset, remaining, 0, remaining.Length);
+
+            using var stream = new MemoryStream(remaining, writable: false);
+            CBORObject.Read(stream);
+            result.CredentialKey = new byte[stream.Position];
+            Array.Copy(remaining, result.CredentialKey, result.CredentialKey.Length);
         }
 
         return result;

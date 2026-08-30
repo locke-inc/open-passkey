@@ -1,4 +1,7 @@
 use sha2::{Digest, Sha256};
+use std::io::{Cursor, Seek};
+
+use ciborium::Value;
 
 use crate::types::WebAuthnError;
 
@@ -73,7 +76,16 @@ pub fn parse_auth_data(data: &[u8]) -> Result<AuthenticatorData, WebAuthnError> 
             ));
         }
         credential_id = Some(data[55..cred_id_end].to_vec());
-        credential_public_key = Some(data[cred_id_end..].to_vec());
+
+        let mut credential_key_reader = Cursor::new(&data[cred_id_end..]);
+        let _: Value = ciborium::from_reader(&mut credential_key_reader).map_err(|e| {
+            WebAuthnError::InvalidInput(format!("invalid credential public key CBOR: {}", e))
+        })?;
+        let credential_key_len = credential_key_reader
+            .stream_position()
+            .map_err(|e| WebAuthnError::InvalidInput(e.to_string()))?
+            as usize;
+        credential_public_key = Some(data[cred_id_end..cred_id_end + credential_key_len].to_vec());
     }
 
     Ok(AuthenticatorData {

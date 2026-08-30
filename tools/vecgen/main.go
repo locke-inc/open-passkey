@@ -51,9 +51,9 @@ func coseEC2PublicKey(pub *ecdsa.PublicKey) []byte {
 	// COSE_Key map: {1: 2, 3: -7, -1: 1, -2: x, -3: y}
 	// kty=2 (EC2), alg=-7 (ES256), crv=1 (P-256)
 	key := map[int]interface{}{
-		1:  2,                               // kty: EC2
-		3:  -7,                              // alg: ES256
-		-1: 1,                               // crv: P-256
+		1:  2,                                 // kty: EC2
+		3:  -7,                                // alg: ES256
+		-1: 1,                                 // crv: P-256
 		-2: pub.X.FillBytes(make([]byte, 32)), // x coordinate
 		-3: pub.Y.FillBytes(make([]byte, 32)), // y coordinate
 	}
@@ -454,12 +454,12 @@ type TestVector struct {
 }
 
 type Expected struct {
-	Success      bool   `json:"success"`
-	Error        string `json:"error,omitempty"`
-	CredentialID string `json:"credentialId,omitempty"`
-	PublicKeyCOSE string `json:"publicKeyCose,omitempty"`
-	SignCount    *uint32 `json:"signCount,omitempty"`
-	RPIDHash     string `json:"rpIdHash,omitempty"`
+	Success       bool    `json:"success"`
+	Error         string  `json:"error,omitempty"`
+	CredentialID  string  `json:"credentialId,omitempty"`
+	PublicKeyCOSE string  `json:"publicKeyCose,omitempty"`
+	SignCount     *uint32 `json:"signCount,omitempty"`
+	RPIDHash      string  `json:"rpIdHash,omitempty"`
 }
 
 type VectorFile struct {
@@ -509,11 +509,54 @@ func generateRegistrationVectors() VectorFile {
 				},
 			},
 			Expected: Expected{
-				Success:      true,
-				CredentialID: b64Encode(auth.credentialID),
+				Success:       true,
+				CredentialID:  b64Encode(auth.credentialID),
 				PublicKeyCOSE: b64Encode(auth.publicKeyCOSE),
-				SignCount:    &signCount,
-				RPIDHash:     b64Encode(rpIDHash[:]),
+				SignCount:     &signCount,
+				RPIDHash:      b64Encode(rpIDHash[:]),
+			},
+		})
+	}
+
+	// --- Authenticator extension data after the credential public key ---
+	{
+		clientDataJSON := makeClientDataJSON("webauthn.create", challenge, origin)
+		flags := byte(0x01 | 0x04 | 0x40 | 0x80) // UP + UV + AT + ED
+		authData := auth.makeAuthenticatorData(rpID, flags, true)
+		extensionData, err := cbor.Marshal(map[string]interface{}{
+			"uvm": []interface{}{[]interface{}{2, 2, 2}},
+		})
+		if err != nil {
+			log.Fatalf("extension data marshal failed: %v", err)
+		}
+		authData = append(authData, extensionData...)
+		attestationObject := makeAttestationObject(authData)
+
+		rpIDHash := sha256.Sum256([]byte(rpID))
+		signCount := uint32(0)
+		vectors.Vectors = append(vectors.Vectors, TestVector{
+			Name:        "valid_registration_with_extension_data",
+			Description: "A valid registration containing UVM authenticator extension output after the COSE credential key.",
+			Input: map[string]any{
+				"rpId":              rpID,
+				"expectedChallenge": challenge,
+				"expectedOrigin":    origin,
+				"credential": map[string]any{
+					"id":    b64Encode(auth.credentialID),
+					"rawId": b64Encode(auth.credentialID),
+					"type":  "public-key",
+					"response": map[string]any{
+						"clientDataJSON":    b64Encode(clientDataJSON),
+						"attestationObject": b64Encode(attestationObject),
+					},
+				},
+			},
+			Expected: Expected{
+				Success:       true,
+				CredentialID:  b64Encode(auth.credentialID),
+				PublicKeyCOSE: b64Encode(auth.publicKeyCOSE),
+				SignCount:     &signCount,
+				RPIDHash:      b64Encode(rpIDHash[:]),
 			},
 		})
 	}
@@ -702,11 +745,11 @@ func generateRegistrationVectors() VectorFile {
 				},
 			},
 			Expected: Expected{
-				Success:      true,
-				CredentialID: b64Encode(auth.credentialID),
+				Success:       true,
+				CredentialID:  b64Encode(auth.credentialID),
 				PublicKeyCOSE: b64Encode(auth.publicKeyCOSE),
-				SignCount:    &signCount,
-				RPIDHash:     b64Encode(rpIDHash[:]),
+				SignCount:     &signCount,
+				RPIDHash:      b64Encode(rpIDHash[:]),
 			},
 		})
 	}
@@ -946,11 +989,11 @@ func generateAuthenticationVectors() VectorFile {
 			Name:        "valid_authentication",
 			Description: "A valid authentication ceremony with ES256 signature.",
 			Input: map[string]any{
-				"rpId":              rpID,
-				"expectedChallenge": challenge,
-				"expectedOrigin":    origin,
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
 				"storedPublicKeyCose": storedPublicKey,
-				"storedSignCount":   0, // previous sign count on server
+				"storedSignCount":     0, // previous sign count on server
 				"credential": map[string]any{
 					"id":    b64Encode(auth.credentialID),
 					"rawId": b64Encode(auth.credentialID),
@@ -980,11 +1023,11 @@ func generateAuthenticationVectors() VectorFile {
 			Name:        "invalid_rp_id_mismatch",
 			Description: "Authentication where the relying party passes a different rpId than what the authenticator signed.",
 			Input: map[string]any{
-				"rpId":              "evil.com", // mismatch!
-				"expectedChallenge": challenge,
-				"expectedOrigin":    origin,
+				"rpId":                "evil.com", // mismatch!
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
 				"storedPublicKeyCose": storedPublicKey,
-				"storedSignCount":   0,
+				"storedSignCount":     0,
 				"credential": map[string]any{
 					"id":    b64Encode(auth.credentialID),
 					"rawId": b64Encode(auth.credentialID),
@@ -1015,11 +1058,11 @@ func generateAuthenticationVectors() VectorFile {
 			Name:        "invalid_challenge_mismatch",
 			Description: "Authentication where the challenge in clientDataJSON does not match the expected challenge.",
 			Input: map[string]any{
-				"rpId":              rpID,
-				"expectedChallenge": challenge,
-				"expectedOrigin":    origin,
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
 				"storedPublicKeyCose": storedPublicKey,
-				"storedSignCount":   0,
+				"storedSignCount":     0,
 				"credential": map[string]any{
 					"id":    b64Encode(auth.credentialID),
 					"rawId": b64Encode(auth.credentialID),
@@ -1054,11 +1097,11 @@ func generateAuthenticationVectors() VectorFile {
 			Name:        "invalid_signature_tampered",
 			Description: "Authentication with a valid structure but a tampered/invalid signature.",
 			Input: map[string]any{
-				"rpId":              rpID,
-				"expectedChallenge": challenge,
-				"expectedOrigin":    origin,
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
 				"storedPublicKeyCose": storedPublicKey,
-				"storedSignCount":   0,
+				"storedSignCount":     0,
 				"credential": map[string]any{
 					"id":    b64Encode(auth.credentialID),
 					"rawId": b64Encode(auth.credentialID),
@@ -1088,11 +1131,11 @@ func generateAuthenticationVectors() VectorFile {
 			Name:        "invalid_type_not_get",
 			Description: "Authentication where clientDataJSON type is 'webauthn.create' instead of 'webauthn.get'.",
 			Input: map[string]any{
-				"rpId":              rpID,
-				"expectedChallenge": challenge,
-				"expectedOrigin":    origin,
+				"rpId":                rpID,
+				"expectedChallenge":   challenge,
+				"expectedOrigin":      origin,
 				"storedPublicKeyCose": storedPublicKey,
-				"storedSignCount":   0,
+				"storedSignCount":     0,
 				"credential": map[string]any{
 					"id":    b64Encode(auth.credentialID),
 					"rawId": b64Encode(auth.credentialID),
