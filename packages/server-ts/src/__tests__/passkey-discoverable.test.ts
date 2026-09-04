@@ -12,10 +12,11 @@ import { verifyAuthentication } from "@open-passkey/core";
 import { Passkey } from "../passkey.js";
 import { MemoryChallengeStore, MemoryCredentialStore } from "../stores.js";
 import { base64urlEncode } from "../base64url.js";
+import type { FinishAuthenticationRequest } from "../types.js";
 
 const mockedVerify = vi.mocked(verifyAuthentication);
 
-function fakeCredential(id = "AQ") {
+function fakeCredential(id = "AQ"): FinishAuthenticationRequest["credential"] {
   return {
     id,
     rawId: id,
