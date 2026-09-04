@@ -13,6 +13,9 @@
 
 export { verifyRegistration } from "./registration.js";
 export { verifyAuthentication } from "./authentication.js";
+export { verifyTpmAttestation, parseTpmPubArea, parseTpmCertInfo, computeTpmName } from "./tpm.js";
+export { verifyAndroidKeyAttestation, androidAttestationSecurityLevel, androidAttestationChallenge, parseAndroidKeyDescription } from "./android-key.js";
+export type { AndroidKeyDescription } from "./android-key.js";
 export type {
   RegistrationInput,
   RegistrationResult,

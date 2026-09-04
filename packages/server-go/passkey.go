@@ -152,6 +152,14 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		UserID   string `json:"userId"`
 		Username string `json:"username"`
 
+		// AuthenticatorSelection mirrors the WebAuthn creation option of the
+		// same name. Only UserVerification is honored: when "required", the
+		// requirement is persisted alongside the challenge and enforced at
+		// FinishRegistration (UV flag must be set).
+		AuthenticatorSelection *struct {
+			UserVerification string `json:"userVerification"`
+		} `json:"authenticatorSelection"`
+
 		// RegistrationToken is reserved for future backend-authorized registration mode.
 		// When implemented, the relying party's backend will issue a signed, short-lived
 		// token authorizing registration for a specific userId, and the gateway will
@@ -198,10 +206,18 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Persist the UV requirement (if any) alongside the challenge so
+	// FinishRegistration can enforce it.
+	userVerification := ""
+	if req.AuthenticatorSelection != nil {
+		userVerification = req.AuthenticatorSelection.UserVerification
+	}
+
 	// Store challenge + PRF salt together as JSON
 	challengeData, _ := json.Marshal(map[string]string{
-		"challenge": challenge,
-		"prfSalt":   base64.RawURLEncoding.EncodeToString(prfSalt),
+		"challenge":        challenge,
+		"prfSalt":          base64.RawURLEncoding.EncodeToString(prfSalt),
+		"userVerification": userVerification,
 	})
 	if err := p.config.ChallengeStore.Store(req.UserID, string(challengeData), p.config.ChallengeTimeout); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to store challenge")
@@ -227,7 +243,7 @@ func (p *Passkey) BeginRegistration(w http.ResponseWriter, r *http.Request) {
 		},
 		"authenticatorSelection": map[string]any{
 			"residentKey":      "preferred",
-			"userVerification": "preferred",
+			"userVerification": orDefault(userVerification, "preferred"),
 		},
 		"timeout":     p.config.ChallengeTimeout.Milliseconds(),
 		"attestation": "none",
@@ -286,8 +302,9 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var stored struct {
-		Challenge string `json:"challenge"`
-		PRFSalt   string `json:"prfSalt"`
+		Challenge        string `json:"challenge"`
+		PRFSalt          string `json:"prfSalt"`
+		UserVerification string `json:"userVerification"`
 	}
 	if err := json.Unmarshal([]byte(challengeData), &stored); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to decode challenge data")
@@ -295,16 +312,17 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := webauthn.VerifyRegistration(webauthn.RegistrationInput{
-		RPID:              p.config.RPID,
-		ExpectedChallenge: stored.Challenge,
-		ExpectedOrigin:    p.config.Origin,
-		AdditionalOrigins: p.config.AdditionalOrigins,
-		ClientDataJSON:    req.Credential.Response.ClientDataJSON,
-		AttestationObject: req.Credential.Response.AttestationObject,
+		RPID:                    p.config.RPID,
+		ExpectedChallenge:       stored.Challenge,
+		ExpectedOrigin:          p.config.Origin,
+		AdditionalOrigins:       p.config.AdditionalOrigins,
+		ClientDataJSON:          req.Credential.Response.ClientDataJSON,
+		AttestationObject:       req.Credential.Response.AttestationObject,
+		RequireUserVerification: stored.UserVerification == "required",
 	})
 	if err != nil {
 		log.Printf("registration verification failed: %s", err.Error())
-		writeError(w, http.StatusBadRequest, "registration verification failed")
+		writeError(w, http.StatusBadRequest, "registration verification failed: "+err.Error())
 		return
 	}
 
@@ -354,6 +372,11 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID string `json:"userId"`
+
+		// UserVerification mirrors the WebAuthn request option of the same
+		// name. When "required", it is persisted alongside the challenge and
+		// enforced at FinishAuthentication (UV flag must be set).
+		UserVerification string `json:"userVerification"`
 	}
 	// Body is optional for discoverable credentials
 	r.Body = http.MaxBytesReader(w, r.Body, 128*1024)
@@ -371,7 +394,13 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 		challengeKey = challenge // use challenge itself as key for discoverable flow
 	}
 
-	if err := p.config.ChallengeStore.Store(challengeKey, challenge, p.config.ChallengeTimeout); err != nil {
+	// Store the challenge with the UV requirement so FinishAuthentication
+	// can enforce it.
+	challengeData, _ := json.Marshal(map[string]string{
+		"challenge":        challenge,
+		"userVerification": req.UserVerification,
+	})
+	if err := p.config.ChallengeStore.Store(challengeKey, string(challengeData), p.config.ChallengeTimeout); err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to store challenge")
 		return
 	}
@@ -380,7 +409,7 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 		"challenge":        challenge,
 		"rpId":             p.config.RPID,
 		"timeout":          p.config.ChallengeTimeout.Milliseconds(),
-		"userVerification": "preferred",
+		"userVerification": orDefault(req.UserVerification, "preferred"),
 	}
 
 	// If userId provided, look up allowed credentials and PRF salts.
@@ -436,6 +465,7 @@ func (p *Passkey) BeginAuthentication(w http.ResponseWriter, r *http.Request) {
 func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		UserID     string `json:"userId"`
+		Challenge  string `json:"challenge"`
 		Credential struct {
 			ID       string `json:"id"`
 			RawID    string `json:"rawId"`
@@ -454,10 +484,35 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	challenge, err := p.config.ChallengeStore.Consume(req.UserID)
+	// Discoverable flow: explicit challenge field takes effect when userId is absent.
+	// Backward compat: old clients stuff the challenge into userId, which still works.
+	lookupKey := req.UserID
+	if lookupKey == "" {
+		lookupKey = req.Challenge
+	}
+	if lookupKey == "" {
+		writeError(w, http.StatusBadRequest, "challenge not found or expired")
+		return
+	}
+
+	challengeData, err := p.config.ChallengeStore.Consume(lookupKey)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "challenge not found or expired")
 		return
+	}
+
+	// Challenges stored by BeginAuthentication are JSON
+	// {"challenge": ..., "userVerification": ...}. Fall back to treating the
+	// value as a raw challenge for entries stored by older versions.
+	challenge := challengeData
+	requireUV := false
+	var storedAuth struct {
+		Challenge        string `json:"challenge"`
+		UserVerification string `json:"userVerification"`
+	}
+	if err := json.Unmarshal([]byte(challengeData), &storedAuth); err == nil && storedAuth.Challenge != "" {
+		challenge = storedAuth.Challenge
+		requireUV = storedAuth.UserVerification == "required"
 	}
 
 	credIDBytes, err := base64.RawURLEncoding.DecodeString(req.Credential.ID)
@@ -486,19 +541,20 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := webauthn.VerifyAuthentication(webauthn.AuthenticationInput{
-		RPID:                p.config.RPID,
-		ExpectedChallenge:   challenge,
-		ExpectedOrigin:      p.config.Origin,
-		AdditionalOrigins:   p.config.AdditionalOrigins,
-		StoredPublicKeyCOSE: stored.PublicKeyCOSE,
-		StoredSignCount:     stored.SignCount,
-		ClientDataJSON:      req.Credential.Response.ClientDataJSON,
-		AuthenticatorData:   req.Credential.Response.AuthenticatorData,
-		Signature:           req.Credential.Response.Signature,
+		RPID:                    p.config.RPID,
+		ExpectedChallenge:       challenge,
+		ExpectedOrigin:          p.config.Origin,
+		AdditionalOrigins:       p.config.AdditionalOrigins,
+		StoredPublicKeyCOSE:     stored.PublicKeyCOSE,
+		StoredSignCount:         stored.SignCount,
+		ClientDataJSON:          req.Credential.Response.ClientDataJSON,
+		AuthenticatorData:       req.Credential.Response.AuthenticatorData,
+		Signature:               req.Credential.Response.Signature,
+		RequireUserVerification: requireUV,
 	})
 	if err != nil {
 		log.Printf("authentication verification failed: %s", err.Error())
-		writeError(w, http.StatusBadRequest, "authentication verification failed")
+		writeError(w, http.StatusBadRequest, "authentication verification failed: "+err.Error())
 		return
 	}
 
@@ -579,6 +635,14 @@ func (p *Passkey) Handler() http.Handler {
 		mux.HandleFunc("POST /logout", p.Logout)
 	}
 	return mux
+}
+
+// orDefault returns val, or def when val is empty.
+func orDefault(val, def string) string {
+	if val != "" {
+		return val
+	}
+	return def
 }
 
 // --- HTTP helpers ---

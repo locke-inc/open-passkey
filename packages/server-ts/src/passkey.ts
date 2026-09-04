@@ -239,7 +239,13 @@ export class Passkey {
   }
 
   async finishAuthentication(req: FinishAuthenticationRequest): Promise<FinishAuthenticationResponse> {
-    const challenge = await this.challengeStore.consume(req.userId);
+    // Discoverable flow: explicit challenge field takes effect when userId is absent.
+    // Backward compat: old clients stuff the challenge into userId, which still works.
+    const lookupKey = req.userId ?? req.challenge;
+    if (!lookupKey) {
+      throw new PasskeyError(400, "challenge not found or expired");
+    }
+    const challenge = await this.challengeStore.consume(lookupKey);
     if (!challenge) {
       throw new PasskeyError(400, "challenge not found or expired");
     }

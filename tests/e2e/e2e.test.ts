@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
-import { runFullCeremony, runInvalidAuthTest } from "./harness.js";
+import { runFullCeremony, runDiscoverableCeremony, runInvalidAuthTest } from "./harness.js";
 import { startExpress, type ServerHandle } from "./servers/express.js";
 import { startGo } from "./servers/go.js";
 import { startFastAPI } from "./servers/fastapi.js";
@@ -37,6 +37,11 @@ for (const serverDef of servers) {
 
     it("rejects tampered signature during authentication", async () => {
       await runInvalidAuthTest(server.baseUrl, server.origin);
+    });
+
+    it("completes discoverable (usernameless) authentication", async () => {
+      const result = await runDiscoverableCeremony(server.baseUrl, server.origin);
+      expect(result.userId).toContain("e2e-disc-");
     });
 
     it("completes multiple independent registrations and authentications", async () => {

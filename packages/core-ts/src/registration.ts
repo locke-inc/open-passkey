@@ -19,6 +19,8 @@ import type { RegistrationInput, RegistrationResult } from "./types.js";
 
 // Import verifyAuthentication's signature helpers for self-attestation reuse
 import { verifyES256SelfAttestation } from "./packed.js";
+import { verifyTpmAttestation } from "./tpm.js";
+import { verifyAndroidKeyAttestation } from "./android-key.js";
 
 export function verifyRegistration(
   input: RegistrationInput,
@@ -37,12 +39,44 @@ export function verifyRegistration(
 
   const fmt: string = attObj.fmt;
   const authData: Uint8Array = attObj.authData;
-  let attStmt: { alg?: number; sig?: Uint8Array; x5c?: Uint8Array[] } | undefined;
+  let attStmt:
+    | {
+        alg?: number;
+        sig?: Uint8Array;
+        x5c?: Uint8Array[];
+        ver?: unknown;
+        certInfo?: Uint8Array;
+        pubArea?: Uint8Array;
+      }
+    | undefined;
 
   switch (fmt) {
     case "none":
       break;
     case "packed": {
+      const raw = attObj.attStmt;
+      if (!raw || raw.alg === undefined || !raw.sig) {
+        throw new InvalidAttestationStatementError("missing alg or sig");
+      }
+      attStmt = { alg: raw.alg, sig: raw.sig, x5c: raw.x5c };
+      break;
+    }
+    case "tpm": {
+      const raw = attObj.attStmt;
+      if (!raw || raw.alg === undefined || !raw.sig) {
+        throw new InvalidAttestationStatementError("missing alg or sig");
+      }
+      attStmt = {
+        alg: raw.alg,
+        sig: raw.sig,
+        x5c: raw.x5c,
+        ver: raw.ver,
+        certInfo: raw.certInfo,
+        pubArea: raw.pubArea,
+      };
+      break;
+    }
+    case "android-key": {
       const raw = attObj.attStmt;
       if (!raw || raw.alg === undefined || !raw.sig) {
         throw new InvalidAttestationStatementError("missing alg or sig");
@@ -70,15 +104,23 @@ export function verifyRegistration(
     throw new InvalidBackupStateError();
   }
 
-  // Verify packed attestation
-  if (fmt === "packed" && attStmt) {
+  // Verify attestation statement (none carries nothing to verify).
+  // Same-documented policy for every x5c format: signatures verify with
+  // x5c[0]; no chain-to-root validation.
+  if (attStmt && fmt !== "none") {
     const clientDataHash = sha256(clientDataJSONRaw);
-    if (attStmt.x5c && attStmt.x5c.length > 0) {
-      // Full attestation: verify with x5c[0]
-      verifyPackedFullAttestation(attStmt, authData, clientDataHash);
-    } else {
-      // Self-attestation: verify with credential public key
-      verifyES256SelfAttestation(parsed.credentialKey!, authData, clientDataJSONRaw, attStmt.sig!);
+    if (fmt === "packed") {
+      if (attStmt.x5c && attStmt.x5c.length > 0) {
+        // Full attestation: verify with x5c[0]
+        verifyPackedFullAttestation(attStmt, authData, clientDataHash);
+      } else {
+        // Self-attestation: verify with credential public key
+        verifyES256SelfAttestation(parsed.credentialKey!, authData, clientDataJSONRaw, attStmt.sig!);
+      }
+    } else if (fmt === "tpm") {
+      verifyTpmAttestation(attStmt, authData, clientDataHash, parsed.credentialKey!);
+    } else if (fmt === "android-key") {
+      verifyAndroidKeyAttestation(attStmt, authData, clientDataHash);
     }
   }
 

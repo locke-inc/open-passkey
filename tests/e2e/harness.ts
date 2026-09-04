@@ -128,6 +128,89 @@ export async function runFullCeremony(baseUrl: string, origin: string) {
 }
 
 /**
+ * Drives a discoverable (usernameless) authentication ceremony: begin without
+ * userId, assert, then finish. Mirrors the SDK workaround of echoing the
+ * challenge back as the finish lookup key (see PasskeyClient.authenticate).
+ */
+export async function runDiscoverableCeremony(baseUrl: string, origin: string) {
+  const userId = `e2e-disc-${Date.now()}`;
+  const username = `discuser-${Date.now()}`;
+
+  // Register first (registration always needs a userId)
+  const regBeginRes = await post(baseUrl, "/passkey/register/begin", { userId, username });
+  expect(regBeginRes.status, "register/begin should return 200").toBe(200);
+  const regOptions = await regBeginRes.json();
+
+  const algorithms = regOptions.pubKeyCredParams
+    .map((p: { alg: number }) => p.alg)
+    .filter((alg: number) => alg === -7);
+
+  const createResult = await createCredential({
+    rpId: regOptions.rp.id,
+    rpName: regOptions.rp.name,
+    userId: base64urlDecode(regOptions.user.id),
+    userName: username,
+    challenge: base64urlDecode(regOptions.challenge),
+    origin,
+    algorithms,
+  });
+
+  const regFinishRes = await post(baseUrl, "/passkey/register/finish", {
+    userId,
+    credential: {
+      id: createResult.credentialId,
+      rawId: createResult.credentialId,
+      type: "public-key",
+      response: {
+        clientDataJSON: createResult.response.clientDataJSON,
+        attestationObject: createResult.response.attestationObject,
+      },
+    },
+  });
+  expect(regFinishRes.status, "register/finish should return 200").toBe(200);
+
+  // Begin authentication WITHOUT userId (usernameless)
+  const authBeginRes = await post(baseUrl, "/passkey/login/begin", {});
+  expect(authBeginRes.status, "login/begin should return 200").toBe(200);
+  const authOptions = await authBeginRes.json();
+  expect(authOptions.challenge).toBeDefined();
+  expect(
+    authOptions.allowCredentials,
+    "discoverable begin should omit allowCredentials",
+  ).toBeUndefined();
+
+  const assertionResult = await getAssertion({
+    rpId: authOptions.rpId,
+    challenge: base64urlDecode(authOptions.challenge),
+    origin,
+    credential: createResult.credential,
+  });
+  expect(assertionResult.response.userHandle).toBeDefined();
+
+  // Finish with the challenge as lookup key (SDK-equivalent behavior)
+  const authFinishRes = await post(baseUrl, "/passkey/login/finish", {
+    userId: authOptions.challenge,
+    credential: {
+      id: createResult.credentialId,
+      rawId: createResult.credentialId,
+      type: "public-key",
+      response: {
+        clientDataJSON: assertionResult.response.clientDataJSON,
+        authenticatorData: assertionResult.response.authenticatorData,
+        signature: assertionResult.response.signature,
+        userHandle: assertionResult.response.userHandle,
+      },
+    },
+  });
+  expect(authFinishRes.status, "login/finish should return 200").toBe(200);
+  const authFinishData = await authFinishRes.json();
+  expect(authFinishData.authenticated).toBe(true);
+  expect(authFinishData.userId).toBe(userId);
+
+  return { userId, credentialId: createResult.credentialId };
+}
+
+/**
  * Tests that an invalid credential is rejected during authentication.
  */
 export async function runInvalidAuthTest(baseUrl: string, origin: string) {

@@ -818,3 +818,108 @@ func TestBeginAuthentication_NoPRFForNonPRFCredentials(t *testing.T) {
 		t.Error("non-PRF credentials should not include extensions")
 	}
 }
+
+// --- Discoverable finish with explicit challenge field ---
+
+func discoverableCred() map[string]any {
+	return map[string]any{
+		"id":    "AQID", // base64url of [1,2,3]
+		"rawId": "AQID",
+		"type":  "public-key",
+		"response": map[string]any{
+			"clientDataJSON":    "fake",
+			"authenticatorData": "fake",
+			"signature":         "fake",
+		},
+	}
+}
+
+func newDiscoverablePasskey(t *testing.T) (*passkey.Passkey, *passkey.MemoryChallengeStore) {
+	t.Helper()
+	cs := passkey.NewMemoryChallengeStore()
+	credStore := passkey.NewMemoryCredentialStore()
+	credStore.Store(passkey.StoredCredential{
+		CredentialID:  []byte{1, 2, 3},
+		PublicKeyCOSE: []byte{4, 5, 6},
+		UserID:        "alice",
+	})
+	p, err := passkey.New(passkey.Config{
+		RPID:            "example.com",
+		RPDisplayName:   "Example",
+		Origin:          "https://example.com",
+		ChallengeStore:  cs,
+		CredentialStore: credStore,
+	})
+	if err != nil {
+		t.Fatalf("failed to create Passkey: %v", err)
+	}
+	return p, cs
+}
+
+func TestFinishAuthentication_ExplicitChallenge(t *testing.T) {
+	p, cs := newDiscoverablePasskey(t)
+	cs.Store("ch-abc", "ch-abc", 5*60*1e9)
+
+	// No userId, explicit challenge field. Fake crypto data fails at signature
+	// verification, but must get PAST the challenge lookup.
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"challenge":  "ch-abc",
+		"credential": discoverableCred(),
+	})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 (fake crypto), got %d: %s", w.Code, w.Body.String())
+	}
+	resp := decodeResponse(t, w)
+	if resp["error"] == "challenge not found or expired" {
+		t.Error("explicit challenge lookup failed; expected to get past challenge lookup")
+	}
+}
+
+func TestFinishAuthentication_UnknownChallengeKey(t *testing.T) {
+	p, _ := newDiscoverablePasskey(t)
+
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"challenge":  "no-such-challenge",
+		"credential": discoverableCred(),
+	})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+	resp := decodeResponse(t, w)
+	if resp["error"] != "challenge not found or expired" {
+		t.Errorf("unexpected error: %v", resp["error"])
+	}
+}
+
+func TestFinishAuthentication_NeitherUserIDNorChallenge(t *testing.T) {
+	p, _ := newDiscoverablePasskey(t)
+
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"credential": discoverableCred(),
+	})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+	resp := decodeResponse(t, w)
+	if resp["error"] != "challenge not found or expired" {
+		t.Errorf("unexpected error: %v", resp["error"])
+	}
+}
+
+func TestFinishAuthentication_OldStyleChallengeAsUserID(t *testing.T) {
+	p, cs := newDiscoverablePasskey(t)
+	cs.Store("ch-abc", "ch-abc", 5*60*1e9)
+
+	// Backward compat: challenge stuffed into userId must still get past lookup.
+	w := postJSON(p.FinishAuthentication, map[string]any{
+		"userId":     "ch-abc",
+		"credential": discoverableCred(),
+	})
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 (fake crypto), got %d: %s", w.Code, w.Body.String())
+	}
+	resp := decodeResponse(t, w)
+	if resp["error"] == "challenge not found or expired" {
+		t.Error("old-style challenge-as-userId lookup failed; backward compat broken")
+	}
+}

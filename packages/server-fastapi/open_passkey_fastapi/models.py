@@ -45,5 +45,6 @@ class FinishAuthenticationCredential(BaseModel):
 
 
 class FinishAuthenticationRequest(BaseModel):
-    userId: str
+    userId: str | None = None
+    challenge: str | None = None
     credential: FinishAuthenticationCredential
