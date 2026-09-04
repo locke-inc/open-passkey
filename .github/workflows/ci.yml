@@ -49,9 +49,25 @@ jobs:
       - name: Test angular
         run: cd packages/angular && npm ci && npm test
       - name: Audit core-ts
-        run: cd packages/core-ts && npm audit --omit=dev
+        run: |
+          for i in 1 2 3; do
+            if (cd packages/core-ts && npm audit --omit=dev); then
+              break
+            elif [ "$i" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 20
+          done
       - name: Audit sdk-js
-        run: cd packages/sdk-js && npm audit --omit=dev
+        run: |
+          for i in 1 2 3; do
+            if (cd packages/sdk-js && npm audit --omit=dev); then
+              break
+            elif [ "$i" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 20
+          done
 
   core-py:
     runs-on: ubuntu-latest
@@ -89,7 +105,9 @@ jobs:
       - name: Test server-py
         run: pip install -e packages/server-py && cd packages/server-py && pytest tests/ -v
       - name: Audit dependencies
-        run: pip install pip-audit && pip-audit
+        run: |
+          pip install -U pip setuptools wheel
+          pip install pip-audit && pip-audit
 
   core-php:
     runs-on: ubuntu-latest
@@ -199,7 +217,7 @@ jobs:
       - name: Test server-axum
         run: cd packages/server-axum && cargo test -- --nocapture
       - name: Install and run cargo-audit
-        run: cargo install cargo-audit && cd packages/core-rust && cargo audit
+        run: cargo install cargo-audit --locked && cd packages/core-rust && cargo audit
 
   e2e:
     runs-on: ubuntu-latest
