@@ -51,7 +51,9 @@ def create_passkey_blueprint(config: PasskeyConfig) -> Blueprint:
     def finish_authentication():
         body = request.get_json(force=True)
         try:
-            result = handler.finish_authentication(body.get("userId", ""), body.get("credential", {}))
+            result = handler.finish_authentication(
+                body.get("userId", ""), body.get("credential", {}), body.get("challenge", "")
+            )
         except PasskeyError as e:
             return jsonify({"error": str(e)}), e.status_code
 

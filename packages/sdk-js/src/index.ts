@@ -325,8 +325,9 @@ export class PasskeyClient {
     // Build finish payload
     // In discoverable flow (no userId), use the challenge as the lookup key —
     // the server stores the challenge under the challenge value itself when no userId is provided.
+    // Send BOTH userId=challenge (old servers) AND the explicit challenge field (new servers).
     const finishPayload: Record<string, unknown> = {
-      userId: userId || options.challenge,
+      ...(userId ? { userId } : { userId: options.challenge, challenge: options.challenge }),
       credential: {
         id: credential.id,
         rawId: base64urlEncode(credential.rawId),

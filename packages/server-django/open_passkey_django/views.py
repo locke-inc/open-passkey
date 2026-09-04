@@ -92,7 +92,9 @@ class FinishAuthenticationView(View):
     def post(self, request):
         body = json.loads(request.body)
         try:
-            result = _handler.finish_authentication(body.get("userId", ""), body.get("credential", {}))
+            result = _handler.finish_authentication(
+                body.get("userId", ""), body.get("credential", {}), body.get("challenge", "")
+            )
         except PasskeyError as e:
             return JsonResponse({"error": str(e)}, status=e.status_code)
 

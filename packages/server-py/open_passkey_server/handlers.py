@@ -139,8 +139,15 @@ class PasskeyHandler:
 
         return options
 
-    def finish_authentication(self, user_id: str, credential: dict) -> dict:
-        challenge = self.config.challenge_store.consume(user_id)
+    def finish_authentication(self, user_id: str = "", credential: dict | None = None, challenge: str = "") -> dict:
+        # Discoverable flow: explicit challenge field takes effect when user_id is absent.
+        # Backward compat: old clients stuff the challenge into user_id, which still works.
+        lookup_key = user_id or challenge
+        if not lookup_key:
+            raise PasskeyError("challenge not found or expired")
+        if credential is None:
+            raise PasskeyError("credential is required")
+        challenge = self.config.challenge_store.consume(lookup_key)
 
         cred_id_bytes = b64url_decode(credential["id"])
         stored = self.config.credential_store.get(cred_id_bytes)

@@ -55,7 +55,7 @@ def create_passkey_router(config: PasskeyConfig) -> APIRouter:
     @router.post("/login/finish")
     async def finish_authentication(req: FinishAuthenticationRequest):
         try:
-            result = handler.finish_authentication(req.userId, req.credential.model_dump())
+            result = handler.finish_authentication(req.userId or "", req.credential.model_dump(), req.challenge or "")
         except PasskeyError as e:
             raise HTTPException(e.status_code, str(e))
 

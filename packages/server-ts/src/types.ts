@@ -80,7 +80,8 @@ export interface BeginAuthenticationRequest {
 }
 
 export interface FinishAuthenticationRequest {
-  userId: string;
+  userId?: string;
+  challenge?: string;
   credential: {
     id: string;
     rawId: string;
