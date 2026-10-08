@@ -42,6 +42,9 @@ var (
 
 // Config holds the relying party configuration.
 type Config struct {
+	// Success callbacks compose verified authentication with an external session backend.
+	OnAuthenticated   AuthenticationSuccessHandler
+	OnRegistered      RegistrationSuccessHandler
 	RPID              string
 	RPDisplayName     string
 	Origin            string
@@ -348,6 +351,13 @@ func (p *Passkey) FinishRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	registrationResult := RegistrationResult{Principal: AuthenticatedPrincipal{ID: req.UserID}, CredentialID: base64.RawURLEncoding.EncodeToString(result.CredentialID), PRFSupported: cred.PRFSupported}
+	if p.config.OnRegistered != nil {
+		if err := p.config.OnRegistered.OnRegistered(r.Context(), registrationResult); err != nil {
+			writeError(w, http.StatusInternalServerError, "registration success handler failed")
+			return
+		}
+	}
 	// Set session cookie if session is configured (auto-login after registration)
 	if p.config.Session != nil {
 		token := createSessionToken(req.UserID, p.config.Session)
@@ -574,6 +584,13 @@ func (p *Passkey) FinishAuthentication(w http.ResponseWriter, r *http.Request) {
 		resp["prfSupported"] = true
 	}
 
+	authenticationResult := AuthenticationResult{Principal: AuthenticatedPrincipal{ID: stored.UserID}, CredentialID: base64.RawURLEncoding.EncodeToString(stored.CredentialID), PRFSupported: stored.PRFSupported}
+	if p.config.OnAuthenticated != nil {
+		if err := p.config.OnAuthenticated.OnAuthenticated(r.Context(), authenticationResult); err != nil {
+			writeError(w, http.StatusInternalServerError, "authentication success handler failed")
+			return
+		}
+	}
 	// Set session cookie if session is configured
 	if p.config.Session != nil {
 		token := createSessionToken(stored.UserID, p.config.Session)
