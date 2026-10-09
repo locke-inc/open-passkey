@@ -25,6 +25,7 @@ describe("Registration round-trip", () => {
     const userId = new Uint8Array([1, 2, 3, 4]);
 
     const result = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
       rpId: RP_ID,
       rpName: "Example",
       userId,
@@ -58,6 +59,7 @@ describe("Authentication round-trip", () => {
     const userId = new Uint8Array([5, 6, 7, 8]);
 
     const createResult = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
       rpId: RP_ID,
       rpName: "Example",
       userId,
@@ -70,6 +72,7 @@ describe("Authentication round-trip", () => {
     // Now create an assertion
     const authChallenge = randomChallenge();
     const assertionResult = await getAssertion({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
       rpId: RP_ID,
       challenge: authChallenge,
       origin: ORIGIN,
@@ -97,6 +100,7 @@ describe("Authentication round-trip", () => {
   it("increments sign count across multiple assertions", async () => {
     const regChallenge = randomChallenge();
     const createResult = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
       rpId: RP_ID,
       rpName: "Example",
       userId: new Uint8Array([9, 10]),
@@ -111,6 +115,7 @@ describe("Authentication round-trip", () => {
     for (let i = 1; i <= 3; i++) {
       const challenge = randomChallenge();
       const assertion = await getAssertion({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
         rpId: RP_ID,
         challenge,
         origin: ORIGIN,
@@ -139,6 +144,7 @@ describe("P1363 to DER conversion", () => {
     // Create a credential and assertion to test the DER output
     const challenge = randomChallenge();
     const createResult = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
       rpId: RP_ID,
       rpName: "Example",
       userId: new Uint8Array([11, 12]),
@@ -150,6 +156,7 @@ describe("P1363 to DER conversion", () => {
 
     const authChallenge = randomChallenge();
     const assertion = await getAssertion({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
       rpId: RP_ID,
       challenge: authChallenge,
       origin: ORIGIN,
@@ -182,6 +189,7 @@ describe("createCredential edge cases", () => {
   it("rejects unsupported algorithms", async () => {
     await expect(
       createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
         rpId: RP_ID,
         rpName: "Example",
         userId: new Uint8Array([1]),

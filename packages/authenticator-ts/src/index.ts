@@ -1,6 +1,7 @@
 export { createCredential } from "./create.js";
 export { getAssertion } from "./assert.js";
 export type {
+  CeremonyFacts,
   StoredCredential,
   CreateCredentialInput,
   CreateCredentialResult,

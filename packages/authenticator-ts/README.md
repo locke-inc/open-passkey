@@ -20,11 +20,12 @@ import { createCredential } from "@open-passkey/authenticator";
 const result = await createCredential({
   rpId: "example.com",
   rpName: "My App",
-  userId: "user-123",
+  userId: new TextEncoder().encode("user-123"),
   userName: "alice@example.com",
   challenge: challengeBytes, // Uint8Array
   origin: "https://example.com",
-  alg: -7, // ES256
+  algorithms: [-7], // ES256
+  ceremony: { userPresent: true, userVerified: false, backupEligible: true, backupState: true },
 });
 
 // result: {
@@ -43,6 +44,7 @@ const result = await getAssertion({
   challenge: challengeBytes,
   origin: "https://example.com",
   credential: storedCredential, // from createCredential
+  ceremony: { userPresent: true, userVerified: false, backupEligible: true, backupState: true },
 });
 
 // result: {
@@ -50,6 +52,13 @@ const result = await getAssertion({
 //   authenticatorData, signature, userHandle
 // }
 ```
+
+Ceremony facts are required for every operation. They describe the simulated authenticator
+ceremony; an RP request for `userVerification: "required"` does not establish verification.
+Tests simulating verified authenticators must explicitly supply `userVerified: true`.
+Missing presence, an unsatisfied verification requirement, impossible backup flags, and
+assertions for a different credential RP ID are rejected. This is an API change for callers
+that previously relied on hardcoded UP/UV flags.
 
 ## API
 
