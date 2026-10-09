@@ -1,3 +1,4 @@
+import { ceremonyFlags } from './ceremony.js';
 import * as cborg from "cborg";
 import { encodeES256PublicKey, ALG_ES256 } from "./cose.js";
 import { sha256, base64urlEncode, randomBytes, concatBytes, uint32BE, uint16BE } from "./util.js";
@@ -6,6 +7,7 @@ import type { CreateCredentialInput, CreateCredentialResult, StoredCredential } 
 const AAGUID = new Uint8Array(16); // 16 zero bytes for software authenticator
 
 export async function createCredential(input: CreateCredentialInput): Promise<CreateCredentialResult> {
+  const flagsByte = ceremonyFlags(input.ceremony, input.userVerification, true);
   // Only ES256 (-7) is supported
   if (!input.algorithms.includes(ALG_ES256)) {
     throw new Error("No supported algorithm found. Only ES256 (-7) is supported.");
@@ -39,7 +41,7 @@ export async function createCredential(input: CreateCredentialInput): Promise<Cr
   // Build authenticatorData for registration
   // flags: 0x5D = UP(0x01) | UV(0x04) | BE(0x08) | BS(0x10) | AT(0x40)
   const rpIdHash = await sha256(new TextEncoder().encode(input.rpId));
-  const flags = new Uint8Array([0x5d]);
+  const flags = new Uint8Array([flagsByte]);
   const signCount = uint32BE(0);
 
   // Attested credential data: AAGUID(16) || credIdLen(2) || credId || COSEkey
@@ -76,8 +78,8 @@ export async function createCredential(input: CreateCredentialInput): Promise<Cr
     signCount: 0,
     createdAt: now,
     lastUsedAt: now,
-    backupEligible: true,
-    backupState: true,
+    backupEligible: input.ceremony.backupEligible,
+    backupState: input.ceremony.backupState,
   };
 
   return {

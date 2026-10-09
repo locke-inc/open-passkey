@@ -1,16 +1,19 @@
+import { ceremonyFlags } from './ceremony.js';
 import { p1363ToDer } from "./der.js";
 import { sha256, base64urlEncode, concatBytes, uint32BE, toArrayBuffer } from "./util.js";
 import type { GetAssertionInput, GetAssertionResult, StoredCredential } from "./types.js";
 
 export async function getAssertion(input: GetAssertionInput): Promise<GetAssertionResult> {
   const credential = input.credential;
+  if (credential.rpId !== input.rpId) throw new Error("Credential RP ID mismatch");
+  if (credential.backupEligible !== input.ceremony?.backupEligible) throw new Error("Backup eligibility mismatch");
   const newSignCount = credential.signCount + 1;
 
   // Build authenticatorData for assertion
   // flags: 0x05 = UP(0x01) | UV(0x04)
   // Backup flags: BE(0x08) | BS(0x10)
   const rpIdHash = await sha256(new TextEncoder().encode(input.rpId));
-  const flagsByte = 0x01 | 0x04 | 0x08 | 0x10; // UP + UV + BE + BS
+  const flagsByte = ceremonyFlags(input.ceremony, input.userVerification, false);
   const flags = new Uint8Array([flagsByte]);
   const signCountBytes = uint32BE(newSignCount);
   const authData = concatBytes(rpIdHash, flags, signCountBytes);

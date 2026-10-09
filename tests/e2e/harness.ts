@@ -57,6 +57,7 @@ export async function runFullCeremony(baseUrl: string, origin: string) {
     .filter((alg: number) => alg === -7); // Use ES256 for E2E (universally supported)
 
   const createResult = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
     rpId: regOptions.rp.id,
     rpName: regOptions.rp.name,
     userId: base64urlDecode(regOptions.user.id),
@@ -98,6 +99,7 @@ export async function runFullCeremony(baseUrl: string, origin: string) {
 
   // Step 5: Create assertion with software authenticator
   const assertionResult = await getAssertion({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
     rpId: authOptions.rpId,
     challenge: base64urlDecode(authOptions.challenge),
     origin,
@@ -146,6 +148,7 @@ export async function runDiscoverableCeremony(baseUrl: string, origin: string) {
     .filter((alg: number) => alg === -7);
 
   const createResult = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
     rpId: regOptions.rp.id,
     rpName: regOptions.rp.name,
     userId: base64urlDecode(regOptions.user.id),
@@ -180,6 +183,7 @@ export async function runDiscoverableCeremony(baseUrl: string, origin: string) {
   ).toBeUndefined();
 
   const assertionResult = await getAssertion({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
     rpId: authOptions.rpId,
     challenge: base64urlDecode(authOptions.challenge),
     origin,
@@ -226,6 +230,7 @@ export async function runInvalidAuthTest(baseUrl: string, origin: string) {
     .filter((alg: number) => alg === -7);
 
   const createResult = await createCredential({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
     rpId: regOptions.rp.id,
     rpName: regOptions.rp.name,
     userId: base64urlDecode(regOptions.user.id),
@@ -251,6 +256,7 @@ export async function runInvalidAuthTest(baseUrl: string, origin: string) {
 
   // Create a valid assertion
   const assertionResult = await getAssertion({
+      ceremony: { userPresent: true, userVerified: true, backupEligible: true, backupState: true },
     rpId: authOptions.rpId,
     challenge: base64urlDecode(authOptions.challenge),
     origin,

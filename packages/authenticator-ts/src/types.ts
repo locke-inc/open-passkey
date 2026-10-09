@@ -1,3 +1,10 @@
+export interface CeremonyFacts {
+  userPresent: boolean;
+  userVerified: boolean;
+  backupEligible: boolean;
+  backupState: boolean;
+}
+
 export interface StoredCredential {
   credentialId: Uint8Array;
   rpId: string;
@@ -15,6 +22,7 @@ export interface StoredCredential {
 }
 
 export interface CreateCredentialInput {
+  ceremony: CeremonyFacts;
   rpId: string;
   rpName: string;
   userId: Uint8Array;
@@ -38,6 +46,7 @@ export interface CreateCredentialResult {
 }
 
 export interface GetAssertionInput {
+  ceremony: CeremonyFacts;
   rpId: string;
   challenge: Uint8Array;
   origin: string;
