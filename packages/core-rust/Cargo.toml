@@ -10,7 +10,7 @@ keywords = ["passkey", "webauthn", "fido2", "post-quantum"]
 categories = ["authentication", "cryptography"]
 
 [dependencies]
-p256 = { version = "0.13", features = ["ecdsa", "sha256"] }
+p256 = { version = "0.14", features = ["ecdsa", "sha256"] }
 ecdsa = { version = "0.16", features = ["der"] }
 sha2 = "0.10"
 ciborium = "0.2"
