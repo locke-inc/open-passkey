@@ -117,3 +117,15 @@ go test ./... -v
 ## License
 
 MIT
+
+### Verified success callbacks
+
+`Config.OnRegistered` and `Config.OnAuthenticated` receive typed results only
+once a ceremony is verified and the credential is persisted/updated. Gateway
+uses these callbacks to establish its Redis-backed Open Bind session. Leave
+`Config.Session` unset when an external session backend owns issuance.
+
+Callbacks are optional and additive: existing opt-in stateless session APIs
+remain available. A callback error fails the response and prevents built-in
+session issuance. Registration persistence has already happened at that point;
+retry through authentication rather than duplicating registration.
